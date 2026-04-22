@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТИТЭМ — Малгай</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0a0a0a;
+  --white:#fafafa;
+  --gray:#888;
+  --gray-light:#e8e8e8;
+  --gray-mid:#d0d0d0;
+  --font-head:'Cormorant Garamond',Georgia,serif;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--white);color:var(--black);font-family:var(--font-body);overflow-x:hidden}
+
+/* ── HEADER ── */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(250,250,250,0.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--gray-light);
+}
+.header-inner{
+  max-width:1320px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:64px;
+}
+.logo{
+  font-family:var(--font-head);
+  font-size:26px;font-weight:500;
+  letter-spacing:6px;color:var(--black);
+  text-decoration:none;text-transform:uppercase;
+}
+.logo span{
+  display:inline-block;width:16px;height:16px;
+  border:1.5px solid var(--black);border-radius:50%;
+  margin-right:8px;vertical-align:middle;margin-top:-3px;
+}
+nav{display:flex;gap:32px;align-items:center}
+nav a{
+  font-size:12px;font-weight:400;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--black);text-decoration:none;
+  transition:color 0.2s;
+}
+nav a:hover{color:var(--gray)}
+.header-actions{display:flex;align-items:center;gap:16px}
+.icon-btn{
+  width:36px;height:36px;border:none;background:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.icon-btn svg{width:20px;height:20px;stroke:var(--black);fill:none;stroke-width:1.5;stroke-linecap:round}
+.cart-count{
+  position:absolute;top:2px;right:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--black);color:var(--white);
+  font-size:9px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  padding-top:64px;
+}
+.hero-left{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:80px 60px 80px 80px;
+  position:relative;
+}
+.hero-eyebrow{
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gray);margin-bottom:24px;
+  display:flex;align-items:center;gap:12px;
+}
+.hero-eyebrow::before{
+  content:'';display:block;width:40px;height:1px;background:var(--gray);
+}
+.hero-title{
+  font-family:var(--font-head);
+  font-size:clamp(52px,6vw,88px);
+  font-weight:300;line-height:1.05;
+  letter-spacing:-1px;
+  margin-bottom:28px;
+}
+.hero-title em{font-style:italic;font-weight:300}
+.hero-desc{
+  font-size:15px;font-weight:300;color:var(--gray);
+  line-height:1.8;max-width:360px;margin-bottom:48px;
+}
+.hero-actions{display:flex;gap:16px;align-items:center}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--black);color:var(--white);
+  padding:14px 32px;font-size:12px;font-weight:500;
+  letter-spacing:1.5px;text-transform:uppercase;
+  text-decoration:none;border:none;cursor:pointer;
+  transition:opacity 0.2s;
+}
+.btn-primary:hover{opacity:0.8}
+.btn-primary svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.btn-secondary{
+  font-size:12px;font-weight:400;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--black);
+  text-decoration:none;border-bottom:1px solid var(--black);
+  padding-bottom:2px;transition:color 0.2s,border-color 0.2s;
+}
+.btn-secondary:hover{color:var(--gray);border-color:var(--gray)}
+.hero-stats{
+  display:flex;gap:40px;margin-top:60px;
+  padding-top:40px;border-top:1px solid var(--gray-light);
+}
+.stat-item{}
+.stat-num{
+  font-family:var(--font-head);
+  font-size:36px;font-weight:300;
+  line-height:1;margin-bottom:4px;
+}
+.stat-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray)}
+
+.hero-right{
+  background:var(--black);
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-img-placeholder{
+  width:100%;height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;
+}
+.hero-img-inner{
+  width:280px;height:280px;
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.hero-img-inner::before{
+  content:'';position:absolute;
+  width:320px;height:320px;
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:50%;
+}
+.crown-icon{
+  font-size:80px;opacity:0.9;
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.hero-tag{
+  position:absolute;bottom:40px;right:40px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  padding:12px 20px;
+}
+.hero-tag-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:4px}
+.hero-tag-val{font-family:var(--font-head);font-size:20px;color:white;font-weight:300}
+
+/* ── CATEGORIES ── */
+.categories{max-width:1320px;margin:0 auto;padding:100px 40px}
+.section-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:48px;
+}
+.section-title{
+  font-family:var(--font-head);
+  font-size:clamp(32px,4vw,52px);font-weight:300;
+  line-height:1.1;
+}
+.section-title em{font-style:italic}
+.see-all{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--black);text-decoration:none;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid transparent;
+  transition:border-color 0.2s;padding-bottom:2px;
+}
+.see-all:hover{border-color:var(--black)}
+.cat-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px}
+.cat-card{
+  position:relative;overflow:hidden;cursor:pointer;
+  aspect-ratio:1;
+  background:var(--black);
+  display:flex;align-items:flex-end;
+  transition:opacity 0.3s;
+}
+.cat-card:hover{opacity:0.85}
+.cat-card:first-child{aspect-ratio:auto;grid-row:span 2}
+.cat-bg{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:120px;opacity:0.12;
+  transition:transform 0.6s ease;
+}
+.cat-card:hover .cat-bg{transform:scale(1.1)}
+.cat-info{
+  position:relative;z-index:1;
+  padding:24px;width:100%;
+  background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 100%);
+}
+.cat-name{
+  font-family:var(--font-head);
+  font-size:24px;font-weight:300;color:white;
+  letter-spacing:1px;margin-bottom:4px;
+}
+.cat-count{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
+
+/* ── FEATURED PRODUCTS ── */
+.products{background:#f4f4f4;padding:100px 0}
+.products-inner{max-width:1320px;margin:0 auto;padding:0 40px}
+.product-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
+  margin-top:48px;
+}
+.product-card{
+  background:var(--white);
+  cursor:pointer;
+  transition:transform 0.3s ease;
+}
+.product-card:hover{transform:translateY(-4px)}
+.product-card:hover .product-img-inner{transform:scale(1.04)}
+.product-img{
+  aspect-ratio:3/4;
+  background:var(--gray-light);
+  overflow:hidden;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.product-img-inner{
+  font-size:80px;transition:transform 0.4s ease;
+}
+.product-badge{
+  position:absolute;top:12px;left:12px;
+  background:var(--black);color:var(--white);
+  font-size:9px;font-weight:500;letter-spacing:1.5px;
+  text-transform:uppercase;padding:4px 10px;
+}
+.product-badge.sale{background:#c0392b}
+.product-info{padding:20px 16px}
+.product-cat{
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--gray);margin-bottom:6px;
+}
+.product-name{
+  font-family:var(--font-head);
+  font-size:18px;font-weight:400;
+  margin-bottom:8px;line-height:1.2;
+}
+.product-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:12px;
+}
+.product-price{
+  font-size:15px;font-weight:500;
+}
+.product-price-old{
+  font-size:12px;color:var(--gray);
+  text-decoration:line-through;margin-right:8px;
+}
+.product-colors{display:flex;gap:4px}
+.color-dot{
+  width:12px;height:12px;border-radius:50%;
+  border:1px solid rgba(0,0,0,0.15);cursor:pointer;
+  transition:transform 0.15s;
+}
+.color-dot:hover{transform:scale(1.2)}
+
+/* ── BANNER ── */
+.banner{
+  background:var(--black);color:var(--white);
+  padding:100px 40px;
+  text-align:center;position:relative;overflow:hidden;
+}
+.banner::before{
+  content:'ТИТЭМ';
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:var(--font-head);
+  font-size:200px;font-weight:300;
+  opacity:0.04;letter-spacing:20px;
+  white-space:nowrap;pointer-events:none;
+}
+.banner-inner{position:relative;z-index:1;max-width:600px;margin:0 auto}
+.banner-eyebrow{
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,0.4);margin-bottom:24px;
+}
+.banner-title{
+  font-family:var(--font-head);
+  font-size:clamp(40px,5vw,72px);font-weight:300;
+  line-height:1.05;margin-bottom:24px;
+}
+.banner-title em{font-style:italic}
+.banner-desc{
+  font-size:14px;color:rgba(255,255,255,0.5);
+  line-height:1.8;margin-bottom:40px;
+}
+.btn-outline{
+  display:inline-flex;align-items:center;gap:10px;
+  border:1px solid rgba(255,255,255,0.3);
+  color:white;padding:14px 36px;
+  font-size:11px;font-weight:400;letter-spacing:2px;
+  text-transform:uppercase;text-decoration:none;
+  transition:all 0.2s;cursor:pointer;background:none;
+}
+.btn-outline:hover{background:white;color:var(--black);border-color:white}
+
+/* ── NEW ARRIVALS MARQUEE ── */
+.marquee-wrap{
+  border-top:1px solid var(--gray-light);
+  border-bottom:1px solid var(--gray-light);
+  overflow:hidden;padding:16px 0;
+  background:var(--white);
+}
+.marquee{
+  display:flex;gap:0;
+  animation:marquee 20s linear infinite;
+  width:max-content;
+}
+.marquee-item{
+  font-family:var(--font-head);
+  font-size:20px;font-weight:300;
+  letter-spacing:2px;padding:0 40px;
+  color:var(--black);white-space:nowrap;
+  display:flex;align-items:center;gap:20px;
+}
+.marquee-item::after{
+  content:'✦';font-size:10px;color:var(--gray);
+}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--black);color:var(--white);
+  padding:60px 40px 30px;
+}
+.footer-inner{max-width:1320px;margin:0 auto}
+.footer-top{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:40px;padding-bottom:48px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+.footer-brand .logo{color:white}
+.footer-brand .logo span{border-color:white}
+.footer-desc{
+  font-size:13px;color:rgba(255,255,255,0.4);
+  line-height:1.8;margin-top:16px;max-width:260px;
+}
+.footer-col h4{
+  font-size:10px;letter-spacing:2.5px;text-transform:uppercase;
+  color:rgba(255,255,255,0.3);margin-bottom:20px;
+}
+.footer-col a{
+  display:block;font-size:13px;color:rgba(255,255,255,0.6);
+  text-decoration:none;margin-bottom:10px;
+  transition:color 0.2s;
+}
+.footer-col a:hover{color:white}
+.footer-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:24px;
+  font-size:11px;color:rgba(255,255,255,0.25);
+  letter-spacing:0.5px;
+}
+.social-links{display:flex;gap:20px}
+.social-links a{
+  font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,0.35);text-decoration:none;
+  transition:color 0.2s;
+}
+.social-links a:hover{color:white}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.hero-eyebrow{animation:fadeUp 0.6s ease both}
+.hero-title{animation:fadeUp 0.6s ease 0.1s both}
+.hero-desc{animation:fadeUp 0.6s ease 0.2s both}
+.hero-actions{animation:fadeUp 0.6s ease 0.3s both}
+.hero-stats{animation:fadeUp 0.6s ease 0.4s both}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .header-inner{padding:0 20px}
+  nav{display:none}
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-left{padding:40px 20px}
+  .hero-right{height:300px}
+  .categories,.products-inner{padding:60px 20px}
+  .cat-grid{grid-template-columns:1fr 1fr;gap:2px}
+  .cat-card:first-child{grid-column:span 2;aspect-ratio:2/1}
+  .product-grid{grid-template-columns:1fr 1fr;gap:2px}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .banner{padding:60px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo"><span></span>Титэм</a>
+    <nav>
+      <a href="#">Шинэ</a>
+      <a href="#">Малгай</a>
+      <a href="#">Ороолт</a>
+      <a href="#">Бээлий</a>
+      <a href="#">Бусад</a>
+      <a href="#">Хямдрал</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" title="Хайх">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      </button>
+      <button class="icon-btn" title="Сагс">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-count">2</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-eyebrow">2024 шинэ цуглуулга</p>
+    <h1 class="hero-title">
+      Малгай бол<br>
+      <em>таны загвар</em>
+    </h1>
+    <p class="hero-desc">
+      Малгай, ороолт, бээлий, faceshield болон бусад — чанар, загвар хоёрыг нэгтгэсэн Монголын тэргүүлэх малгайн брэнд.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary">
+        Дэлгүүр үзэх
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="#" class="btn-secondary">Шинэ бараа</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">500+</div>
+        <div class="stat-label">Бараа</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">5</div>
+        <div class="stat-label">Салбар</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10K+</div>
+        <div class="stat-label">Харилцагч</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img-placeholder">
+      <div class="hero-img-inner">
+        <div class="crown-icon">👑</div>
+      </div>
+    </div>
+    <div class="hero-tag">
+      <div class="hero-tag-label">Шинэ ирлээ</div>
+      <div class="hero-tag-val">Winter 2024</div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee">
+    <div class="marquee-item">Шинэ цуглуулга</div>
+    <div class="marquee-item">Малгай</div>
+    <div class="marquee-item">Ороолт</div>
+    <div class="marquee-item">Бээлий</div>
+    <div class="marquee-item">Faceshield</div>
+    <div class="marquee-item">Хүзүүний алчуур</div>
+    <div class="marquee-item">Шинэ цуглуулга</div>
+    <div class="marquee-item">Малгай</div>
+    <div class="marquee-item">Ороолт</div>
+    <div class="marquee-item">Бээлий</div>
+    <div class="marquee-item">Faceshield</div>
+    <div class="marquee-item">Хүзүүний алчуур</div>
+  </div>
+</div>
+
+<!-- CATEGORIES -->
+<section class="categories">
+  <div class="section-header">
+    <h2 class="section-title">Бараа<br><em>ангилал</em></h2>
+    <a href="#" class="see-all">Бүгдийг үзэх →</a>
+  </div>
+  <div class="cat-grid">
+    <div class="cat-card">
+      <div class="cat-bg">🧢</div>
+      <div class="cat-info">
+        <div class="cat-name">Малгай</div>
+        <div class="cat-count">120+ загвар</div>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-bg">🧣</div>
+      <div class="cat-info">
+        <div class="cat-name">Ороолт</div>
+        <div class="cat-count">80+ загвар</div>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-bg">🧤</div>
+      <div class="cat-info">
+        <div class="cat-name">Бээлий</div>
+        <div class="cat-count">60+ загвар</div>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-bg">😷</div>
+      <div class="cat-info">
+        <div class="cat-name">Faceshield</div>
+        <div class="cat-count">40+ загвар</div>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-bg">🧦</div>
+      <div class="cat-info">
+        <div class="cat-name">Алчуур</div>
+        <div class="cat-count">30+ загвар</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED PRODUCTS -->
+<section class="products">
+  <div class="products-inner">
+    <div class="section-header">
+      <h2 class="section-title">Шилдэг<br><em>бараанууд</em></h2>
+      <a href="#" class="see-all">Бүгдийг үзэх →</a>
+    </div>
+    <div class="product-grid">
+      <div class="product-card">
+        <div class="product-img">
+          <div class="product-img-inner">🧢</div>
+          <span class="product-badge">Шинэ</span>
+        </div>
+        <div class="product-info">
+          <div class="product-cat">Малгай</div>
+          <div class="product-name">Классик Бүргэд</div>
+          <div class="product-bottom">
+            <div class="product-price">₮45,000</div>
+            <div class="product-colors">
+              <div class="color-dot" style="background:#0a0a0a"></div>
+              <div class="color-dot" style="background:#8B4513"></div>
+              <div class="color-dot" style="background:#1a3a5c"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img" style="background:#e8e4df">
+          <div class="product-img-inner">🧣</div>
+          <span class="product-badge sale">-20%</span>
+        </div>
+        <div class="product-info">
+          <div class="product-cat">Ороолт</div>
+          <div class="product-name">Зимийн ороолт</div>
+          <div class="product-bottom">
+            <div class="product-price">
+              <span class="product-price-old">₮38,000</span>₮30,400
+            </div>
+            <div class="product-colors">
+              <div class="color-dot" style="background:#c0392b"></div>
+              <div class="color-dot" style="background:#2c3e50"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img" style="background:#f0ede8">
+          <div class="product-img-inner">🧤</div>
+        </div>
+        <div class="product-info">
+          <div class="product-cat">Бээлий</div>
+          <div class="product-name">Утас бээлий</div>
+          <div class="product-bottom">
+            <div class="product-price">₮25,000</div>
+            <div class="product-colors">
+              <div class="color-dot" style="background:#0a0a0a"></div>
+              <div class="color-dot" style="background:#fafafa;border:1px solid #ccc"></div>
+              <div class="color-dot" style="background:#8B0000"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img" style="background:#e8edf0">
+          <div class="product-img-inner">😷</div>
+          <span class="product-badge">Хит</span>
+        </div>
+        <div class="product-info">
+          <div class="product-cat">Faceshield</div>
+          <div class="product-name">Өвлийн хамгаалалт</div>
+          <div class="product-bottom">
+            <div class="product-price">₮18,000</div>
+            <div class="product-colors">
+              <div class="color-dot" style="background:#0a0a0a"></div>
+              <div class="color-dot" style="background:#2c5f2e"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BANNER -->
+<section class="banner">
+  <div class="banner-inner">
+    <p class="banner-eyebrow">Онцгой санал</p>
+    <h2 class="banner-title">Бөөний<br><em>захиалга</em></h2>
+    <p class="banner-desc">10-аас дээш ширхэг захиалбал бөөний үнээр авах боломжтой. Байгууллага, баг, хамт олондоо тохируулан захиалаарай.</p>
+    <a href="#" class="btn-outline">Холбоо барих →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="logo"><span></span>Титэм</a>
+        <p class="footer-desc">Монголын тэргүүлэх малгайн брэнд. Чанар, загвар, тав тухыг нэгтгэсэн бүтээгдэхүүн.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Дэлгүүр</h4>
+        <a href="#">Малгай</a>
+        <a href="#">Ороолт</a>
+        <a href="#">Бээлий</a>
+        <a href="#">Faceshield</a>
+        <a href="#">Хямдрал</a>
+      </div>
+      <div class="footer-col">
+        <h4>Мэдээлэл</h4>
+        <a href="#">Бидний тухай</a>
+        <a href="#">Салбарууд</a>
+        <a href="#">Хүргэлт</a>
+        <a href="#">Буцаалт</a>
+        <a href="#">Холбоо барих</a>
+      </div>
+      <div class="footer-col">
+        <h4>Холбоо</h4>
+        <a href="#">Facebook</a>
+        <a href="#">Instagram</a>
+        <a href="#">Messenger</a>
+        <a href="#">+976 9900-0000</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024 Титэм. Бүх эрх хуулиар хамгаалагдсан.</span>
+      <div class="social-links">
+        <a href="#">Facebook</a>
+        <a href="#">Instagram</a>
+        <a href="#">Messenger</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

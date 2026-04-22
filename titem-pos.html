@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТИТЭМ — POS Систем</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0a0a0a;--white:#fff;--gray:#888;
+  --gray-light:#f0f0f0;--gray-mid:#d0d0d0;
+  --green:#27ae60;--red:#e74c3c;--amber:#e67e22;--blue:#2980b9;
+  --font-head:'Cormorant Garamond',Georgia,serif;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:#f5f5f5;color:var(--black);font-family:var(--font-body);overflow-x:hidden;min-height:100vh}
+.page{display:none;min-height:100vh}
+.page.active{display:flex;flex-direction:column}
+
+/* НЭВТРЭХ */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fafafa}
+.login-card{width:100%;max-width:420px;background:var(--white);border:1px solid var(--gray-light);border-radius:8px;padding:48px 40px}
+.login-logo{font-family:var(--font-head);font-size:28px;font-weight:500;letter-spacing:6px;text-transform:uppercase;text-align:center;margin-bottom:8px}
+.login-sub{font-size:12px;color:var(--gray);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:36px}
+.field-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px;display:block}
+.field-input,.field-select{width:100%;border:1px solid var(--gray-mid);background:var(--white);padding:12px 14px;font-size:14px;font-family:var(--font-body);outline:none;border-radius:6px;transition:border-color .15s;color:var(--black)}
+.field-input:focus,.field-select:focus{border-color:var(--black)}
+.field-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.modal-field{margin-bottom:16px}
+.pw-wrap{position:relative}
+.pw-wrap .field-input{padding-right:44px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:18px}
+.btn-login{width:100%;background:var(--black);color:var(--white);border:none;padding:14px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);transition:opacity .2s}
+.btn-login:hover{opacity:.8}
+.login-hint{text-align:center;font-size:11px;color:var(--gray);margin-top:20px}
+.login-hint span{color:var(--black);font-weight:600}
+.login-error{background:#fff0ee;border:1px solid #fcc;color:var(--red);font-size:12px;padding:10px 14px;border-radius:6px;margin-bottom:16px;display:none}
+
+/* POS LAYOUT */
+.pos-page{background:#f5f5f5;display:grid;grid-template-rows:60px 1fr;min-height:100vh}
+.pos-header{background:var(--black);color:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px}
+.pos-logo{font-family:var(--font-head);font-size:20px;letter-spacing:4px;text-transform:uppercase}
+.pos-branch{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:6px;padding:6px 14px}
+.pos-branch-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.pos-branch-name{font-size:12px;font-weight:600}
+.pos-header-right{display:flex;align-items:center;gap:10px}
+.pos-cashier{font-size:12px;color:rgba(255,255,255,.6)}
+.btn-header{border:1px solid rgba(255,255,255,.2);background:none;color:var(--white);padding:7px 14px;font-size:11px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);transition:background .15s}
+.btn-header:hover{background:rgba(255,255,255,.1)}
+.btn-header.danger{border-color:rgba(231,76,60,.4);color:#ff8a80}
+.pos-body{display:grid;grid-template-columns:1fr 380px;height:calc(100vh - 60px);overflow:hidden}
+
+/* БАРАА ХЭСЭГ */
+.pos-left{display:flex;flex-direction:column;overflow:hidden}
+.pos-toolbar{background:var(--white);border-bottom:1px solid var(--gray-light);padding:12px 16px;display:flex;gap:10px;align-items:center}
+.search-wrap{flex:1;position:relative}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--gray);fill:none;stroke-width:1.5;stroke-linecap:round}
+.pos-search{width:100%;border:1px solid var(--gray-light);border-radius:6px;padding:9px 12px 9px 38px;font-size:13px;font-family:var(--font-body);outline:none;background:#fafafa;transition:border-color .15s}
+.pos-search:focus{border-color:var(--black);background:var(--white)}
+.barcode-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--gray-mid);border-radius:6px;padding:9px 14px;font-size:12px;font-weight:500;cursor:pointer;background:var(--white);font-family:var(--font-body);transition:all .15s;white-space:nowrap}
+.barcode-btn:hover{border-color:var(--black)}
+.barcode-btn svg{width:16px;height:16px;stroke:var(--black);fill:none;stroke-width:1.5;stroke-linecap:round}
+.cat-tabs{background:var(--white);border-bottom:1px solid var(--gray-light);padding:0 16px;display:flex;overflow-x:auto}
+.cat-tab{padding:11px 18px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;border:none;background:none;font-family:var(--font-body)}
+.cat-tab:hover{color:var(--black)}
+.cat-tab.active{color:var(--black);border-bottom:2px solid var(--black)}
+.product-grid-pos{flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;align-content:start}
+.pos-product-card{background:var(--white);border:1px solid var(--gray-light);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .2s}
+.pos-product-card:hover{border-color:var(--black);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.pos-product-card.out-of-stock{opacity:.45;cursor:not-allowed}
+.pos-product-card.out-of-stock:hover{transform:none;box-shadow:none;border-color:var(--gray-light)}
+.pos-product-img{background:#f8f8f8;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:52px;position:relative}
+.pos-stock-badge{position:absolute;top:6px;right:6px;font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px}
+.badge-ok{background:#e8f8ef;color:var(--green)}
+.badge-low{background:#fff3e0;color:var(--amber)}
+.badge-out{background:#ffeaea;color:var(--red)}
+.pos-product-info{padding:10px 12px}
+.pos-product-name{font-size:13px;font-weight:500;margin-bottom:3px;line-height:1.3}
+.pos-product-sku{font-size:10px;color:var(--gray);letter-spacing:.5px;margin-bottom:6px}
+.pos-product-bottom{display:flex;align-items:center;justify-content:space-between}
+.pos-product-price{font-size:14px;font-weight:600}
+.pos-product-colors{display:flex;gap:3px}
+.pos-color-dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.1)}
+
+/* САГС */
+.pos-right{background:var(--white);border-left:1px solid var(--gray-light);display:flex;flex-direction:column;overflow:hidden}
+.pos-cart-header{padding:14px 16px;border-bottom:1px solid var(--gray-light);display:flex;align-items:center;justify-content:space-between}
+.pos-cart-title{font-size:13px;font-weight:600;letter-spacing:.5px}
+.pos-cart-count{background:var(--black);color:var(--white);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.btn-clear{border:none;background:none;cursor:pointer;color:var(--gray);font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-family:var(--font-body);transition:color .15s}
+.btn-clear:hover{color:var(--red)}
+.pos-cart-items{flex:1;overflow-y:auto;padding:8px}
+.pos-cart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--gray);font-size:13px}
+.pos-cart-empty-icon{font-size:48px;opacity:.3}
+.pos-cart-item{display:flex;gap:10px;align-items:center;padding:10px 8px;border-radius:6px;transition:background .15s}
+.pos-cart-item:hover{background:#fafafa}
+.pos-cart-item-emoji{font-size:28px;flex-shrink:0;width:44px;height:44px;background:#f8f8f8;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.pos-cart-item-info{flex:1;min-width:0}
+.pos-cart-item-name{font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-cart-item-variant{font-size:10px;color:var(--gray)}
+.pos-cart-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.pos-cart-item-price{font-size:13px;font-weight:600}
+.pos-item-qty{display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:4px;overflow:hidden}
+.pos-item-qty button{width:24px;height:24px;border:none;background:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.pos-item-qty button:hover{background:var(--gray-light)}
+.pos-item-qty span{width:28px;text-align:center;font-size:12px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:24px}
+.pos-item-remove{border:none;background:none;cursor:pointer;color:var(--gray-mid);font-size:16px;line-height:1;padding:0 2px;transition:color .15s}
+.pos-item-remove:hover{color:var(--red)}
+.pos-discount-wrap{padding:10px 16px;border-top:1px solid var(--gray-light)}
+.discount-row{display:flex;gap:8px}
+.discount-input{flex:1;border:1px solid var(--gray-light);border-radius:6px;padding:8px 12px;font-size:12px;font-family:var(--font-body);outline:none;transition:border-color .15s}
+.discount-input:focus{border-color:var(--black)}
+.discount-btn{background:var(--black);color:var(--white);border:none;padding:8px 14px;font-size:11px;font-weight:600;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)}
+.pos-totals{padding:12px 16px;border-top:1px solid var(--gray-light)}
+.total-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+.total-row span:first-child{color:var(--gray)}
+.total-row.grand{font-size:18px;font-weight:700;padding-top:10px;border-top:2px solid var(--black);margin-top:6px}
+.total-row.grand span:first-child{color:var(--black)}
+.pos-payment{padding:12px 16px;border-top:1px solid var(--gray-light)}
+.pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.pay-method{border:1px solid var(--gray-light);border-radius:6px;padding:8px 6px;cursor:pointer;text-align:center;transition:all .15s;background:var(--white)}
+.pay-method:hover{border-color:var(--gray-mid)}
+.pay-method.active{border-color:var(--black);background:#fafafa}
+.pay-method-icon{font-size:18px;margin-bottom:3px}
+.pay-method-name{font-size:10px;font-weight:600;letter-spacing:.5px}
+.btn-charge{width:100%;background:var(--green);color:var(--white);border:none;padding:15px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-charge:hover{opacity:.85}
+.btn-charge:disabled{background:var(--gray-mid);cursor:not-allowed;opacity:1}
+.btn-charge svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:12px;padding:32px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--font-head);font-size:26px;font-weight:300;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--gray);margin-bottom:24px}
+.modal-btns{display:flex;gap:10px;margin-top:24px}
+.btn-modal-cancel{flex:1;border:1px solid var(--gray-mid);background:var(--white);padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)}
+.btn-modal-ok{flex:2;background:var(--black);color:var(--white);border:none;padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)}
+
+/* RECEIPT */
+.receipt-modal{max-width:340px}
+.receipt-header{text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--gray-mid)}
+.receipt-logo{font-family:var(--font-head);font-size:20px;letter-spacing:4px;text-transform:uppercase;margin-bottom:4px}
+.receipt-info{font-size:11px;color:var(--gray);line-height:1.6}
+.receipt-item-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f0f0f0}
+.receipt-item-row:last-child{border-bottom:none}
+.receipt-totals{border-top:1px dashed var(--gray-mid);padding-top:12px;margin:12px 0}
+.receipt-total-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.receipt-total-row.grand{font-size:15px;font-weight:700;border-top:1px solid var(--black);padding-top:8px;margin-top:6px}
+.receipt-footer{text-align:center;font-size:11px;color:var(--gray);padding-top:14px;border-top:1px dashed var(--gray-mid)}
+.receipt-actions{display:flex;gap:8px;margin-top:18px}
+.btn-print{flex:1;background:var(--black);color:var(--white);border:none;padding:12px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)}
+.btn-new-sale{flex:1;border:1px solid var(--black);background:var(--white);color:var(--black);padding:12px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)}
+
+/* REPORT */
+.report-modal{max-width:500px}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.report-card{background:#f8f8f8;border-radius:8px;padding:14px}
+.report-card-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-bottom:6px}
+.report-card-val{font-family:var(--font-head);font-size:24px;font-weight:400}
+.report-card-val.green{color:var(--green)}
+.report-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+.report-table th{text-align:left;padding:8px 10px;background:#f0f0f0;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gray)}
+.report-table td{padding:8px 10px;border-bottom:1px solid var(--gray-light)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--black);color:white;padding:12px 18px;font-size:12px;font-weight:500;border-radius:6px;transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none;display:flex;align-items:center;gap:10px;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.toast svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- НЭВТРЭХ -->
+<div class="page active" id="page-login">
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">Титэм</div>
+    <div class="login-sub">POS — Борлуулалтын систем</div>
+    <div id="login-error" class="login-error">Нэвтрэх нэр эсвэл нууц үг буруу байна</div>
+    <div class="modal-field">
+      <label class="field-label">Салбар сонгох</label>
+      <select class="field-select" id="branch-select">
+        <option value="1">🏪 Салбар 1 — Сүхбаатар дүүрэг</option>
+        <option value="2">🏪 Салбар 2 — Баянзүрх дүүрэг</option>
+        <option value="3">🏪 Салбар 3 — Хан-Уул дүүрэг</option>
+        <option value="4">🏪 Салбар 4 — Баянгол дүүрэг</option>
+        <option value="5">🏪 Салбар 5 — Налайх</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Нэвтрэх нэр</label>
+      <input class="field-input" id="username" placeholder="cashier01" type="text" value="cashier01">
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Нууц үг</label>
+      <div class="pw-wrap">
+        <input class="field-input" id="password" placeholder="••••••••" type="password" value="1234">
+        <button class="pw-toggle" onclick="togglePw()" type="button">👁</button>
+      </div>
+    </div>
+    <button class="btn-login" onclick="doLogin()">Нэвтрэх</button>
+    <div class="login-hint">Туршилт: <span>cashier01 / 1234</span></div>
+  </div>
+</div>
+</div>
+
+<!-- POS -->
+<div class="page" id="page-pos">
+  <div class="pos-header">
+    <div class="pos-logo">Титэм</div>
+    <div class="pos-branch">
+      <div class="pos-branch-dot"></div>
+      <div class="pos-branch-name" id="pos-branch-name">Салбар 1</div>
+    </div>
+    <div class="pos-header-right">
+      <span class="pos-cashier" id="pos-cashier">cashier01</span>
+      <span class="pos-cashier" id="pos-clock">00:00:00</span>
+      <button class="btn-header" onclick="openReport()">📊 Тайлан</button>
+      <button class="btn-header" onclick="openCashClose()">🔒 Касс хаах</button>
+      <button class="btn-header danger" onclick="doLogout()">Гарах</button>
+    </div>
+  </div>
+  <div class="pos-body">
+    <!-- Зүүн -->
+    <div class="pos-left">
+      <div class="pos-toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+          <input class="pos-search" id="pos-search" placeholder="Бараа хайх эсвэл баркод оруулах..." oninput="filterProducts(this.value)" onkeydown="handleBarcode(event)">
+        </div>
+        <button class="barcode-btn" onclick="scanBarcode()">
+          <svg viewBox="0 0 24 24"><path d="M3 9V5a2 2 0 012-2h4M3 15v4a2 2 0 002 2h4M15 3h4a2 2 0 012 2v4M15 21h4a2 2 0 002-2v-4"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="14" y1="8" x2="14" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
+          Баркод
+        </button>
+      </div>
+      <div class="cat-tabs">
+        <button class="cat-tab active" onclick="filterCat(this,'all')">Бүгд</button>
+        <button class="cat-tab" onclick="filterCat(this,'hat')">Малгай</button>
+        <button class="cat-tab" onclick="filterCat(this,'scarf')">Ороолт</button>
+        <button class="cat-tab" onclick="filterCat(this,'glove')">Бээлий</button>
+        <button class="cat-tab" onclick="filterCat(this,'face')">Faceshield</button>
+        <button class="cat-tab" onclick="filterCat(this,'neck')">Алчуур</button>
+      </div>
+      <div class="product-grid-pos" id="product-grid-pos"></div>
+    </div>
+    <!-- Баруун -->
+    <div class="pos-right">
+      <div class="pos-cart-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="pos-cart-title">Захиалга</span>
+          <span class="pos-cart-count" id="pos-cart-count">0</span>
+        </div>
+        <button class="btn-clear" onclick="clearCart()">Цэвэрлэх</button>
+      </div>
+      <div class="pos-cart-items" id="pos-cart-items">
+        <div class="pos-cart-empty" id="pos-cart-empty">
+          <div class="pos-cart-empty-icon">🛒</div>
+          <span>Бараа нэмнэ үү</span>
+        </div>
+      </div>
+      <div class="pos-discount-wrap">
+        <div class="discount-row">
+          <input class="discount-input" id="discount-input" type="number" placeholder="Хямдрал % (жишээ: 10)" min="0" max="100">
+          <button class="discount-btn" onclick="applyDiscount()">Хэрэглэх</button>
+        </div>
+        <div id="discount-msg" style="font-size:11px;margin-top:4px;display:none"></div>
+      </div>
+      <div class="pos-totals">
+        <div class="total-row"><span>Дүн</span><span id="pos-subtotal">₮0</span></div>
+        <div class="total-row"><span>Хямдрал</span><span id="pos-discount" style="color:var(--red)">−₮0</span></div>
+        <div class="total-row grand"><span>Нийт</span><span id="pos-total">₮0</span></div>
+      </div>
+      <div class="pos-payment">
+        <div class="pay-methods">
+          <div class="pay-method active" onclick="setPayMethod(this,'cash')">
+            <div class="pay-method-icon">💵</div>
+            <div class="pay-method-name">Бэлэн</div>
+          </div>
+          <div class="pay-method" onclick="setPayMethod(this,'card')">
+            <div class="pay-method-icon">💳</div>
+            <div class="pay-method-name">Карт</div>
+          </div>
+          <div class="pay-method" onclick="setPayMethod(this,'qpay')">
+            <div class="pay-method-icon">📱</div>
+            <div class="pay-method-name">QPay</div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;padding:8px 0 10px;cursor:pointer;font-size:13px;border-top:1px solid var(--gray-light);margin-top:2px">
+          <input type="checkbox" id="receipt-toggle" checked style="accent-color:var(--black);width:16px;height:16px;cursor:pointer">
+          <span style="font-weight:500">Баримт гаргах</span>
+          <span style="font-size:11px;color:var(--gray);margin-left:auto">🖨 Хэвлэх</span>
+        </label>
+        <button class="btn-charge" id="btn-charge" onclick="processPayment()" disabled>
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Төлбөр авах
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- КАСС НЭЭХ -->
+<div class="modal-overlay" id="modal-cash-open">
+  <div class="modal">
+    <div class="modal-title">Касс нээх</div>
+    <div class="modal-sub" id="cash-open-date">Өнөөдөр</div>
+    <div class="modal-field">
+      <label class="field-label">Эхний бэлэн мөнгө (₮)</label>
+      <input class="field-input" id="cash-open-amount" type="number" placeholder="100000" value="100000">
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Тайлбар</label>
+      <input class="field-input" id="cash-open-note" type="text" placeholder="...">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="confirmCashOpen()" style="flex:1">Касс нээх</button>
+    </div>
+  </div>
+</div>
+
+<!-- КАСС ХААХ -->
+<div class="modal-overlay" id="modal-cash-close">
+  <div class="modal">
+    <div class="modal-title">Касс хаах</div>
+    <div class="modal-sub">Өдрийн тооцоог баталгаажуулна уу</div>
+    <div class="report-grid">
+      <div class="report-card"><div class="report-card-label">Нийт борлуулалт</div><div class="report-card-val green" id="cc-sales">₮0</div></div>
+      <div class="report-card"><div class="report-card-label">Гүйлгээний тоо</div><div class="report-card-val" id="cc-count">0</div></div>
+      <div class="report-card"><div class="report-card-label">Бэлэн мөнгө</div><div class="report-card-val" id="cc-cash">₮0</div></div>
+      <div class="report-card"><div class="report-card-label">Карт / QPay</div><div class="report-card-val" id="cc-digital">₮0</div></div>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Тоолсон бэлэн мөнгө (₮)</label>
+      <input class="field-input" id="cc-counted" type="number" placeholder="0" oninput="calcDiff()">
+    </div>
+    <div id="cc-diff-row" style="font-size:13px;padding:10px 14px;border-radius:6px;background:#f8f8f8;display:none">
+      Зөрүү: <strong id="cc-diff">₮0</strong>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('modal-cash-close')">Болих</button>
+      <button class="btn-modal-ok" onclick="confirmCashClose()">Касс хаах</button>
+    </div>
+  </div>
+</div>
+
+<!-- БАРИМТ -->
+<div class="modal-overlay" id="modal-receipt">
+  <div class="modal receipt-modal">
+    <div class="receipt-header">
+      <div class="receipt-logo">Титэм</div>
+      <div class="receipt-info" id="receipt-info"></div>
+    </div>
+    <div class="receipt-items" id="receipt-items"></div>
+    <div class="receipt-totals" id="receipt-totals"></div>
+    <div class="receipt-footer">Баярлалаа! Дахин уулзтал.<br>www.titem.mn · 9900-0000</div>
+    <div class="receipt-actions">
+      <button class="btn-print" onclick="showToast('🖨 Принтер рүү илгээгдлээ','success')">🖨 Хэвлэх</button>
+      <button class="btn-new-sale" onclick="newSale()">Шинэ захиалга</button>
+    </div>
+  </div>
+</div>
+
+<!-- ТАЙЛАН -->
+<div class="modal-overlay" id="modal-report">
+  <div class="modal report-modal">
+    <div class="modal-title">Өдрийн тайлан</div>
+    <div class="modal-sub" id="report-date"></div>
+    <div class="report-grid">
+      <div class="report-card"><div class="report-card-label">Нийт орлого</div><div class="report-card-val green" id="rep-total">₮0</div></div>
+      <div class="report-card"><div class="report-card-label">Гүйлгээ</div><div class="report-card-val" id="rep-count">0</div></div>
+      <div class="report-card"><div class="report-card-label">Бэлэн</div><div class="report-card-val" id="rep-cash">₮0</div></div>
+      <div class="report-card"><div class="report-card-label">Карт / QPay</div><div class="report-card-val" id="rep-digital">₮0</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--gray)">Борлуулсан бараанууд</div>
+    <table class="report-table">
+      <thead><tr><th>Бараа</th><th>Тоо</th><th>Дүн</th></tr></thead>
+      <tbody id="rep-items"></tbody>
+    </table>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('modal-report')">Хаах</button>
+      <button class="btn-modal-ok" onclick="closeModal('modal-report')">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT -->
+<div class="modal-overlay" id="modal-variant">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title" id="var-product-name">Бараа сонгох</div>
+    <div class="modal-sub">Өнгө болон хэмжээ сонгоно уу</div>
+    <div class="modal-field">
+      <label class="field-label">Өнгө</label>
+      <div id="var-colors" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+    </div>
+    <div class="modal-field" style="margin-top:16px">
+      <label class="field-label">Хэмжээ</label>
+      <div id="var-sizes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('modal-variant')">Болих</button>
+      <button class="btn-modal-ok" onclick="addVariantToCart()">Сагсанд нэмэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">OK</span>
+</div>
+
+<script>
+const USERS={cashier01:'1234',cashier02:'1234',manager:'admin123'};
+const BRANCHES={1:'Салбар 1 — Сүхбаатар',2:'Салбар 2 — Баянзүрх',3:'Салбар 3 — Хан-Уул',4:'Салбар 4 — Баянгол',5:'Салбар 5 — Налайх'};
+const PRODUCTS=[
+  {id:1,name:'Классик Бүргэд',cat:'hat',emoji:'🧢',price:45000,sku:'TIT-001',stock:23,colors:['Хар','Бор','Хөх','Улаан'],sizes:['S','M','L','XL']},
+  {id:2,name:'Snapback малгай',cat:'hat',emoji:'🧢',price:42000,sku:'TIT-002',stock:15,colors:['Хар','Цагаан','Улаан'],sizes:['M','L','XL']},
+  {id:3,name:'Өвлийн малгай',cat:'hat',emoji:'🎩',price:38000,sku:'TIT-003',stock:3,colors:['Хар','Бор'],sizes:['S','M','L']},
+  {id:4,name:'Зусланы малгай',cat:'hat',emoji:'⛑️',price:25000,sku:'TIT-004',stock:0,colors:['Цагаан','Бор'],sizes:['M','L']},
+  {id:5,name:'Зимийн ороолт',cat:'scarf',emoji:'🧣',price:30400,sku:'TIT-005',stock:18,colors:['Улаан','Хөх','Хар'],sizes:['Нэг хэмжээ']},
+  {id:6,name:'Флис ороолт',cat:'scarf',emoji:'🧣',price:32000,sku:'TIT-006',stock:12,colors:['Ногоон','Улаан','Хар'],sizes:['Нэг хэмжээ']},
+  {id:7,name:'Утас бээлий',cat:'glove',emoji:'🧤',price:25000,sku:'TIT-007',stock:8,colors:['Хар','Цагаан','Улаан'],sizes:['S','M','L']},
+  {id:8,name:'Арьсан бээлий',cat:'glove',emoji:'🧤',price:46750,sku:'TIT-008',stock:5,colors:['Бор','Хар'],sizes:['M','L','XL']},
+  {id:9,name:'Өвлийн хамгаалалт',cat:'face',emoji:'😷',price:18000,sku:'TIT-009',stock:30,colors:['Хар','Ногоон','Улаан'],sizes:['Нэг хэмжээ']},
+  {id:10,name:'Faceshield Pro',cat:'face',emoji:'😷',price:22000,sku:'TIT-010',stock:7,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ']},
+  {id:11,name:'Хүзүүний алчуур',cat:'neck',emoji:'🧦',price:15000,sku:'TIT-011',stock:25,colors:['Хар','Хөх','Улаан','Ногоон'],sizes:['Нэг хэмжээ']},
+  {id:12,name:'Buff ороолт',cat:'neck',emoji:'🧦',price:19000,sku:'TIT-012',stock:0,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ']},
+];
+
+let cart=[],discountPct=0,payMethod='cash',currentUser='',currentBranch=1;
+let todaySales=[],selectedProduct=null,selectedColor='',selectedSize='';
+let currentCat='all',searchQuery='',cashOpenAmount=0;
+
+function togglePw(){const p=document.getElementById('password');p.type=p.type==='password'?'text':'password'}
+
+function doLogin(){
+  const user=document.getElementById('username').value.trim();
+  const pw=document.getElementById('password').value;
+  const branch=parseInt(document.getElementById('branch-select').value);
+  const err=document.getElementById('login-error');
+  if(USERS[user]&&USERS[user]===pw){
+    currentUser=user;currentBranch=branch;err.style.display='none';
+    document.getElementById('pos-branch-name').textContent=BRANCHES[branch];
+    document.getElementById('pos-cashier').textContent=user;
+    showPage('pos');openCashOpen();startClock();renderProducts();
+  }else{err.style.display='block'}
+}
+
+function doLogout(){
+  if(confirm('Системээс гарах уу?')){cart=[];discountPct=0;todaySales=[];showPage('login')}
+}
+
+function startClock(){
+  function tick(){
+    const n=new Date();
+    document.getElementById('pos-clock').textContent=
+      String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+  }
+  tick();setInterval(tick,1000);
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+}
+
+function colorHex(n){
+  return({Хар:'#0a0a0a',Цагаан:'#f0f0f0',Улаан:'#c0392b',Хөх:'#1a3a5c',Ногоон:'#2c5f2e',Бор:'#8B4513',Ягаан:'#d4537e'})[n]||'#888';
+}
+
+function renderProducts(){
+  const grid=document.getElementById('product-grid-pos');
+  const filtered=PRODUCTS.filter(p=>{
+    const cm=currentCat==='all'||p.cat===currentCat;
+    const q=searchQuery.toLowerCase();
+    const sm=!q||p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q);
+    return cm&&sm;
+  });
+  grid.innerHTML=filtered.map(p=>{
+    const sb=p.stock===0?'<span class="pos-stock-badge badge-out">Дуссан</span>':
+      p.stock<=5?`<span class="pos-stock-badge badge-low">${p.stock} үлдсэн</span>`:
+      `<span class="pos-stock-badge badge-ok">${p.stock}</span>`;
+    return`<div class="pos-product-card${p.stock===0?' out-of-stock':''}" onclick="selectProduct(${p.id})">
+      <div class="pos-product-img">${p.emoji}${sb}</div>
+      <div class="pos-product-info">
+        <div class="pos-product-name">${p.name}</div>
+        <div class="pos-product-sku">${p.sku}</div>
+        <div class="pos-product-bottom">
+          <div class="pos-product-price">₮${p.price.toLocaleString()}</div>
+          <div class="pos-product-colors">${p.colors.slice(0,4).map(c=>`<div class="pos-color-dot" style="background:${colorHex(c)}"></div>`).join('')}</div>
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+function filterCat(el,cat){
+  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');currentCat=cat;renderProducts();
+}
+function filterProducts(q){searchQuery=q;renderProducts()}
+function handleBarcode(e){
+  if(e.key==='Enter'){
+    const q=e.target.value.trim();
+    const found=PRODUCTS.find(p=>p.sku.toLowerCase()===q.toLowerCase());
+    if(found){selectProduct(found.id);e.target.value='';searchQuery='';renderProducts();}
+    else showToast('Баркод олдсонгүй: '+q,'error');
+  }
+}
+function scanBarcode(){
+  const sku=prompt('Баркод оруулах (жишээ: TIT-001):');
+  if(!sku)return;
+  const found=PRODUCTS.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim());
+  if(found)selectProduct(found.id);
+  else showToast('Баркод олдсонгүй','error');
+}
+
+function selectProduct(id){
+  const p=PRODUCTS.find(pr=>pr.id===id);
+  if(!p||p.stock===0){showToast('Бараа дууссан байна','error');return;}
+  selectedProduct=p;selectedColor=p.colors[0];selectedSize=p.sizes[0];
+  document.getElementById('var-product-name').textContent=p.name+' — ₮'+p.price.toLocaleString();
+  document.getElementById('var-colors').innerHTML=p.colors.map(c=>`
+    <div onclick="varSelectColor(this,'${c}')" data-color="${c}"
+      style="padding:6px 14px;border:1.5px solid ${c===selectedColor?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all .15s">
+      <div style="width:12px;height:12px;border-radius:50%;background:${colorHex(c)};border:1px solid rgba(0,0,0,.1)"></div>${c}
+    </div>`).join('');
+  document.getElementById('var-sizes').innerHTML=p.sizes.map(s=>`
+    <div onclick="varSelectSize(this,'${s}')" data-size="${s}"
+      style="padding:6px 16px;border:1.5px solid ${s===selectedSize?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s">
+      ${s}</div>`).join('');
+  openModal('modal-variant');
+}
+
+function varSelectColor(el,color){
+  selectedColor=color;
+  document.querySelectorAll('#var-colors div').forEach(d=>d.style.borderColor='var(--gray-light)');
+  el.style.borderColor='var(--black)';
+}
+function varSelectSize(el,size){
+  selectedSize=size;
+  document.querySelectorAll('#var-sizes div').forEach(d=>d.style.borderColor='var(--gray-light)');
+  el.style.borderColor='var(--black)';
+}
+function addVariantToCart(){
+  if(!selectedProduct)return;
+  const key=selectedProduct.id+'-'+selectedColor+'-'+selectedSize;
+  const ex=cart.find(c=>c.key===key);
+  if(ex)ex.qty++;
+  else cart.push({key,id:selectedProduct.id,name:selectedProduct.name,emoji:selectedProduct.emoji,color:selectedColor,size:selectedSize,price:selectedProduct.price,qty:1});
+  closeModal('modal-variant');
+  renderCart();
+  showToast(selectedProduct.name+' ('+selectedColor+', '+selectedSize+') нэмэгдлээ','success');
+}
+
+function renderCart(){
+  const items=document.getElementById('pos-cart-items');
+  const subtotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const discAmt=Math.round(subtotal*discountPct/100);
+  const total=subtotal-discAmt;
+  document.getElementById('pos-cart-count').textContent=cart.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('pos-subtotal').textContent='₮'+subtotal.toLocaleString();
+  document.getElementById('pos-discount').textContent='−₮'+discAmt.toLocaleString();
+  document.getElementById('pos-total').textContent='₮'+total.toLocaleString();
+  const btn=document.getElementById('btn-charge');
+  btn.disabled=cart.length===0;
+  btn.innerHTML=cart.length>0?`<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> ₮${total.toLocaleString()} авах`:'<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> Төлбөр авах';
+  if(cart.length===0){items.innerHTML='<div class="pos-cart-empty"><div class="pos-cart-empty-icon">🛒</div><span>Бараа нэмнэ үү</span></div>';return;}
+  items.innerHTML=cart.map(item=>`
+    <div class="pos-cart-item">
+      <div class="pos-cart-item-emoji">${item.emoji}</div>
+      <div class="pos-cart-item-info">
+        <div class="pos-cart-item-name">${item.name}</div>
+        <div class="pos-cart-item-variant">${item.color} · ${item.size}</div>
+      </div>
+      <div class="pos-cart-item-right">
+        <div class="pos-cart-item-price">₮${(item.price*item.qty).toLocaleString()}</div>
+        <div class="pos-item-qty">
+          <button onclick="cartQty('${item.key}',-1)">−</button>
+          <span>${item.qty}</span>
+          <button onclick="cartQty('${item.key}',1)">+</button>
+        </div>
+        <button class="pos-item-remove" onclick="removeItem('${item.key}')">×</button>
+      </div>
+    </div>`).join('');
+}
+
+function cartQty(key,d){const i=cart.find(c=>c.key===key);if(i){i.qty=Math.max(1,i.qty+d);renderCart();}}
+function removeItem(key){cart=cart.filter(c=>c.key!==key);renderCart();}
+function clearCart(){if(cart.length&&confirm('Захиалгыг цэвэрлэх үү?')){cart=[];discountPct=0;renderCart();}}
+
+function applyDiscount(){
+  const v=parseFloat(document.getElementById('discount-input').value);
+  const msg=document.getElementById('discount-msg');
+  if(isNaN(v)||v<0||v>100){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='0–100 хооронд оруулна уу';return;}
+  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='✓ '+v+'% хямдрал хэрэглэгдлээ';
+  renderCart();
+}
+
+function setPayMethod(el,method){
+  document.querySelectorAll('.pay-method').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');payMethod=method;
+}
+
+function processPayment(){
+  if(!cart.length)return;
+  const subtotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const discAmt=Math.round(subtotal*discountPct/100);
+  const total=subtotal-discAmt;
+  const now=new Date();
+  const sale={
+    id:'#TIT-'+Date.now().toString().slice(-6),
+    time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),
+    items:[...cart],subtotal,discAmt,total,payMethod,
+    branch:BRANCHES[currentBranch],cashier:currentUser
+  };
+  todaySales.push(sale);
+  const wantReceipt=document.getElementById('receipt-toggle').checked;
+  if(wantReceipt){showReceipt(sale);}
+  else{newSale();showToast('Борлуулалт амжилттай бүртгэгдлээ','success');}
+}
+
+function showReceipt(sale){
+  const now=new Date();
+  const ds=now.getFullYear()+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0');
+  document.getElementById('receipt-info').innerHTML=`${sale.branch}<br>${ds} ${sale.time}<br>${sale.id}<br>Худалдагч: ${sale.cashier}`;
+  document.getElementById('receipt-items').innerHTML=sale.items.map(i=>`
+    <div class="receipt-item-row"><span>${i.name} (${i.color}, ${i.size}) ×${i.qty}</span><span>₮${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+  const pn={cash:'Бэлэн',card:'Карт',qpay:'QPay'}[sale.payMethod];
+  document.getElementById('receipt-totals').innerHTML=`
+    <div class="receipt-total-row"><span>Дүн</span><span>₮${sale.subtotal.toLocaleString()}</span></div>
+    ${sale.discAmt>0?`<div class="receipt-total-row"><span>Хямдрал</span><span style="color:var(--red)">−₮${sale.discAmt.toLocaleString()}</span></div>`:''}
+    <div class="receipt-total-row grand"><span>Нийт</span><span>₮${sale.total.toLocaleString()}</span></div>
+    <div class="receipt-total-row" style="margin-top:8px"><span>Төлбөр</span><span>${pn}</span></div>`;
+  openModal('modal-receipt');
+}
+
+function newSale(){
+  cart=[];discountPct=0;
+  document.getElementById('discount-input').value='';
+  document.getElementById('discount-msg').style.display='none';
+  renderCart();closeModal('modal-receipt');
+  showToast('Шинэ захиалга бэлэн','success');
+}
+
+function openCashOpen(){
+  const now=new Date();
+  document.getElementById('cash-open-date').textContent=now.toLocaleDateString('mn-MN')+' · '+BRANCHES[currentBranch];
+  openModal('modal-cash-open');
+}
+function confirmCashOpen(){
+  cashOpenAmount=parseFloat(document.getElementById('cash-open-amount').value)||0;
+  closeModal('modal-cash-open');
+  showToast('Касс нээгдлээ — ₮'+cashOpenAmount.toLocaleString(),'success');
+}
+function openCashClose(){
+  const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
+  const digS=todaySales.filter(s=>s.payMethod!=='cash').reduce((s,sale)=>s+sale.total,0);
+  const totS=todaySales.reduce((s,sale)=>s+sale.total,0);
+  document.getElementById('cc-sales').textContent='₮'+totS.toLocaleString();
+  document.getElementById('cc-count').textContent=todaySales.length;
+  document.getElementById('cc-cash').textContent='₮'+(cashS+cashOpenAmount).toLocaleString();
+  document.getElementById('cc-digital').textContent='₮'+digS.toLocaleString();
+  openModal('modal-cash-close');
+}
+function calcDiff(){
+  const counted=parseFloat(document.getElementById('cc-counted').value)||0;
+  const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
+  const expected=cashOpenAmount+cashS;
+  const diff=counted-expected;
+  const row=document.getElementById('cc-diff-row');
+  row.style.display='block';
+  const el=document.getElementById('cc-diff');
+  el.textContent=(diff>=0?'+':'')+'₮'+diff.toLocaleString();
+  el.style.color=diff===0?'var(--green)':diff>0?'var(--amber)':'var(--red)';
+}
+function confirmCashClose(){
+  closeModal('modal-cash-close');
+  showToast('Касс амжилттай хаагдлаа','success');
+  setTimeout(()=>{if(confirm('Системээс гарах уу?'))doLogout();},1000);
+}
+
+function openReport(){
+  const now=new Date();
+  document.getElementById('report-date').textContent=now.toLocaleDateString('mn-MN')+' · '+BRANCHES[currentBranch];
+  const totS=todaySales.reduce((s,sale)=>s+sale.total,0);
+  const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
+  const digS=todaySales.filter(s=>s.payMethod!=='cash').reduce((s,sale)=>s+sale.total,0);
+  document.getElementById('rep-total').textContent='₮'+totS.toLocaleString();
+  document.getElementById('rep-count').textContent=todaySales.length;
+  document.getElementById('rep-cash').textContent='₮'+cashS.toLocaleString();
+  document.getElementById('rep-digital').textContent='₮'+digS.toLocaleString();
+  const itemMap={};
+  todaySales.forEach(sale=>sale.items.forEach(item=>{
+    if(!itemMap[item.name])itemMap[item.name]={qty:0,total:0};
+    itemMap[item.name].qty+=item.qty;itemMap[item.name].total+=item.price*item.qty;
+  }));
+  const tbody=document.getElementById('rep-items');
+  if(!Object.keys(itemMap).length){
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">Өнөөдөр борлуулалт байхгүй</td></tr>';
+  }else{
+    tbody.innerHTML=Object.entries(itemMap).sort((a,b)=>b[1].total-a[1].total)
+      .map(([n,d])=>`<tr><td>${n}</td><td>${d.qty}</td><td>₮${d.total.toLocaleString()}</td></tr>`).join('');
+  }
+  openModal('modal-report');
+}
+
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.className='toast'+(type?' '+type:'');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{
+    if(e.target===o&&o.id!=='modal-cash-open')o.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>

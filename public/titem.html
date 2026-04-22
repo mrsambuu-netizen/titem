@@ -3,637 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ТИТЭМ — Малгай</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Титэм — Малгайн дэлгүүр</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --black:#0a0a0a;
-  --white:#fafafa;
+  --black:#111;
+  --white:#fff;
+  --bg:#f4f4f4;
   --gray:#888;
   --gray-light:#e8e8e8;
-  --gray-mid:#d0d0d0;
-  --font-head:'Cormorant Garamond',Georgia,serif;
+  --gold:#c9a84c;
+  --font-head:'Playfair Display',Georgia,serif;
   --font-body:'DM Sans',sans-serif;
+  --max:1320px;
 }
 html{scroll-behavior:smooth}
-body{background:var(--white);color:var(--black);font-family:var(--font-body);overflow-x:hidden}
+body{background:var(--bg);color:var(--black);font-family:var(--font-body);overflow-x:hidden}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--black);color:rgba(255,255,255,.7);font-size:11px;letter-spacing:.5px;padding:7px 40px;display:flex;align-items:center;justify-content:flex-end;gap:24px}
+.topbar a{color:rgba(255,255,255,.6);text-decoration:none;transition:color .15s;font-size:11px;letter-spacing:.5px}
+.topbar a:hover{color:var(--white)}
+.topbar-divider{width:1px;height:12px;background:rgba(255,255,255,.2)}
 
 /* ── HEADER ── */
-header{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(250,250,250,0.92);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--gray-light);
-}
-.header-inner{
-  max-width:1320px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 40px;height:64px;
-}
-.logo{
-  font-family:var(--font-head);
-  font-size:26px;font-weight:500;
-  letter-spacing:6px;color:var(--black);
-  text-decoration:none;text-transform:uppercase;
-}
-.logo span{
-  display:inline-block;width:16px;height:16px;
-  border:1.5px solid var(--black);border-radius:50%;
-  margin-right:8px;vertical-align:middle;margin-top:-3px;
-}
-nav{display:flex;gap:32px;align-items:center}
-nav a{
-  font-size:12px;font-weight:400;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--black);text-decoration:none;
-  transition:color 0.2s;
-}
-nav a:hover{color:var(--gray)}
-.header-actions{display:flex;align-items:center;gap:16px}
-.icon-btn{
-  width:36px;height:36px;border:none;background:none;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  position:relative;
-}
-.icon-btn svg{width:20px;height:20px;stroke:var(--black);fill:none;stroke-width:1.5;stroke-linecap:round}
-.cart-count{
-  position:absolute;top:2px;right:2px;
-  width:14px;height:14px;border-radius:50%;
-  background:var(--black);color:var(--white);
-  font-size:9px;font-weight:500;
-  display:flex;align-items:center;justify-content:center;
-}
+header{background:var(--white);border-bottom:1px solid var(--gray-light);position:sticky;top:0;z-index:200}
+.header-main{max-width:var(--max);margin:0 auto;padding:0 40px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;flex-shrink:0}
+.logo-img{width:40px;height:40px;border-radius:8px;background:var(--black);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--gold);font-family:var(--font-head);font-weight:700;letter-spacing:1px}
+.logo-text{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--black);letter-spacing:1px}
+.header-search{flex:1;max-width:400px;position:relative}
+.header-search input{width:100%;border:1.5px solid var(--gray-light);border-radius:8px;padding:9px 16px 9px 40px;font-size:13px;font-family:var(--font-body);outline:none;background:#fafafa;transition:border-color .15s;color:var(--black)}
+.header-search input:focus{border-color:var(--black);background:var(--white)}
+.header-search input::placeholder{color:#bbb}
+.header-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--gray);fill:none;stroke-width:1.8;stroke-linecap:round}
+.header-right{display:flex;align-items:center;gap:6px}
+.h-icon-btn{width:40px;height:40px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:background .15s;position:relative}
+.h-icon-btn:hover{background:var(--bg)}
+.h-icon-btn svg{width:20px;height:20px;stroke:var(--black);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.cart-badge{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--black);color:var(--white);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.btn-login{display:flex;align-items:center;gap:6px;border:1.5px solid var(--black);background:none;color:var(--black);padding:7px 16px;font-size:12px;font-weight:500;letter-spacing:.5px;cursor:pointer;border-radius:8px;font-family:var(--font-body);transition:all .15s}
+.btn-login:hover{background:var(--black);color:var(--white)}
 
-/* ── HERO ── */
-.hero{
-  min-height:100vh;
-  display:grid;grid-template-columns:1fr 1fr;
-  padding-top:64px;
-}
-.hero-left{
-  display:flex;flex-direction:column;justify-content:center;
-  padding:80px 60px 80px 80px;
-  position:relative;
-}
-.hero-eyebrow{
-  font-size:11px;letter-spacing:3px;text-transform:uppercase;
-  color:var(--gray);margin-bottom:24px;
-  display:flex;align-items:center;gap:12px;
-}
-.hero-eyebrow::before{
-  content:'';display:block;width:40px;height:1px;background:var(--gray);
-}
-.hero-title{
-  font-family:var(--font-head);
-  font-size:clamp(52px,6vw,88px);
-  font-weight:300;line-height:1.05;
-  letter-spacing:-1px;
-  margin-bottom:28px;
-}
-.hero-title em{font-style:italic;font-weight:300}
-.hero-desc{
-  font-size:15px;font-weight:300;color:var(--gray);
-  line-height:1.8;max-width:360px;margin-bottom:48px;
-}
-.hero-actions{display:flex;gap:16px;align-items:center}
-.btn-primary{
-  display:inline-flex;align-items:center;gap:10px;
-  background:var(--black);color:var(--white);
-  padding:14px 32px;font-size:12px;font-weight:500;
-  letter-spacing:1.5px;text-transform:uppercase;
-  text-decoration:none;border:none;cursor:pointer;
-  transition:opacity 0.2s;
-}
-.btn-primary:hover{opacity:0.8}
-.btn-primary svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
-.btn-secondary{
-  font-size:12px;font-weight:400;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--black);
-  text-decoration:none;border-bottom:1px solid var(--black);
-  padding-bottom:2px;transition:color 0.2s,border-color 0.2s;
-}
-.btn-secondary:hover{color:var(--gray);border-color:var(--gray)}
-.hero-stats{
-  display:flex;gap:40px;margin-top:60px;
-  padding-top:40px;border-top:1px solid var(--gray-light);
-}
-.stat-item{}
-.stat-num{
-  font-family:var(--font-head);
-  font-size:36px;font-weight:300;
-  line-height:1;margin-bottom:4px;
-}
-.stat-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray)}
+/* ── NAV ── */
+nav{border-top:1px solid var(--gray-light)}
+.nav-inner{max-width:var(--max);margin:0 auto;padding:0 40px;display:flex;align-items:center;gap:0}
+.nav-item{display:flex;align-items:center;gap:6px;padding:13px 18px;font-size:13px;font-weight:500;color:var(--black);text-decoration:none;letter-spacing:.3px;border-bottom:2px solid transparent;transition:all .2s;cursor:pointer;border:none;background:none;font-family:var(--font-body);white-space:nowrap}
+.nav-item:hover,.nav-item.active{color:var(--black);border-bottom-color:var(--black)}
+.nav-item svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;transition:transform .2s}
+.nav-item:hover svg{transform:rotate(180deg)}
+.nav-badge{background:var(--black);color:var(--white);font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;letter-spacing:.5px}
 
-.hero-right{
-  background:var(--black);
-  position:relative;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-}
-.hero-img-placeholder{
-  width:100%;height:100%;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:16px;
-}
-.hero-img-inner{
-  width:280px;height:280px;
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-}
-.hero-img-inner::before{
-  content:'';position:absolute;
-  width:320px;height:320px;
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:50%;
-}
-.crown-icon{
-  font-size:80px;opacity:0.9;
-  animation:float 4s ease-in-out infinite;
-}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-.hero-tag{
-  position:absolute;bottom:40px;right:40px;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.12);
-  padding:12px 20px;
-}
-.hero-tag-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:4px}
-.hero-tag-val{font-family:var(--font-head);font-size:20px;color:white;font-weight:300}
+/* ── HERO SLIDER ── */
+.hero{position:relative;overflow:hidden;background:var(--white)}
+.slides{display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.slide{min-width:100%;height:580px;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:0 80px;gap:40px;flex-shrink:0}
+.slide-1{background:linear-gradient(135deg,#f8f5f0 0%,#ede8df 100%)}
+.slide-2{background:linear-gradient(135deg,#0f1923 0%,#1a2d3d 100%)}
+.slide-3{background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%)}
+.slide-content{display:flex;flex-direction:column;gap:20px}
+.slide-tag{font-size:11px;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.slide-tag::before{content:'';width:30px;height:1px;background:currentColor;opacity:.5}
+.slide-1 .slide-tag{color:#888}
+.slide-2 .slide-tag{color:rgba(255,255,255,.5)}
+.slide-3 .slide-tag{color:var(--gold)}
+.slide-title{font-family:var(--font-head);font-size:clamp(36px,4.5vw,64px);font-weight:700;line-height:1.05}
+.slide-1 .slide-title{color:#111}
+.slide-2 .slide-title{color:#fff}
+.slide-3 .slide-title{color:#fff}
+.slide-title em{font-style:italic;font-weight:400}
+.slide-desc{font-size:15px;font-weight:300;line-height:1.8;max-width:380px}
+.slide-1 .slide-desc{color:#666}
+.slide-2 .slide-desc{color:rgba(255,255,255,.6)}
+.slide-3 .slide-desc{color:rgba(255,255,255,.6)}
+.slide-btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--black);color:var(--white);padding:13px 28px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;border:none;cursor:pointer;border-radius:6px;font-family:var(--font-body);transition:all .2s}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;border:1.5px solid;padding:13px 28px;font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;text-decoration:none;border-radius:6px;font-family:var(--font-body);transition:all .2s;cursor:pointer;background:none}
+.slide-1 .btn-outline{border-color:#111;color:#111}
+.slide-1 .btn-outline:hover{background:#111;color:#fff}
+.slide-2 .btn-outline{border-color:rgba(255,255,255,.4);color:#fff}
+.slide-2 .btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+.slide-3 .btn-outline{border-color:var(--gold);color:var(--gold)}
+.slide-3 .btn-outline:hover{background:var(--gold);color:#111}
+.slide-img{display:flex;align-items:center;justify-content:center;height:100%;position:relative}
+.slide-emoji{font-size:clamp(140px,18vw,220px);filter:drop-shadow(0 20px 60px rgba(0,0,0,.15));animation:floatHero 4s ease-in-out infinite}
+@keyframes floatHero{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-16px) rotate(3deg)}}
+.slide-badge{position:absolute;top:30px;right:20px;background:var(--gold);color:#111;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-radius:4px}
 
-/* ── CATEGORIES ── */
-.categories{max-width:1320px;margin:0 auto;padding:100px 40px}
-.section-header{
-  display:flex;align-items:flex-end;justify-content:space-between;
-  margin-bottom:48px;
-}
-.section-title{
-  font-family:var(--font-head);
-  font-size:clamp(32px,4vw,52px);font-weight:300;
-  line-height:1.1;
-}
-.section-title em{font-style:italic}
-.see-all{
-  font-size:11px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--black);text-decoration:none;
-  display:flex;align-items:center;gap:8px;
-  border-bottom:1px solid transparent;
-  transition:border-color 0.2s;padding-bottom:2px;
-}
-.see-all:hover{border-color:var(--black)}
-.cat-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px}
-.cat-card{
-  position:relative;overflow:hidden;cursor:pointer;
-  aspect-ratio:1;
-  background:var(--black);
-  display:flex;align-items:flex-end;
-  transition:opacity 0.3s;
-}
-.cat-card:hover{opacity:0.85}
-.cat-card:first-child{aspect-ratio:auto;grid-row:span 2}
-.cat-bg{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:120px;opacity:0.12;
-  transition:transform 0.6s ease;
-}
-.cat-card:hover .cat-bg{transform:scale(1.1)}
-.cat-info{
-  position:relative;z-index:1;
-  padding:24px;width:100%;
-  background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 100%);
-}
-.cat-name{
-  font-family:var(--font-head);
-  font-size:24px;font-weight:300;color:white;
-  letter-spacing:1px;margin-bottom:4px;
-}
-.cat-count{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
+/* SLIDER CONTROLS */
+.slider-controls{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.slider-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(0,0,0,.3);background:transparent;cursor:pointer;transition:all .2s}
+.slider-dot.active{background:var(--black);border-color:var(--black);width:24px;border-radius:4px}
+.slider-prev,.slider-next{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.slider-prev{left:20px}
+.slider-next{right:20px}
+.slider-prev:hover,.slider-next:hover{background:var(--white);box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.slider-prev svg,.slider-next svg{width:18px;height:18px;stroke:var(--black);fill:none;stroke-width:2;stroke-linecap:round}
 
 /* ── FEATURED PRODUCTS ── */
-.products{background:#f4f4f4;padding:100px 0}
-.products-inner{max-width:1320px;margin:0 auto;padding:0 40px}
-.product-grid{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
-  margin-top:48px;
-}
-.product-card{
-  background:var(--white);
-  cursor:pointer;
-  transition:transform 0.3s ease;
-}
-.product-card:hover{transform:translateY(-4px)}
-.product-card:hover .product-img-inner{transform:scale(1.04)}
-.product-img{
-  aspect-ratio:3/4;
-  background:var(--gray-light);
-  overflow:hidden;position:relative;
-  display:flex;align-items:center;justify-content:center;
-}
-.product-img-inner{
-  font-size:80px;transition:transform 0.4s ease;
-}
-.product-badge{
-  position:absolute;top:12px;left:12px;
-  background:var(--black);color:var(--white);
-  font-size:9px;font-weight:500;letter-spacing:1.5px;
-  text-transform:uppercase;padding:4px 10px;
-}
-.product-badge.sale{background:#c0392b}
-.product-info{padding:20px 16px}
-.product-cat{
-  font-size:10px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--gray);margin-bottom:6px;
-}
-.product-name{
-  font-family:var(--font-head);
-  font-size:18px;font-weight:400;
-  margin-bottom:8px;line-height:1.2;
-}
-.product-bottom{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-top:12px;
-}
-.product-price{
-  font-size:15px;font-weight:500;
-}
-.product-price-old{
-  font-size:12px;color:var(--gray);
-  text-decoration:line-through;margin-right:8px;
-}
-.product-colors{display:flex;gap:4px}
-.color-dot{
-  width:12px;height:12px;border-radius:50%;
-  border:1px solid rgba(0,0,0,0.15);cursor:pointer;
-  transition:transform 0.15s;
-}
-.color-dot:hover{transform:scale(1.2)}
+.featured{padding:72px 40px;max-width:var(--max);margin:0 auto}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.section-title{font-family:var(--font-head);font-size:clamp(24px,3vw,36px);font-weight:700;color:var(--black)}
+.section-title em{font-style:italic;font-weight:400;color:var(--gray)}
+.section-link{font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--black);text-decoration:none;display:flex;align-items:center;gap:6px;border-bottom:1.5px solid var(--black);padding-bottom:2px;transition:opacity .2s}
+.section-link:hover{opacity:.6}
 
-/* ── BANNER ── */
-.banner{
-  background:var(--black);color:var(--white);
-  padding:100px 40px;
-  text-align:center;position:relative;overflow:hidden;
-}
-.banner::before{
-  content:'ТИТЭМ';
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  font-family:var(--font-head);
-  font-size:200px;font-weight:300;
-  opacity:0.04;letter-spacing:20px;
-  white-space:nowrap;pointer-events:none;
-}
-.banner-inner{position:relative;z-index:1;max-width:600px;margin:0 auto}
-.banner-eyebrow{
-  font-size:11px;letter-spacing:3px;text-transform:uppercase;
-  color:rgba(255,255,255,0.4);margin-bottom:24px;
-}
-.banner-title{
-  font-family:var(--font-head);
-  font-size:clamp(40px,5vw,72px);font-weight:300;
-  line-height:1.05;margin-bottom:24px;
-}
-.banner-title em{font-style:italic}
-.banner-desc{
-  font-size:14px;color:rgba(255,255,255,0.5);
-  line-height:1.8;margin-bottom:40px;
-}
-.btn-outline{
-  display:inline-flex;align-items:center;gap:10px;
-  border:1px solid rgba(255,255,255,0.3);
-  color:white;padding:14px 36px;
-  font-size:11px;font-weight:400;letter-spacing:2px;
-  text-transform:uppercase;text-decoration:none;
-  transition:all 0.2s;cursor:pointer;background:none;
-}
-.btn-outline:hover{background:white;color:var(--black);border-color:white}
+/* Product row — 3 per row, 3 rows = 9 total */
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.product-card{background:var(--white);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .25s,transform .25s;position:relative}
+.product-card:hover{box-shadow:0 12px 40px rgba(0,0,0,.1);transform:translateY(-3px)}
+.product-card:hover .p-add{transform:translateY(0);opacity:1}
+.p-img{aspect-ratio:1;background:#f8f8f8;display:flex;align-items:center;justify-content:center;font-size:100px;position:relative;overflow:hidden}
+.p-img-emoji{transition:transform .4s ease}
+.product-card:hover .p-img-emoji{transform:scale(1.07)}
+.p-badge{position:absolute;top:12px;left:12px;background:var(--black);color:var(--white);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:4px}
+.p-badge.sale{background:#e74c3c}
+.p-badge.new{background:var(--black)}
+.p-add{position:absolute;bottom:0;left:0;right:0;background:var(--black);color:var(--white);border:none;padding:12px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;font-family:var(--font-body);transform:translateY(100%);opacity:0;transition:all .25s ease;display:flex;align-items:center;justify-content:center;gap:8px}
+.p-info{padding:16px}
+.p-cat{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-bottom:5px}
+.p-name{font-family:var(--font-head);font-size:18px;font-weight:600;margin-bottom:10px;line-height:1.2}
+.p-bottom{display:flex;align-items:center;justify-content:space-between}
+.p-price{font-size:15px;font-weight:600;color:var(--black)}
+.p-price-old{font-size:12px;color:var(--gray);text-decoration:line-through;margin-right:6px}
+.p-colors{display:flex;gap:4px}
+.p-clr{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(0,0,0,.1);cursor:pointer;transition:transform .15s}
+.p-clr:hover{transform:scale(1.25)}
 
-/* ── NEW ARRIVALS MARQUEE ── */
-.marquee-wrap{
-  border-top:1px solid var(--gray-light);
-  border-bottom:1px solid var(--gray-light);
-  overflow:hidden;padding:16px 0;
-  background:var(--white);
-}
-.marquee{
-  display:flex;gap:0;
-  animation:marquee 20s linear infinite;
-  width:max-content;
-}
-.marquee-item{
-  font-family:var(--font-head);
-  font-size:20px;font-weight:300;
-  letter-spacing:2px;padding:0 40px;
-  color:var(--black);white-space:nowrap;
-  display:flex;align-items:center;gap:20px;
-}
-.marquee-item::after{
-  content:'✦';font-size:10px;color:var(--gray);
-}
-@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:40px}
+.pg-btn{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--gray-light);background:var(--white);cursor:pointer;font-size:13px;font-weight:500;color:var(--black);transition:all .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font-body)}
+.pg-btn:hover{border-color:var(--black)}
+.pg-btn.active{background:var(--black);color:var(--white);border-color:var(--black)}
+.pg-btn.arrow{font-size:16px}
 
 /* ── FOOTER ── */
-footer{
-  background:var(--black);color:var(--white);
-  padding:60px 40px 30px;
-}
-.footer-inner{max-width:1320px;margin:0 auto}
-.footer-top{
-  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
-  gap:40px;padding-bottom:48px;
-  border-bottom:1px solid rgba(255,255,255,0.1);
-}
-.footer-brand .logo{color:white}
-.footer-brand .logo span{border-color:white}
-.footer-desc{
-  font-size:13px;color:rgba(255,255,255,0.4);
-  line-height:1.8;margin-top:16px;max-width:260px;
-}
-.footer-col h4{
-  font-size:10px;letter-spacing:2.5px;text-transform:uppercase;
-  color:rgba(255,255,255,0.3);margin-bottom:20px;
-}
-.footer-col a{
-  display:block;font-size:13px;color:rgba(255,255,255,0.6);
-  text-decoration:none;margin-bottom:10px;
-  transition:color 0.2s;
-}
-.footer-col a:hover{color:white}
-.footer-bottom{
-  display:flex;align-items:center;justify-content:space-between;
-  padding-top:24px;
-  font-size:11px;color:rgba(255,255,255,0.25);
-  letter-spacing:0.5px;
-}
-.social-links{display:flex;gap:20px}
-.social-links a{
-  font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
-  color:rgba(255,255,255,0.35);text-decoration:none;
-  transition:color 0.2s;
-}
-.social-links a:hover{color:white}
+footer{background:var(--black);color:var(--white);padding:64px 40px 32px;margin-top:80px}
+.footer-inner{max-width:var(--max);margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr;gap:40px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:32px}
+.footer-logo-wrap{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.footer-logo-img{width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--gold)}
+.footer-logo-text{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--white);letter-spacing:1px}
+.footer-desc{font-size:13px;color:rgba(255,255,255,.4);line-height:1.8;max-width:280px;margin-bottom:24px}
+.footer-social{display:flex;gap:10px}
+.social-btn{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;text-decoration:none;color:rgba(255,255,255,.5);font-size:13px}
+.social-btn:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+.footer-col h4{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:20px;font-weight:600}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;margin-bottom:10px;transition:color .15s;letter-spacing:.3px}
+.footer-col a:hover{color:var(--white)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.5px}
+.footer-bottom-links{display:flex;gap:20px}
+.footer-bottom-links a{color:rgba(255,255,255,.25);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:color .15s}
+.footer-bottom-links a:hover{color:rgba(255,255,255,.5)}
 
-/* ── ANIMATIONS ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-.hero-eyebrow{animation:fadeUp 0.6s ease both}
-.hero-title{animation:fadeUp 0.6s ease 0.1s both}
-.hero-desc{animation:fadeUp 0.6s ease 0.2s both}
-.hero-actions{animation:fadeUp 0.6s ease 0.3s both}
-.hero-stats{animation:fadeUp 0.6s ease 0.4s both}
+/* ── CART ── */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;visibility:hidden;transition:all .3s;backdrop-filter:blur(4px)}
+.cart-overlay.open{opacity:1;visibility:visible}
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:400px;background:var(--white);z-index:501;transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.1)}
+.cart-drawer.open{transform:translateX(0)}
+.cart-drawer-head{padding:20px 24px;border-bottom:1px solid var(--gray-light);display:flex;align-items:center;justify-content:space-between}
+.cart-drawer-title{font-family:var(--font-head);font-size:22px;font-weight:700}
+.cart-drawer-close{width:36px;height:36px;border:none;background:none;cursor:pointer;font-size:20px;border-radius:8px;transition:background .15s;display:flex;align-items:center;justify-content:center}
+.cart-drawer-close:hover{background:var(--bg)}
+.cart-drawer-body{flex:1;overflow-y:auto;padding:16px 24px}
+.cart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--gray)}
+.cart-empty-emoji{font-size:56px;opacity:.3}
+.cart-item-row{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray-light)}
+.ci-thumb{width:64px;height:64px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.ci-details{flex:1;min-width:0}
+.ci-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.ci-meta{font-size:11px;color:var(--gray);margin-bottom:8px}
+.ci-price-qty{display:flex;align-items:center;justify-content:space-between}
+.ci-price{font-size:14px;font-weight:700}
+.ci-qty-ctrl{display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:6px;overflow:hidden}
+.ci-qty-ctrl button{width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px;transition:background .15s}
+.ci-qty-ctrl button:hover{background:var(--bg)}
+.ci-qty-ctrl span{width:32px;text-align:center;font-size:12px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px}
+.ci-remove{border:none;background:none;cursor:pointer;color:var(--gray);font-size:16px;padding:0 4px;transition:color .15s;flex-shrink:0;align-self:center}
+.ci-remove:hover{color:#e74c3c}
+.cart-drawer-foot{padding:16px 24px;border-top:1px solid var(--gray-light)}
+.cart-subtotal{display:flex;justify-content:space-between;font-size:13px;color:var(--gray);margin-bottom:6px}
+.cart-total-row{display:flex;justify-content:space-between;font-size:17px;font-weight:700;margin-bottom:16px}
+.btn-checkout{width:100%;background:var(--black);color:var(--white);border:none;padding:15px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:8px;font-family:var(--font-body);transition:opacity .2s}
+.btn-checkout:hover{opacity:.85}
+.btn-continue{width:100%;background:none;border:1.5px solid var(--gray-light);color:var(--black);padding:11px;font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:8px;font-family:var(--font-body);margin-top:8px;transition:border-color .15s}
+.btn-continue:hover{border-color:var(--black)}
 
-/* ── MOBILE ── */
-@media(max-width:768px){
-  .header-inner{padding:0 20px}
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;z-index:999;background:var(--black);color:var(--white);padding:13px 20px;font-size:12px;font-weight:500;border-radius:8px;transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-check{color:var(--gold);font-size:16px}
+
+/* MOBILE */
+@media(max-width:900px){
+  .topbar{display:none}
+  .header-main{padding:0 16px;height:60px}
+  .logo-text{font-size:18px}
+  .header-search{display:none}
   nav{display:none}
-  .hero{grid-template-columns:1fr;min-height:auto}
-  .hero-left{padding:40px 20px}
-  .hero-right{height:300px}
-  .categories,.products-inner{padding:60px 20px}
-  .cat-grid{grid-template-columns:1fr 1fr;gap:2px}
-  .cat-card:first-child{grid-column:span 2;aspect-ratio:2/1}
-  .product-grid{grid-template-columns:1fr 1fr;gap:2px}
-  .footer-top{grid-template-columns:1fr 1fr}
-  .banner{padding:60px 20px}
+  .slide{grid-template-columns:1fr;padding:60px 24px;height:auto;min-height:500px;text-align:center}
+  .slide-img{height:200px}
+  .slide-emoji{font-size:120px}
+  .featured{padding:40px 16px}
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .footer-top{grid-template-columns:1fr 1fr;gap:28px}
+  footer{padding:40px 20px 24px}
+  .cart-drawer{width:100%}
 }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="header-inner">
-    <a href="#" class="logo"><span></span>Титэм</a>
-    <nav>
-      <a href="#">Шинэ</a>
-      <a href="#">Малгай</a>
-      <a href="#">Ороолт</a>
-      <a href="#">Бээлий</a>
-      <a href="#">Бусад</a>
-      <a href="#">Хямдрал</a>
-    </nav>
-    <div class="header-actions">
-      <button class="icon-btn" title="Хайх">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-      </button>
-      <button class="icon-btn" title="Сагс">
-        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-        <span class="cart-count">2</span>
-      </button>
-    </div>
-  </div>
-</header>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-left">
-    <p class="hero-eyebrow">2024 шинэ цуглуулга</p>
-    <h1 class="hero-title">
-      Малгай бол<br>
-      <em>таны загвар</em>
-    </h1>
-    <p class="hero-desc">
-      Малгай, ороолт, бээлий, faceshield болон бусад — чанар, загвар хоёрыг нэгтгэсэн Монголын тэргүүлэх малгайн брэнд.
-    </p>
-    <div class="hero-actions">
-      <a href="#" class="btn-primary">
-        Дэлгүүр үзэх
-        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-      <a href="#" class="btn-secondary">Шинэ бараа</a>
-    </div>
-    <div class="hero-stats">
-      <div class="stat-item">
-        <div class="stat-num">500+</div>
-        <div class="stat-label">Бараа</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">5</div>
-        <div class="stat-label">Салбар</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">10K+</div>
-        <div class="stat-label">Харилцагч</div>
-      </div>
-    </div>
-  </div>
-  <div class="hero-right">
-    <div class="hero-img-placeholder">
-      <div class="hero-img-inner">
-        <div class="crown-icon">👑</div>
-      </div>
-    </div>
-    <div class="hero-tag">
-      <div class="hero-tag-label">Шинэ ирлээ</div>
-      <div class="hero-tag-val">Winter 2024</div>
-    </div>
-  </div>
-</section>
-
-<!-- MARQUEE -->
-<div class="marquee-wrap">
-  <div class="marquee">
-    <div class="marquee-item">Шинэ цуглуулга</div>
-    <div class="marquee-item">Малгай</div>
-    <div class="marquee-item">Ороолт</div>
-    <div class="marquee-item">Бээлий</div>
-    <div class="marquee-item">Faceshield</div>
-    <div class="marquee-item">Хүзүүний алчуур</div>
-    <div class="marquee-item">Шинэ цуглуулга</div>
-    <div class="marquee-item">Малгай</div>
-    <div class="marquee-item">Ороолт</div>
-    <div class="marquee-item">Бээлий</div>
-    <div class="marquee-item">Faceshield</div>
-    <div class="marquee-item">Хүзүүний алчуур</div>
-  </div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <a href="#">Нөөц / Тусламж</a>
+  <div class="topbar-divider"></div>
+  <a href="#">Хамтын ажиллагаа</a>
+  <div class="topbar-divider"></div>
+  <a href="/admin">Нэвтрэх</a>
 </div>
 
-<!-- CATEGORIES -->
-<section class="categories">
-  <div class="section-header">
-    <h2 class="section-title">Бараа<br><em>ангилал</em></h2>
-    <a href="#" class="see-all">Бүгдийг үзэх →</a>
+<!-- HEADER -->
+<header>
+  <div class="header-main">
+    <!-- LOGO -->
+    <a href="/" class="logo">
+      <div class="logo-img" id="logo-img">Т</div>
+      <span class="logo-text">Титэм</span>
+    </a>
+
+    <!-- SEARCH -->
+    <div class="header-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      <input placeholder="Бараа хайх..." id="search-input" oninput="handleSearch(this.value)">
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="header-right">
+      <button class="h-icon-btn" title="Хайх" onclick="document.getElementById('search-input').focus()">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      </button>
+      <button class="h-icon-btn" title="Сагс" onclick="openCart()">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+      <button class="btn-login" onclick="window.location.href='/admin'">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Нэвтрэх
+      </button>
+    </div>
   </div>
-  <div class="cat-grid">
-    <div class="cat-card">
-      <div class="cat-bg">🧢</div>
-      <div class="cat-info">
-        <div class="cat-name">Малгай</div>
-        <div class="cat-count">120+ загвар</div>
+
+  <!-- MAIN NAV -->
+  <nav>
+    <div class="nav-inner">
+      <button class="nav-item active" onclick="filterCat('all',this)">Бүгд</button>
+      <button class="nav-item" onclick="filterCat('hat',this)">
+        Малгай
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="nav-item" onclick="filterCat('scarf',this)">
+        Ороолт
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="nav-item" onclick="filterCat('glove',this)">Бээлий</button>
+      <button class="nav-item" onclick="filterCat('neck',this)">Алчуур</button>
+      <button class="nav-item" onclick="filterCat('new',this)">
+        Шинэ бараа <span class="nav-badge">New</span>
+      </button>
+      <button class="nav-item" onclick="filterCat('all',this)">Бусад</button>
+    </div>
+  </nav>
+</header>
+
+<!-- HERO SLIDER -->
+<section class="hero">
+  <button class="slider-prev" onclick="prevSlide()">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button class="slider-next" onclick="nextSlide()">
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+
+  <div class="slides" id="slides">
+    <!-- Slide 1 -->
+    <div class="slide slide-1">
+      <div class="slide-content">
+        <p class="slide-tag">2024 шинэ цуглуулга</p>
+        <h1 class="slide-title">Классик<br><em>загвар</em><br>шинэ дүр</h1>
+        <p class="slide-desc">Малгай бүр өөрийн түүхтэй. Энэ улиралд шинэ цуглуулга таныг хүлээж байна.</p>
+        <div class="slide-btns">
+          <a href="#products" class="btn-primary">Дэлгүүр үзэх →</a>
+          <a href="#" class="btn-outline">Дэлгэрэнгүй</a>
+        </div>
+      </div>
+      <div class="slide-img">
+        <div class="slide-emoji">🧢</div>
+        <div class="slide-badge">Шинэ ирлээ</div>
       </div>
     </div>
-    <div class="cat-card">
-      <div class="cat-bg">🧣</div>
-      <div class="cat-info">
-        <div class="cat-name">Ороолт</div>
-        <div class="cat-count">80+ загвар</div>
+
+    <!-- Slide 2 -->
+    <div class="slide slide-2">
+      <div class="slide-content">
+        <p class="slide-tag">Өвлийн цуглуулга</p>
+        <h1 class="slide-title" style="color:#fff">Дулаан<br><em style="color:rgba(255,255,255,.5)">бөгөөд</em><br>загварлаг</h1>
+        <p class="slide-desc">Өвлийн хүйтнийг даван туулах дулаан ороолт, бээлий, малгайн цуглуулга.</p>
+        <div class="slide-btns">
+          <a href="#products" class="btn-primary" style="background:#fff;color:#111">Харах →</a>
+          <a href="#" class="btn-outline">Дэлгэрэнгүй</a>
+        </div>
+      </div>
+      <div class="slide-img">
+        <div class="slide-emoji">🧣</div>
       </div>
     </div>
-    <div class="cat-card">
-      <div class="cat-bg">🧤</div>
-      <div class="cat-info">
-        <div class="cat-name">Бээлий</div>
-        <div class="cat-count">60+ загвар</div>
+
+    <!-- Slide 3 -->
+    <div class="slide slide-3">
+      <div class="slide-content">
+        <p class="slide-tag">Онцгой санал</p>
+        <h1 class="slide-title" style="color:#fff">Бөөний<br><em style="color:var(--gold)">захиалга</em><br>хямдрал</h1>
+        <p class="slide-desc">10-аас дээш ширхэг захиалбал бөөний үнээр. Байгууллага, баг, хамт олондоо.</p>
+        <div class="slide-btns">
+          <a href="tel:99000000" class="btn-primary" style="background:var(--gold);color:#111">Холбоо барих →</a>
+          <a href="#" class="btn-outline">Дэлгэрэнгүй</a>
+        </div>
+      </div>
+      <div class="slide-img">
+        <div class="slide-emoji">🏷</div>
       </div>
     </div>
-    <div class="cat-card">
-      <div class="cat-bg">😷</div>
-      <div class="cat-info">
-        <div class="cat-name">Faceshield</div>
-        <div class="cat-count">40+ загвар</div>
-      </div>
-    </div>
-    <div class="cat-card">
-      <div class="cat-bg">🧦</div>
-      <div class="cat-info">
-        <div class="cat-name">Алчуур</div>
-        <div class="cat-count">30+ загвар</div>
-      </div>
-    </div>
+  </div>
+
+  <div class="slider-controls">
+    <div class="slider-dot active" onclick="goSlide(0)"></div>
+    <div class="slider-dot" onclick="goSlide(1)"></div>
+    <div class="slider-dot" onclick="goSlide(2)"></div>
   </div>
 </section>
 
 <!-- FEATURED PRODUCTS -->
-<section class="products">
-  <div class="products-inner">
-    <div class="section-header">
-      <h2 class="section-title">Шилдэг<br><em>бараанууд</em></h2>
-      <a href="#" class="see-all">Бүгдийг үзэх →</a>
-    </div>
-    <div class="product-grid">
-      <div class="product-card">
-        <div class="product-img">
-          <div class="product-img-inner">🧢</div>
-          <span class="product-badge">Шинэ</span>
-        </div>
-        <div class="product-info">
-          <div class="product-cat">Малгай</div>
-          <div class="product-name">Классик Бүргэд</div>
-          <div class="product-bottom">
-            <div class="product-price">₮45,000</div>
-            <div class="product-colors">
-              <div class="color-dot" style="background:#0a0a0a"></div>
-              <div class="color-dot" style="background:#8B4513"></div>
-              <div class="color-dot" style="background:#1a3a5c"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-img" style="background:#e8e4df">
-          <div class="product-img-inner">🧣</div>
-          <span class="product-badge sale">-20%</span>
-        </div>
-        <div class="product-info">
-          <div class="product-cat">Ороолт</div>
-          <div class="product-name">Зимийн ороолт</div>
-          <div class="product-bottom">
-            <div class="product-price">
-              <span class="product-price-old">₮38,000</span>₮30,400
-            </div>
-            <div class="product-colors">
-              <div class="color-dot" style="background:#c0392b"></div>
-              <div class="color-dot" style="background:#2c3e50"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-img" style="background:#f0ede8">
-          <div class="product-img-inner">🧤</div>
-        </div>
-        <div class="product-info">
-          <div class="product-cat">Бээлий</div>
-          <div class="product-name">Утас бээлий</div>
-          <div class="product-bottom">
-            <div class="product-price">₮25,000</div>
-            <div class="product-colors">
-              <div class="color-dot" style="background:#0a0a0a"></div>
-              <div class="color-dot" style="background:#fafafa;border:1px solid #ccc"></div>
-              <div class="color-dot" style="background:#8B0000"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-img" style="background:#e8edf0">
-          <div class="product-img-inner">😷</div>
-          <span class="product-badge">Хит</span>
-        </div>
-        <div class="product-info">
-          <div class="product-cat">Faceshield</div>
-          <div class="product-name">Өвлийн хамгаалалт</div>
-          <div class="product-bottom">
-            <div class="product-price">₮18,000</div>
-            <div class="product-colors">
-              <div class="color-dot" style="background:#0a0a0a"></div>
-              <div class="color-dot" style="background:#2c5f2e"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<section class="featured" id="products">
+  <div class="section-head">
+    <h2 class="section-title">Онцлох <em>бараанууд</em></h2>
+    <a href="#" class="section-link">Бүгдийг үзэх →</a>
   </div>
-</section>
+  <div class="product-grid" id="product-grid"></div>
 
-<!-- BANNER -->
-<section class="banner">
-  <div class="banner-inner">
-    <p class="banner-eyebrow">Онцгой санал</p>
-    <h2 class="banner-title">Бөөний<br><em>захиалга</em></h2>
-    <p class="banner-desc">10-аас дээш ширхэг захиалбал бөөний үнээр авах боломжтой. Байгууллага, баг, хамт олондоо тохируулан захиалаарай.</p>
-    <a href="#" class="btn-outline">Холбоо барих →</a>
-  </div>
+  <!-- PAGINATION -->
+  <div class="pagination" id="pagination"></div>
 </section>
 
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <div class="footer-top">
-      <div class="footer-brand">
-        <a href="#" class="logo"><span></span>Титэм</a>
+      <div>
+        <div class="footer-logo-wrap">
+          <div class="footer-logo-img" id="footer-logo-img">Т</div>
+          <span class="footer-logo-text">Титэм</span>
+        </div>
         <p class="footer-desc">Монголын тэргүүлэх малгайн брэнд. Чанар, загвар, тав тухыг нэгтгэсэн бүтээгдэхүүн.</p>
+        <div class="footer-social">
+          <a href="#" class="social-btn">f</a>
+          <a href="#" class="social-btn">in</a>
+          <a href="#" class="social-btn">✉</a>
+        </div>
       </div>
       <div class="footer-col">
         <h4>Дэлгүүр</h4>
@@ -641,34 +379,234 @@ footer{
         <a href="#">Ороолт</a>
         <a href="#">Бээлий</a>
         <a href="#">Faceshield</a>
+        <a href="#">Алчуур</a>
         <a href="#">Хямдрал</a>
       </div>
       <div class="footer-col">
-        <h4>Мэдээлэл</h4>
+        <h4>Компани</h4>
         <a href="#">Бидний тухай</a>
         <a href="#">Салбарууд</a>
         <a href="#">Хүргэлт</a>
         <a href="#">Буцаалт</a>
         <a href="#">Холбоо барих</a>
+        <a href="#">Ажлын байр</a>
       </div>
       <div class="footer-col">
-        <h4>Холбоо</h4>
+        <h4>Холбоо барих</h4>
+        <a href="tel:99000000">+976 9900-0000</a>
+        <a href="mailto:info@hat.mn">info@hat.mn</a>
         <a href="#">Facebook</a>
         <a href="#">Instagram</a>
         <a href="#">Messenger</a>
-        <a href="#">+976 9900-0000</a>
+        <a href="/pos" style="margin-top:8px;color:rgba(255,255,255,.3)">POS систем</a>
+        <a href="/warehouse" style="color:rgba(255,255,255,.3)">Агуулах</a>
       </div>
     </div>
     <div class="footer-bottom">
       <span>© 2024 Титэм. Бүх эрх хуулиар хамгаалагдсан.</span>
-      <div class="social-links">
-        <a href="#">Facebook</a>
-        <a href="#">Instagram</a>
-        <a href="#">Messenger</a>
+      <div class="footer-bottom-links">
+        <a href="#">Нууцлалын бодлого</a>
+        <a href="#">Үйлчилгээний нөхцөл</a>
+        <a href="#">Байршил</a>
       </div>
     </div>
   </div>
 </footer>
 
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-drawer-head">
+    <div class="cart-drawer-title">Миний сагс</div>
+    <button class="cart-drawer-close" onclick="closeCart()">×</button>
+  </div>
+  <div class="cart-drawer-body" id="cart-body"></div>
+  <div class="cart-drawer-foot">
+    <div class="cart-subtotal"><span>Дэд дүн</span><span id="cart-sub">₮0</span></div>
+    <div class="cart-total-row"><span>Нийт</span><span id="cart-total">₮0</span></div>
+    <button class="btn-checkout" onclick="window.location.href='/shop'">Захиалга хийх →</button>
+    <button class="btn-continue" onclick="closeCart()">Дэлгүүр үргэлжлүүлэх</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-check">✓</span>
+  <span id="toast-msg">Сагсанд нэмэгдлээ</span>
+</div>
+
+<script>
+// ── PRODUCTS DATA ──
+const ALL_PRODUCTS=[
+  {id:1,name:'Классик Бүргэд',cat:'hat',emoji:'🧢',price:45000,badge:'new',colors:['#0a0a0a','#8B4513','#1a3a5c','#c0392b']},
+  {id:2,name:'Snapback малгай',cat:'hat',emoji:'🧢',price:42000,badge:null,colors:['#0a0a0a','#c0392b','#fafafa']},
+  {id:3,name:'Өвлийн малгай',cat:'hat',emoji:'🎩',price:38000,badge:'new',colors:['#0a0a0a','#8B4513']},
+  {id:4,name:'Зимийн ороолт',cat:'scarf',emoji:'🧣',price:30400,oldPrice:38000,badge:'sale',colors:['#c0392b','#2c3e50','#0a0a0a']},
+  {id:5,name:'Флис ороолт',cat:'scarf',emoji:'🧣',price:32000,badge:null,colors:['#2c5f2e','#8B0000','#0a0a0a']},
+  {id:6,name:'Утас бээлий',cat:'glove',emoji:'🧤',price:25000,badge:null,colors:['#0a0a0a','#fafafa','#8B0000']},
+  {id:7,name:'Арьсан бээлий',cat:'glove',emoji:'🧤',price:46750,oldPrice:55000,badge:'sale',colors:['#5c3317','#0a0a0a']},
+  {id:8,name:'Өвлийн хамгаалалт',cat:'face',emoji:'😷',price:18000,badge:'new',colors:['#0a0a0a','#2c5f2e','#c0392b']},
+  {id:9,name:'Faceshield Pro',cat:'face',emoji:'😷',price:22000,badge:null,colors:['#0a0a0a','#fafafa']},
+  {id:10,name:'Хүзүүний алчуур',cat:'neck',emoji:'🧦',price:15000,badge:'new',colors:['#0a0a0a','#1a3a5c','#8B4513']},
+  {id:11,name:'Buff ороолт',cat:'neck',emoji:'🧦',price:19000,badge:null,colors:['#0a0a0a','#fafafa']},
+  {id:12,name:'Зусланы малгай',cat:'hat',emoji:'⛑️',price:25000,badge:null,colors:['#fafafa','#8B4513']},
+];
+
+const CAT_NAMES={hat:'Малгай',scarf:'Ороолт',glove:'Бээлий',face:'Faceshield',neck:'Алчуур'};
+const PAGE_SIZE=9;
+let cart=[];
+let currentCat='all';
+let currentPage=1;
+let searchQuery='';
+
+// ── RENDER ──
+function getFiltered(){
+  let list=ALL_PRODUCTS;
+  if(currentCat==='new') list=list.filter(p=>p.badge==='new');
+  else if(currentCat!=='all') list=list.filter(p=>p.cat===currentCat);
+  if(searchQuery) list=list.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  return list;
+}
+
+function renderProducts(){
+  const filtered=getFiltered();
+  const totalPages=Math.ceil(filtered.length/PAGE_SIZE);
+  currentPage=Math.min(currentPage,totalPages||1);
+  const start=(currentPage-1)*PAGE_SIZE;
+  const page=filtered.slice(start,start+PAGE_SIZE);
+  const grid=document.getElementById('product-grid');
+  grid.innerHTML=page.map(p=>`
+    <div class="product-card">
+      <div class="p-img">
+        <div class="p-img-emoji">${p.emoji}</div>
+        ${p.badge==='sale'?'<div class="p-badge sale">Sale</div>':p.badge==='new'?'<div class="p-badge new">Шинэ</div>':''}
+        <button class="p-add" onclick="addCart(${p.id})">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Сагсанд нэмэх
+        </button>
+      </div>
+      <div class="p-info">
+        <div class="p-cat">${CAT_NAMES[p.cat]||''}</div>
+        <div class="p-name">${p.name}</div>
+        <div class="p-bottom">
+          <div class="p-price">
+            ${p.oldPrice?`<span class="p-price-old">₮${p.oldPrice.toLocaleString()}</span>`:''}
+            ₮${p.price.toLocaleString()}
+          </div>
+          <div class="p-colors">${p.colors.slice(0,4).map(c=>`<div class="p-clr" style="background:${c}"></div>`).join('')}</div>
+        </div>
+      </div>
+    </div>`).join('');
+  renderPagination(totalPages);
+}
+
+function renderPagination(total){
+  const pg=document.getElementById('pagination');
+  if(total<=1){pg.innerHTML='';return;}
+  let html=`<button class="pg-btn arrow" onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=total;i++){
+    html+=`<button class="pg-btn ${i===currentPage?'active':''}" onclick="changePage(${i})">${i}</button>`;
+  }
+  html+=`<button class="pg-btn arrow" onclick="changePage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>`;
+  pg.innerHTML=html;
+}
+
+function changePage(p){
+  const filtered=getFiltered();
+  const total=Math.ceil(filtered.length/PAGE_SIZE);
+  if(p<1||p>total)return;
+  currentPage=p;
+  renderProducts();
+  document.getElementById('products').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function filterCat(cat,btn){
+  currentCat=cat;currentPage=1;
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderProducts();
+}
+
+function handleSearch(q){searchQuery=q;currentPage=1;renderProducts();}
+
+// ── SLIDER ──
+let slideIdx=0;
+const TOTAL_SLIDES=3;
+function goSlide(i){
+  slideIdx=i;
+  document.getElementById('slides').style.transform=`translateX(-${i*100}%)`;
+  document.querySelectorAll('.slider-dot').forEach((d,j)=>d.classList.toggle('active',j===i));
+}
+function nextSlide(){goSlide((slideIdx+1)%TOTAL_SLIDES)}
+function prevSlide(){goSlide((slideIdx-1+TOTAL_SLIDES)%TOTAL_SLIDES)}
+setInterval(nextSlide,5000);
+
+// ── CART ──
+function addCart(id){
+  const p=ALL_PRODUCTS.find(pr=>pr.id===id);
+  if(!p)return;
+  const ex=cart.find(c=>c.id===id);
+  if(ex)ex.qty++;
+  else cart.push({...p,qty:1});
+  updateCartUI();
+  showToast(`"${p.name}" сагсанд нэмэгдлээ`);
+}
+function removeCart(id){cart=cart.filter(c=>c.id!==id);updateCartUI();}
+function changeQty(id,d){
+  const item=cart.find(c=>c.id===id);
+  if(!item)return;
+  item.qty=Math.max(1,item.qty+d);
+  updateCartUI();
+}
+function updateCartUI(){
+  const total=cart.reduce((s,i)=>s+i.qty,0);
+  const sum=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('cart-badge').textContent=total;
+  document.getElementById('cart-sub').textContent='₮'+sum.toLocaleString();
+  document.getElementById('cart-total').textContent='₮'+sum.toLocaleString();
+  const body=document.getElementById('cart-body');
+  if(!cart.length){
+    body.innerHTML='<div class="cart-empty"><div class="cart-empty-emoji">🛒</div><div>Сагс хоосон байна</div></div>';
+    return;
+  }
+  body.innerHTML=cart.map(item=>`
+    <div class="cart-item-row">
+      <div class="ci-thumb">${item.emoji}</div>
+      <div class="ci-details">
+        <div class="ci-name">${item.name}</div>
+        <div class="ci-meta">${CAT_NAMES[item.cat]||''}</div>
+        <div class="ci-price-qty">
+          <div class="ci-price">₮${(item.price*item.qty).toLocaleString()}</div>
+          <div class="ci-qty-ctrl">
+            <button onclick="changeQty(${item.id},-1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="changeQty(${item.id},1)">+</button>
+          </div>
+        </div>
+      </div>
+      <button class="ci-remove" onclick="removeCart(${item.id})">×</button>
+    </div>`).join('');
+}
+function openCart(){
+  document.getElementById('cart-overlay').classList.add('open');
+  document.getElementById('cart-drawer').classList.add('open');
+}
+function closeCart(){
+  document.getElementById('cart-overlay').classList.remove('open');
+  document.getElementById('cart-drawer').classList.remove('open');
+}
+
+function showToast(msg){
+  document.getElementById('toast-msg').textContent=msg;
+  const t=document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Init
+renderProducts();
+updateCartUI();
+</script>
 </body>
 </html>

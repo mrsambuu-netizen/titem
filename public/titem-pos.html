@@ -416,44 +416,71 @@ body{background:#f5f5f5;color:var(--black);font-family:var(--font-body);overflow
 </div>
 
 <script>
-const USERS={cashier01:'1234',cashier02:'1234',manager:'admin123'};
-const BRANCHES={1:'Салбар 1 — Сүхбаатар',2:'Салбар 2 — Баянзүрх',3:'Салбар 3 — Хан-Уул',4:'Салбар 4 — Баянгол',5:'Салбар 5 — Налайх'};
-const PRODUCTS=[
-  {id:1,name:'Классик Бүргэд',cat:'hat',emoji:'🧢',price:45000,sku:'TIT-001',stock:23,colors:['Хар','Бор','Хөх','Улаан'],sizes:['S','M','L','XL']},
-  {id:2,name:'Snapback малгай',cat:'hat',emoji:'🧢',price:42000,sku:'TIT-002',stock:15,colors:['Хар','Цагаан','Улаан'],sizes:['M','L','XL']},
-  {id:3,name:'Өвлийн малгай',cat:'hat',emoji:'🎩',price:38000,sku:'TIT-003',stock:3,colors:['Хар','Бор'],sizes:['S','M','L']},
-  {id:4,name:'Зусланы малгай',cat:'hat',emoji:'⛑️',price:25000,sku:'TIT-004',stock:0,colors:['Цагаан','Бор'],sizes:['M','L']},
-  {id:5,name:'Зимийн ороолт',cat:'scarf',emoji:'🧣',price:30400,sku:'TIT-005',stock:18,colors:['Улаан','Хөх','Хар'],sizes:['Нэг хэмжээ']},
-  {id:6,name:'Флис ороолт',cat:'scarf',emoji:'🧣',price:32000,sku:'TIT-006',stock:12,colors:['Ногоон','Улаан','Хар'],sizes:['Нэг хэмжээ']},
-  {id:7,name:'Утас бээлий',cat:'glove',emoji:'🧤',price:25000,sku:'TIT-007',stock:8,colors:['Хар','Цагаан','Улаан'],sizes:['S','M','L']},
-  {id:8,name:'Арьсан бээлий',cat:'glove',emoji:'🧤',price:46750,sku:'TIT-008',stock:5,colors:['Бор','Хар'],sizes:['M','L','XL']},
-  {id:9,name:'Өвлийн хамгаалалт',cat:'face',emoji:'😷',price:18000,sku:'TIT-009',stock:30,colors:['Хар','Ногоон','Улаан'],sizes:['Нэг хэмжээ']},
-  {id:10,name:'Faceshield Pro',cat:'face',emoji:'😷',price:22000,sku:'TIT-010',stock:7,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ']},
-  {id:11,name:'Хүзүүний алчуур',cat:'neck',emoji:'🧦',price:15000,sku:'TIT-011',stock:25,colors:['Хар','Хөх','Улаан','Ногоон'],sizes:['Нэг хэмжээ']},
-  {id:12,name:'Buff ороолт',cat:'neck',emoji:'🧦',price:19000,sku:'TIT-012',stock:0,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ']},
-];
-
-let cart=[],discountPct=0,payMethod='cash',currentUser='',currentBranch=1;
+// ── API CONFIG ──
+const API='';
+let TOKEN=localStorage.getItem('pos_token')||'';
+let currentUser='',currentBranch=1,currentBranchName='';
+let PRODUCTS=[],BRANCHES_LIST=[];
+let cart=[],discountPct=0,payMethod='cash';
 let todaySales=[],selectedProduct=null,selectedColor='',selectedSize='';
 let currentCat='all',searchQuery='',cashOpenAmount=0;
+let cashSessionId=null;
 
+// ── API HELPERS ──
+async function apiGet(url){
+  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+async function apiPost(url,data){
+  const res=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:JSON.stringify(data)});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+
+// ── НЭВТРЭХ ──
 function togglePw(){const p=document.getElementById('password');p.type=p.type==='password'?'text':'password'}
 
-function doLogin(){
-  const user=document.getElementById('username').value.trim();
-  const pw=document.getElementById('password').value;
-  const branch=parseInt(document.getElementById('branch-select').value);
+async function doLogin(){
+  const username=document.getElementById('username').value.trim();
+  const password=document.getElementById('password').value;
+  const branchEl=document.getElementById('branch-select');
   const err=document.getElementById('login-error');
-  if(USERS[user]&&USERS[user]===pw){
-    currentUser=user;currentBranch=branch;err.style.display='none';
-    document.getElementById('pos-branch-name').textContent=BRANCHES[branch];
-    document.getElementById('pos-cashier').textContent=user;
-    showPage('pos');openCashOpen();startClock();renderProducts();
-  }else{err.style.display='block'}
+  err.style.display='none';
+  try {
+    const data=await apiPost('/api/auth/login',{username,password});
+    TOKEN=data.token;
+    localStorage.setItem('pos_token',TOKEN);
+    currentUser=data.user.full_name||data.user.username;
+    currentBranch=parseInt(branchEl.value)||data.user.branch_id||1;
+    currentBranchName=branchEl.options[branchEl.selectedIndex]?.text||'Салбар';
+    document.getElementById('pos-branch-name').textContent=currentBranchName;
+    document.getElementById('pos-cashier').textContent=currentUser;
+    showPage('pos');
+    startClock();
+    await loadBranches();
+    await loadProducts();
+    openCashOpen();
+  } catch(e){
+    err.style.display='block';
+    err.textContent='Нэвтрэх нэр эсвэл нууц үг буруу байна';
+  }
+}
+
+async function loadBranches(){
+  try{
+    BRANCHES_LIST=await apiGet('/api/branches');
+    const sel=document.getElementById('branch-select');
+    sel.innerHTML=BRANCHES_LIST.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name} — ${b.location}</option>`).join('');
+  }catch(e){console.error('Салбар татах алдаа:',e)}
 }
 
 function doLogout(){
-  if(confirm('Системээс гарах уу?')){cart=[];discountPct=0;todaySales=[];showPage('login')}
+  if(confirm('Системээс гарах уу?')){
+    cart=[];discountPct=0;todaySales=[];
+    TOKEN='';localStorage.removeItem('pos_token');
+    showPage('login');
+  }
 }
 
 function startClock(){
@@ -468,6 +495,40 @@ function startClock(){
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
+}
+
+// ── БАРАА ──
+const CAT_EMOJI={Малгай:'🧢',Ороолт:'🧣',Бээлий:'🧤',Faceshield:'😷',Алчуур:'🧦'};
+
+async function loadProducts(){
+  try{
+    const grid=document.getElementById('product-grid-pos');
+    grid.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:#888">Бараа ачааллаж байна...</div>';
+    const data=await apiGet('/api/products?limit=100&branch_id='+currentBranch);
+    PRODUCTS=data.map(p=>({
+      id:p.id,
+      name:p.name,
+      sku:p.sku,
+      cat:p.category_name||'',
+      emoji:CAT_EMOJI[p.category_name]||'📦',
+      price:p.price,
+      stock:parseInt(p.total_stock)||0,
+      colors:[],sizes:[],variants:[]
+    }));
+    // Variant татах
+    for(const p of PRODUCTS){
+      try{
+        const detail=await apiGet('/api/products/'+p.id);
+        p.colors=[...new Set((detail.variants||[]).map(v=>v.color).filter(Boolean))];
+        p.sizes=[...new Set((detail.variants||[]).map(v=>v.size).filter(Boolean))];
+        p.variants=detail.variants||[];
+      }catch(e){}
+    }
+    renderProducts();
+  }catch(e){
+    document.getElementById('product-grid-pos').innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:red">Бараа татахад алдаа гарлаа</div>';
+    showToast('Бараа татах алдаа: '+e.message,'error');
+  }
 }
 
 function colorHex(n){
@@ -492,28 +553,42 @@ function renderProducts(){
         <div class="pos-product-name">${p.name}</div>
         <div class="pos-product-sku">${p.sku}</div>
         <div class="pos-product-bottom">
-          <div class="pos-product-price">₮${p.price.toLocaleString()}</div>
+          <div class="pos-product-price">&#8366;${p.price.toLocaleString()}</div>
           <div class="pos-product-colors">${p.colors.slice(0,4).map(c=>`<div class="pos-color-dot" style="background:${colorHex(c)}"></div>`).join('')}</div>
         </div>
       </div></div>`;
-  }).join('');
+  }).join('')||'<div style="grid-column:1/-1;padding:40px;text-align:center;color:#888">Бараа олдсонгүй</div>';
 }
 
 function filterCat(el,cat){
   document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');currentCat=cat;renderProducts();
 }
-function filterProducts(q){searchQuery=q;renderProducts()}
-function handleBarcode(e){
-  if(e.key==='Enter'){
-    const q=e.target.value.trim();
-    const found=PRODUCTS.find(p=>p.sku.toLowerCase()===q.toLowerCase());
-    if(found){selectProduct(found.id);e.target.value='';searchQuery='';renderProducts();}
-    else showToast('Баркод олдсонгүй: '+q,'error');
-  }
+function filterProducts(q){searchQuery=q;renderProducts();}
+
+async function handleBarcode(e){
+  if(e.key!=='Enter')return;
+  const barcode=e.target.value.trim();
+  try{
+    const v=await apiGet('/api/barcode/'+encodeURIComponent(barcode));
+    const prod=PRODUCTS.find(p=>p.id===v.product_id);
+    if(prod){
+      cart.push({
+        key:v.id+'-'+v.color+'-'+v.size,
+        id:prod.id,variantId:v.id,
+        name:prod.name,emoji:prod.emoji,
+        color:v.color,size:v.size,
+        price:prod.price,qty:1
+      });
+      renderCart();
+      showToast(prod.name+' ('+v.color+', '+v.size+') нэмэгдлээ','success');
+    }
+  }catch(e){showToast('Баркод олдсонгүй','error');}
+  e.target.value='';
 }
+
 function scanBarcode(){
-  const sku=prompt('Баркод оруулах (жишээ: TIT-001):');
+  const sku=prompt('Баркод оруулах:');
   if(!sku)return;
   const found=PRODUCTS.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim());
   if(found)selectProduct(found.id);
@@ -523,16 +598,18 @@ function scanBarcode(){
 function selectProduct(id){
   const p=PRODUCTS.find(pr=>pr.id===id);
   if(!p||p.stock===0){showToast('Бараа дууссан байна','error');return;}
-  selectedProduct=p;selectedColor=p.colors[0];selectedSize=p.sizes[0];
-  document.getElementById('var-product-name').textContent=p.name+' — ₮'+p.price.toLocaleString();
+  selectedProduct=p;
+  selectedColor=p.colors[0]||'';
+  selectedSize=p.sizes[0]||'';
+  document.getElementById('var-product-name').textContent=p.name+' — &#8366;'+p.price.toLocaleString();
   document.getElementById('var-colors').innerHTML=p.colors.map(c=>`
     <div onclick="varSelectColor(this,'${c}')" data-color="${c}"
-      style="padding:6px 14px;border:1.5px solid ${c===selectedColor?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all .15s">
+      style="padding:6px 14px;border:1.5px solid ${c===selectedColor?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">
       <div style="width:12px;height:12px;border-radius:50%;background:${colorHex(c)};border:1px solid rgba(0,0,0,.1)"></div>${c}
     </div>`).join('');
   document.getElementById('var-sizes').innerHTML=p.sizes.map(s=>`
     <div onclick="varSelectSize(this,'${s}')" data-size="${s}"
-      style="padding:6px 16px;border:1.5px solid ${s===selectedSize?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s">
+      style="padding:6px 16px;border:1.5px solid ${s===selectedSize?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">
       ${s}</div>`).join('');
   openModal('modal-variant');
 }
@@ -547,30 +624,44 @@ function varSelectSize(el,size){
   document.querySelectorAll('#var-sizes div').forEach(d=>d.style.borderColor='var(--gray-light)');
   el.style.borderColor='var(--black)';
 }
+
 function addVariantToCart(){
   if(!selectedProduct)return;
+  const variant=selectedProduct.variants.find(v=>v.color===selectedColor&&v.size===selectedSize);
   const key=selectedProduct.id+'-'+selectedColor+'-'+selectedSize;
   const ex=cart.find(c=>c.key===key);
   if(ex)ex.qty++;
-  else cart.push({key,id:selectedProduct.id,name:selectedProduct.name,emoji:selectedProduct.emoji,color:selectedColor,size:selectedSize,price:selectedProduct.price,qty:1});
+  else cart.push({
+    key,id:selectedProduct.id,
+    variantId:variant?.id||null,
+    name:selectedProduct.name,emoji:selectedProduct.emoji,
+    color:selectedColor,size:selectedSize,
+    price:selectedProduct.price,qty:1
+  });
   closeModal('modal-variant');
   renderCart();
   showToast(selectedProduct.name+' ('+selectedColor+', '+selectedSize+') нэмэгдлээ','success');
 }
 
+// ── CART ──
 function renderCart(){
-  const items=document.getElementById('pos-cart-items');
   const subtotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const discAmt=Math.round(subtotal*discountPct/100);
   const total=subtotal-discAmt;
   document.getElementById('pos-cart-count').textContent=cart.reduce((s,i)=>s+i.qty,0);
-  document.getElementById('pos-subtotal').textContent='₮'+subtotal.toLocaleString();
-  document.getElementById('pos-discount').textContent='−₮'+discAmt.toLocaleString();
-  document.getElementById('pos-total').textContent='₮'+total.toLocaleString();
+  document.getElementById('pos-subtotal').textContent='&#8366;'+subtotal.toLocaleString();
+  document.getElementById('pos-discount').textContent='&#8722;&#8366;'+discAmt.toLocaleString();
+  document.getElementById('pos-total').textContent='&#8366;'+total.toLocaleString();
   const btn=document.getElementById('btn-charge');
   btn.disabled=cart.length===0;
-  btn.innerHTML=cart.length>0?`<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> ₮${total.toLocaleString()} авах`:'<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> Төлбөр авах';
-  if(cart.length===0){items.innerHTML='<div class="pos-cart-empty"><div class="pos-cart-empty-icon">🛒</div><span>Бараа нэмнэ үү</span></div>';return;}
+  btn.innerHTML=cart.length>0
+    ?`<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> &#8366;${total.toLocaleString()} авах`
+    :'<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> Төлбөр авах';
+  const items=document.getElementById('pos-cart-items');
+  if(!cart.length){
+    items.innerHTML='<div class="pos-cart-empty"><div class="pos-cart-empty-icon">🛒</div><span>Бараа нэмнэ үү</span></div>';
+    return;
+  }
   items.innerHTML=cart.map(item=>`
     <div class="pos-cart-item">
       <div class="pos-cart-item-emoji">${item.emoji}</div>
@@ -579,13 +670,13 @@ function renderCart(){
         <div class="pos-cart-item-variant">${item.color} · ${item.size}</div>
       </div>
       <div class="pos-cart-item-right">
-        <div class="pos-cart-item-price">₮${(item.price*item.qty).toLocaleString()}</div>
+        <div class="pos-cart-item-price">&#8366;${(item.price*item.qty).toLocaleString()}</div>
         <div class="pos-item-qty">
-          <button onclick="cartQty('${item.key}',-1)">−</button>
+          <button onclick="cartQty('${item.key}',-1)">&#8722;</button>
           <span>${item.qty}</span>
           <button onclick="cartQty('${item.key}',1)">+</button>
         </div>
-        <button class="pos-item-remove" onclick="removeItem('${item.key}')">×</button>
+        <button class="pos-item-remove" onclick="removeItem('${item.key}')">&#215;</button>
       </div>
     </div>`).join('');
 }
@@ -598,7 +689,7 @@ function applyDiscount(){
   const v=parseFloat(document.getElementById('discount-input').value);
   const msg=document.getElementById('discount-msg');
   if(isNaN(v)||v<0||v>100){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='0–100 хооронд оруулна уу';return;}
-  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='✓ '+v+'% хямдрал хэрэглэгдлээ';
+  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='&#10003; '+v+'% хямдрал хэрэглэгдлээ';
   renderCart();
 }
 
@@ -607,22 +698,37 @@ function setPayMethod(el,method){
   el.classList.add('active');payMethod=method;
 }
 
-function processPayment(){
+// ── БОРЛУУЛАЛТ — API ── 
+async function processPayment(){
   if(!cart.length)return;
   const subtotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const discAmt=Math.round(subtotal*discountPct/100);
   const total=subtotal-discAmt;
-  const now=new Date();
-  const sale={
-    id:'#TIT-'+Date.now().toString().slice(-6),
-    time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),
-    items:[...cart],subtotal,discAmt,total,payMethod,
-    branch:BRANCHES[currentBranch],cashier:currentUser
-  };
-  todaySales.push(sale);
-  const wantReceipt=document.getElementById('receipt-toggle').checked;
-  if(wantReceipt){showReceipt(sale);}
-  else{newSale();showToast('Борлуулалт амжилттай бүртгэгдлээ','success');}
+  try{
+    const orderData={
+      branch_id:currentBranch,
+      items:cart.map(i=>({
+        variant_id:i.variantId,
+        name:i.name,color:i.color,size:i.size,
+        quantity:i.qty,price:i.price
+      })),
+      subtotal,discount_amount:discAmt,total,
+      payment_method:payMethod
+    };
+    const result=await apiPost('/api/orders',orderData);
+    const sale={
+      id:result.order.order_number,
+      time:new Date().toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'}),
+      items:[...cart],subtotal,discAmt,total,payMethod,
+      branch:currentBranchName,cashier:currentUser
+    };
+    todaySales.push(sale);
+    const wantReceipt=document.getElementById('receipt-toggle').checked;
+    if(wantReceipt)showReceipt(sale);
+    else{newSale();showToast('Борлуулалт амжилттай бүртгэгдлээ','success');}
+  }catch(e){
+    showToast('Борлуулалт бүртгэхэд алдаа: '+e.message,'error');
+  }
 }
 
 function showReceipt(sale){
@@ -630,12 +736,12 @@ function showReceipt(sale){
   const ds=now.getFullYear()+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0');
   document.getElementById('receipt-info').innerHTML=`${sale.branch}<br>${ds} ${sale.time}<br>${sale.id}<br>Худалдагч: ${sale.cashier}`;
   document.getElementById('receipt-items').innerHTML=sale.items.map(i=>`
-    <div class="receipt-item-row"><span>${i.name} (${i.color}, ${i.size}) ×${i.qty}</span><span>₮${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+    <div class="receipt-item-row"><span>${i.name} (${i.color}, ${i.size}) &#215;${i.qty}</span><span>&#8366;${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
   const pn={cash:'Бэлэн',card:'Карт',qpay:'QPay'}[sale.payMethod];
   document.getElementById('receipt-totals').innerHTML=`
-    <div class="receipt-total-row"><span>Дүн</span><span>₮${sale.subtotal.toLocaleString()}</span></div>
-    ${sale.discAmt>0?`<div class="receipt-total-row"><span>Хямдрал</span><span style="color:var(--red)">−₮${sale.discAmt.toLocaleString()}</span></div>`:''}
-    <div class="receipt-total-row grand"><span>Нийт</span><span>₮${sale.total.toLocaleString()}</span></div>
+    <div class="receipt-total-row"><span>Дүн</span><span>&#8366;${sale.subtotal.toLocaleString()}</span></div>
+    ${sale.discAmt>0?`<div class="receipt-total-row"><span>Хямдрал</span><span style="color:var(--red)">&#8722;&#8366;${sale.discAmt.toLocaleString()}</span></div>`:''}
+    <div class="receipt-total-row grand"><span>Нийт</span><span>&#8366;${sale.total.toLocaleString()}</span></div>
     <div class="receipt-total-row" style="margin-top:8px"><span>Төлбөр</span><span>${pn}</span></div>`;
   openModal('modal-receipt');
 }
@@ -648,64 +754,71 @@ function newSale(){
   showToast('Шинэ захиалга бэлэн','success');
 }
 
+// ── КАСС ──
 function openCashOpen(){
   const now=new Date();
-  document.getElementById('cash-open-date').textContent=now.toLocaleDateString('mn-MN')+' · '+BRANCHES[currentBranch];
+  document.getElementById('cash-open-date').textContent=now.toLocaleDateString('mn-MN')+' · '+currentBranchName;
   openModal('modal-cash-open');
 }
-function confirmCashOpen(){
+
+async function confirmCashOpen(){
   cashOpenAmount=parseFloat(document.getElementById('cash-open-amount').value)||0;
+  try{
+    const result=await apiPost('/api/cash/open',{opening_amount:cashOpenAmount});
+    cashSessionId=result.id;
+  }catch(e){console.log('Касс нээх:',e.message);}
   closeModal('modal-cash-open');
-  showToast('Касс нээгдлээ — ₮'+cashOpenAmount.toLocaleString(),'success');
+  showToast('Касс нээгдлээ — &#8366;'+cashOpenAmount.toLocaleString(),'success');
 }
+
 function openCashClose(){
   const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
   const digS=todaySales.filter(s=>s.payMethod!=='cash').reduce((s,sale)=>s+sale.total,0);
   const totS=todaySales.reduce((s,sale)=>s+sale.total,0);
-  document.getElementById('cc-sales').textContent='₮'+totS.toLocaleString();
+  document.getElementById('cc-sales').textContent='&#8366;'+totS.toLocaleString();
   document.getElementById('cc-count').textContent=todaySales.length;
-  document.getElementById('cc-cash').textContent='₮'+(cashS+cashOpenAmount).toLocaleString();
-  document.getElementById('cc-digital').textContent='₮'+digS.toLocaleString();
+  document.getElementById('cc-cash').textContent='&#8366;'+(cashS+cashOpenAmount).toLocaleString();
+  document.getElementById('cc-digital').textContent='&#8366;'+digS.toLocaleString();
   openModal('modal-cash-close');
 }
+
 function calcDiff(){
   const counted=parseFloat(document.getElementById('cc-counted').value)||0;
   const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
-  const expected=cashOpenAmount+cashS;
-  const diff=counted-expected;
+  const diff=counted-(cashOpenAmount+cashS);
   const row=document.getElementById('cc-diff-row');
   row.style.display='block';
   const el=document.getElementById('cc-diff');
-  el.textContent=(diff>=0?'+':'')+'₮'+diff.toLocaleString();
+  el.textContent=(diff>=0?'+':'')+'&#8366;'+Math.abs(diff).toLocaleString();
   el.style.color=diff===0?'var(--green)':diff>0?'var(--amber)':'var(--red)';
 }
-function confirmCashClose(){
+
+async function confirmCashClose(){
+  const closing=parseFloat(document.getElementById('cc-counted').value)||0;
+  try{await apiPost('/api/cash/close',{closing_amount:closing});}catch(e){}
   closeModal('modal-cash-close');
   showToast('Касс амжилттай хаагдлаа','success');
   setTimeout(()=>{if(confirm('Системээс гарах уу?'))doLogout();},1000);
 }
 
-function openReport(){
+// ── ТАЙЛАН ──
+async function openReport(){
   const now=new Date();
-  document.getElementById('report-date').textContent=now.toLocaleDateString('mn-MN')+' · '+BRANCHES[currentBranch];
-  const totS=todaySales.reduce((s,sale)=>s+sale.total,0);
-  const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
-  const digS=todaySales.filter(s=>s.payMethod!=='cash').reduce((s,sale)=>s+sale.total,0);
-  document.getElementById('rep-total').textContent='₮'+totS.toLocaleString();
-  document.getElementById('rep-count').textContent=todaySales.length;
-  document.getElementById('rep-cash').textContent='₮'+cashS.toLocaleString();
-  document.getElementById('rep-digital').textContent='₮'+digS.toLocaleString();
-  const itemMap={};
-  todaySales.forEach(sale=>sale.items.forEach(item=>{
-    if(!itemMap[item.name])itemMap[item.name]={qty:0,total:0};
-    itemMap[item.name].qty+=item.qty;itemMap[item.name].total+=item.price*item.qty;
-  }));
-  const tbody=document.getElementById('rep-items');
-  if(!Object.keys(itemMap).length){
-    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">Өнөөдөр борлуулалт байхгүй</td></tr>';
-  }else{
-    tbody.innerHTML=Object.entries(itemMap).sort((a,b)=>b[1].total-a[1].total)
-      .map(([n,d])=>`<tr><td>${n}</td><td>${d.qty}</td><td>₮${d.total.toLocaleString()}</td></tr>`).join('');
+  document.getElementById('report-date').textContent=now.toLocaleDateString('mn-MN')+' · '+currentBranchName;
+  try{
+    const today=now.toISOString().split('T')[0];
+    const data=await apiGet('/api/reports/daily?date='+today+'&branch_id='+currentBranch);
+    const s=data.summary;
+    document.getElementById('rep-total').textContent='&#8366;'+parseInt(s.total_revenue||0).toLocaleString();
+    document.getElementById('rep-count').textContent=s.transaction_count||0;
+    document.getElementById('rep-cash').textContent='&#8366;'+parseInt(s.cash_total||0).toLocaleString();
+    document.getElementById('rep-digital').textContent='&#8366;'+(parseInt(s.card_total||0)+parseInt(s.qpay_total||0)).toLocaleString();
+    const tbody=document.getElementById('rep-items');
+    tbody.innerHTML=(data.top_products||[]).length
+      ? (data.top_products||[]).map(p=>`<tr><td>${p.product_name}</td><td>${p.sold_qty}</td><td>&#8366;${parseInt(p.revenue).toLocaleString()}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">Өнөөдөр борлуулалт байхгүй</td></tr>';
+  }catch(e){
+    document.getElementById('rep-items').innerHTML='<tr><td colspan="3" style="color:red">Тайлан татахад алдаа гарлаа</td></tr>';
   }
   openModal('modal-report');
 }
@@ -727,6 +840,10 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
     if(e.target===o&&o.id!=='modal-cash-open')o.classList.remove('show');
   });
 });
+
+// ── INIT ──
+// Салбар татах
+loadBranches();
 </script>
 </body>
 </html>

@@ -209,6 +209,16 @@ tr:hover td{background:#fafafa}
       <button class="nav-item" onclick="showPanel('suppliers',this)">
         <span class="nav-item-icon">🚛</span>Нийлүүлэгч
       </button>
+      <div class="nav-section">Агуулах</div>
+      <button class="nav-item" onclick="showPanel('wh-receive',this)">
+        <span class="nav-item-icon">📥</span>Орлогодох
+      </button>
+      <button class="nav-item" onclick="showPanel('wh-distribute',this)">
+        <span class="nav-item-icon">📤</span>Хуваарилах
+      </button>
+      <button class="nav-item" onclick="showPanel('wh-return',this)">
+        <span class="nav-item-icon">↩️</span>Буцаалт
+      </button>
       <div class="nav-section">Тайлан</div>
       <button class="nav-item" onclick="showPanel('sales',this)">
         <span class="nav-item-icon">💰</span>Борлуулалт
@@ -424,6 +434,152 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+      <!-- АГУУЛАХ — ОРЛОГО -->
+      <div class="panel" id="panel-wh-receive">
+        <div class="kpi-grid" style="margin-bottom:20px">
+          <div class="kpi-card"><div class="kpi-label">📥 Өнөөдөр орлогодсон</div><div class="kpi-val" id="wh-kpi-in">0</div><div class="kpi-sub">ширхэг</div></div>
+          <div class="kpi-card"><div class="kpi-label">📦 Агуулахын нийт</div><div class="kpi-val" id="wh-kpi-total">—</div><div class="kpi-sub">ширхэг</div></div>
+          <div class="kpi-card"><div class="kpi-label">🚛 Нийлүүлэгч</div><div class="kpi-val" id="wh-kpi-supplier">0</div><div class="kpi-sub">идэвхтэй</div></div>
+          <div class="kpi-card"><div class="kpi-label">⚠️ Дутагдаж байна</div><div class="kpi-val" style="color:var(--red)" id="wh-kpi-low">0</div><div class="kpi-sub">төрлийн бараа</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Нийлүүлэгчээс бараа орлогодох</div>
+          <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">📷</span>
+            <div style="flex:1">
+              <input id="wh-barcode" class="f-input" placeholder="Баркод уншуулах эсвэл SKU бичих (TIT-001)..." onkeydown="whHandleBarcode(event)" style="width:100%">
+              <div style="font-size:11px;color:var(--gray);margin-top:4px">Enter дарж нэмнэ</div>
+            </div>
+          </div>
+          <div class="form-grid g3" style="margin-bottom:16px">
+            <div class="f-group">
+              <label class="f-label">Нийлүүлэгч</label>
+              <select class="f-input" id="wh-supplier" style="cursor:pointer"></select>
+            </div>
+            <div class="f-group">
+              <label class="f-label">Нэхэмжлэлийн дугаар</label>
+              <input class="f-input" id="wh-invoice" placeholder="INV-2024-001">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Огноо</label>
+              <input class="f-input" id="wh-date" type="date">
+            </div>
+          </div>
+          <table class="main-table" style="margin-bottom:12px">
+            <thead><tr><th>SKU</th><th>Бараа</th><th>Өнгө</th><th>Хэмжээ</th><th>Тоо</th><th>Нэгжийн үнэ</th><th>Нийт</th><th></th></tr></thead>
+            <tbody id="wh-receive-items"></tbody>
+          </table>
+          <div id="wh-receive-empty" style="text-align:center;padding:28px;color:var(--gray);background:#fafafa;border-radius:8px;border:1px dashed var(--gray-mid)">Баркод уншуулж бараа нэмнэ үү</div>
+          <div id="wh-receive-summary" style="display:none;background:#f8f8f8;border-radius:8px;padding:14px;margin-top:12px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--gray)">Нийт бараа</span><span id="wh-r-qty" style="font-weight:600">0 ширхэг</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700"><span>Нийт үнэ</span><span id="wh-r-price">₮0</span></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button onclick="whConfirmReceive()" class="btn-primary">✓ Орлого батлах</button>
+            <button onclick="whClearReceive()" class="btn-secondary">Цэвэрлэх</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Өнөөдрийн орлогын түүх</div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Цаг</th><th>Нийлүүлэгч</th><th>Нэхэмжлэл</th><th>Бараа</th><th>Тоо</th><th>Үнэ</th><th>Статус</th></tr></thead>
+              <tbody id="wh-receive-history"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- АГУУЛАХ — ХУВААРИЛАХ -->
+      <div class="panel" id="panel-wh-distribute">
+        <div class="card">
+          <div class="card-title">Агуулахаас салбарт хуваарилах</div>
+          <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">📷</span>
+            <div style="flex:1">
+              <input id="wh-dist-barcode" class="f-input" placeholder="Баркод уншуулах эсвэл SKU бичих..." onkeydown="whHandleDistBarcode(event)" style="width:100%">
+            </div>
+          </div>
+          <div class="form-grid g2" style="margin-bottom:16px">
+            <div class="f-group">
+              <label class="f-label">Хаашаа явуулах салбар</label>
+              <select class="f-input" id="wh-dist-branch" style="cursor:pointer"></select>
+            </div>
+            <div class="f-group">
+              <label class="f-label">Тэмдэглэл</label>
+              <input class="f-input" id="wh-dist-note" placeholder="Шилжүүлгийн тэмдэглэл...">
+            </div>
+          </div>
+          <table class="main-table" style="margin-bottom:12px">
+            <thead><tr><th>SKU</th><th>Бараа</th><th>Өнгө</th><th>Хэмжээ</th><th>Үлдэгдэл</th><th>Явуулах тоо</th><th></th></tr></thead>
+            <tbody id="wh-dist-items"></tbody>
+          </table>
+          <div id="wh-dist-empty" style="text-align:center;padding:28px;color:var(--gray);background:#fafafa;border-radius:8px;border:1px dashed var(--gray-mid)">Баркод уншуулж бараа нэмнэ үү</div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button onclick="whConfirmDist()" class="btn-primary">→ Хуваарилалт батлах</button>
+            <button onclick="whClearDist()" class="btn-secondary">Цэвэрлэх</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Хуваарилалтын түүх</div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Огноо</th><th>Салбар</th><th>Бараа</th><th>Тоо</th><th>Хариуцсан</th><th>Статус</th></tr></thead>
+              <tbody id="wh-dist-history"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- АГУУЛАХ — БУЦААЛТ -->
+      <div class="panel" id="panel-wh-return">
+        <div class="card">
+          <div class="card-title">Бараа буцаалт бүртгэх</div>
+          <div class="form-grid g3" style="margin-bottom:16px">
+            <div class="f-group">
+              <label class="f-label">Буцаалтын төрөл</label>
+              <select class="f-input" id="wh-return-type" style="cursor:pointer">
+                <option value="customer">Хэрэглэгчийн буцаалт</option>
+                <option value="branch">Салбараас буцаасан</option>
+                <option value="supplier">Нийлүүлэгчид буцаасан</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label class="f-label">Захиалгын дугаар</label>
+              <input class="f-input" id="wh-return-order" placeholder="#TIT-XXXXXX">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Шалтгаан</label>
+              <input class="f-input" id="wh-return-reason" placeholder="Шалтгаан...">
+            </div>
+          </div>
+          <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">📷</span>
+            <div style="flex:1">
+              <input id="wh-return-barcode" class="f-input" placeholder="Буцааж байгаа барааны баркод..." onkeydown="whHandleReturnBarcode(event)" style="width:100%">
+            </div>
+          </div>
+          <table class="main-table" style="margin-bottom:12px">
+            <thead><tr><th>SKU</th><th>Бараа</th><th>Тоо</th><th>Нөхцөл</th><th>Дахин зарах</th><th></th></tr></thead>
+            <tbody id="wh-return-items"></tbody>
+          </table>
+          <div id="wh-return-empty" style="text-align:center;padding:28px;color:var(--gray);background:#fafafa;border-radius:8px;border:1px dashed var(--gray-mid)">Буцаах барааны баркод уншуулна уу</div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button onclick="whConfirmReturn()" class="btn-primary">✓ Буцаалт батлах</button>
+            <button onclick="whClearReturn()" class="btn-secondary">Цэвэрлэх</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Буцаалтын түүх</div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Огноо</th><th>Төрөл</th><th>Бараа</th><th>Тоо</th><th>Шалтгаан</th><th>Статус</th></tr></thead>
+              <tbody id="wh-return-history"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- БОРЛУУЛАЛТ ТАЙЛАН -->
       <div class="panel" id="panel-sales">
         <div class="kpi-grid" style="margin-bottom:24px">
@@ -608,8 +764,9 @@ function showPanel(id,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага'};
+  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт'};
   if(id==='manage-products') loadManageProducts();
+  if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
   document.getElementById('page-title').textContent=titles[id]||id;
 }
 
@@ -1084,6 +1241,228 @@ async function deleteProduct(id, name){
     await loadManageProducts();
   }catch(e){showToast('Устгахад алдаа','error');}
 }
+
+// ── WAREHOUSE FUNCTIONS ──
+let whProducts=[], whBranches=[], whSuppliers=[];
+let whReceiveItems=[], whDistItems=[], whReturnItems=[];
+let whTodayIn=0;
+
+async function loadWarehouseData(){
+  try{
+    const [prods, branches, suppliers] = await Promise.all([
+      apiGet('/api/products?limit=100'),
+      fetch('/api/branches').then(r=>r.json()),
+      apiGet('/api/suppliers')
+    ]);
+    whProducts = prods;
+    whBranches = branches;
+    whSuppliers = suppliers;
+
+    // KPI
+    const totalStock = prods.reduce((s,p)=>s+parseInt(p.total_stock||0),0);
+    document.getElementById('wh-kpi-total').textContent = totalStock.toLocaleString();
+    document.getElementById('wh-kpi-supplier').textContent = suppliers.length;
+    const lowCount = prods.filter(p=>parseInt(p.total_stock||0)<5).length;
+    document.getElementById('wh-kpi-low').textContent = lowCount;
+
+    // Нийлүүлэгч dropdown
+    const supSel = document.getElementById('wh-supplier');
+    if(supSel) supSel.innerHTML = suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+
+    // Салбар dropdown
+    const branchSel = document.getElementById('wh-dist-branch');
+    if(branchSel) branchSel.innerHTML = branches.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+
+    // Date
+    const dateEl = document.getElementById('wh-date');
+    if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  }catch(e){console.error('Warehouse data алдаа:',e);}
+}
+
+function whFindProduct(sku){
+  return whProducts.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim());
+}
+
+// RECEIVE
+function whHandleBarcode(e){
+  if(e.key!=='Enter') return;
+  const sku = e.target.value.trim();
+  const p = whFindProduct(sku);
+  if(!p){showToast('Бараа олдсонгүй: '+sku,'error');return;}
+  const ex = whReceiveItems.find(i=>i.sku===p.sku);
+  if(ex){ex.qty++;} else {
+    whReceiveItems.push({id:p.id,sku:p.sku,name:p.name,qty:1,price:p.wholesale_price||p.price});
+  }
+  e.target.value='';
+  whRenderReceive();
+  showToast(p.name+' нэмэгдлээ','success');
+}
+
+function whRenderReceive(){
+  const tbody = document.getElementById('wh-receive-items');
+  const empty = document.getElementById('wh-receive-empty');
+  const summary = document.getElementById('wh-receive-summary');
+  if(!whReceiveItems.length){empty.style.display='block';tbody.innerHTML='';summary.style.display='none';return;}
+  empty.style.display='none'; summary.style.display='block';
+  tbody.innerHTML = whReceiveItems.map((item,i)=>`
+    <tr>
+      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
+      <td><b>${item.name}</b></td>
+      <td>—</td><td>—</td>
+      <td>
+        <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
+          <button onclick="whReceiveItems[${i}].qty=Math.max(1,whReceiveItems[${i}].qty-1);whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          <button onclick="whReceiveItems[${i}].qty++;whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
+        </div>
+      </td>
+      <td><input type="number" value="${item.price}" style="width:90px;border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="whReceiveItems[${i}].price=parseInt(this.value)||0;whRenderReceive()"></td>
+      <td><b>₮${(item.price*item.qty).toLocaleString()}</b></td>
+      <td><button onclick="whReceiveItems.splice(${i},1);whRenderReceive()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+    </tr>`).join('');
+  const qty = whReceiveItems.reduce((s,i)=>s+i.qty,0);
+  const price = whReceiveItems.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('wh-r-qty').textContent = qty+' ширхэг';
+  document.getElementById('wh-r-price').textContent = '₮'+price.toLocaleString();
+}
+
+async function whConfirmReceive(){
+  if(!whReceiveItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  const supplier = document.getElementById('wh-supplier');
+  const invoice = document.getElementById('wh-invoice').value||'—';
+  const qty = whReceiveItems.reduce((s,i)=>s+i.qty,0);
+  const price = whReceiveItems.reduce((s,i)=>s+i.price*i.qty,0);
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+
+  whTodayIn += qty;
+  document.getElementById('wh-kpi-in').textContent = whTodayIn;
+
+  const tbody = document.getElementById('wh-receive-history');
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'—'}</td><td>${invoice}</td><td>${whReceiveItems.map(i=>i.name+'×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  tbody.prepend(row);
+
+  whClearReceive();
+  showToast('Орлого амжилттай бүртгэгдлээ — '+qty+' ширхэг','success');
+}
+
+function whClearReceive(){whReceiveItems=[];whRenderReceive();}
+
+// DISTRIBUTE
+function whHandleDistBarcode(e){
+  if(e.key!=='Enter') return;
+  const sku = e.target.value.trim();
+  const p = whFindProduct(sku);
+  if(!p){showToast('Бараа олдсонгүй','error');return;}
+  const ex = whDistItems.find(i=>i.sku===p.sku);
+  if(ex){ex.qty++;} else {
+    whDistItems.push({id:p.id,sku:p.sku,name:p.name,qty:1,stock:parseInt(p.total_stock||0)});
+  }
+  e.target.value='';whRenderDist();
+  showToast(p.name+' нэмэгдлээ','success');
+}
+
+function whRenderDist(){
+  const tbody = document.getElementById('wh-dist-items');
+  const empty = document.getElementById('wh-dist-empty');
+  if(!whDistItems.length){empty.style.display='block';tbody.innerHTML='';return;}
+  empty.style.display='none';
+  tbody.innerHTML = whDistItems.map((item,i)=>`
+    <tr>
+      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
+      <td><b>${item.name}</b></td>
+      <td>—</td><td>—</td>
+      <td style="font-weight:700;color:${item.stock<=5?'var(--red)':'var(--green)'}">${item.stock}</td>
+      <td>
+        <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
+          <button onclick="whDistItems[${i}].qty=Math.max(1,whDistItems[${i}].qty-1);whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          <button onclick="whDistItems[${i}].qty++;whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
+        </div>
+      </td>
+      <td><button onclick="whDistItems.splice(${i},1);whRenderDist()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+    </tr>`).join('');
+}
+
+async function whConfirmDist(){
+  if(!whDistItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  const branch = document.getElementById('wh-dist-branch');
+  const branchName = branch.options[branch.selectedIndex].text;
+  const note = document.getElementById('wh-dist-note').value||'—';
+  const qty = whDistItems.reduce((s,i)=>s+i.qty,0);
+
+  const tbody = document.getElementById('wh-dist-history');
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${branchName}</td><td>${whDistItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>Админ</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  tbody.prepend(row);
+
+  whClearDist();
+  showToast('Хуваарилалт амжилттай — '+qty+' ширхэг '+branchName+' руу явлаа','success');
+}
+function whClearDist(){whDistItems=[];whRenderDist();}
+
+// RETURN
+function whHandleReturnBarcode(e){
+  if(e.key!=='Enter') return;
+  const sku = e.target.value.trim();
+  const p = whFindProduct(sku);
+  if(!p){showToast('Бараа олдсонгүй','error');return;}
+  const ex = whReturnItems.find(i=>i.sku===p.sku);
+  if(ex){ex.qty++;} else {
+    whReturnItems.push({sku:p.sku,name:p.name,qty:1,condition:'good',resell:true});
+  }
+  e.target.value='';whRenderReturn();
+  showToast(p.name+' нэмэгдлээ','success');
+}
+
+function whRenderReturn(){
+  const tbody = document.getElementById('wh-return-items');
+  const empty = document.getElementById('wh-return-empty');
+  if(!whReturnItems.length){empty.style.display='block';tbody.innerHTML='';return;}
+  empty.style.display='none';
+  tbody.innerHTML = whReturnItems.map((item,i)=>`
+    <tr>
+      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
+      <td><b>${item.name}</b></td>
+      <td>
+        <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
+          <button onclick="whReturnItems[${i}].qty=Math.max(1,whReturnItems[${i}].qty-1);whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          <button onclick="whReturnItems[${i}].qty++;whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
+        </div>
+      </td>
+      <td>
+        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="whReturnItems[${i}].condition=this.value">
+          <option value="good">Сайн</option>
+          <option value="used">Хэрэглэсэн</option>
+          <option value="damaged">Гэмтсэн</option>
+        </select>
+      </td>
+      <td>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+          <input type="checkbox" ${item.resell?'checked':''} onchange="whReturnItems[${i}].resell=this.checked" style="accent-color:var(--black)"> Тийм
+        </label>
+      </td>
+      <td><button onclick="whReturnItems.splice(${i},1);whRenderReturn()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+    </tr>`).join('');
+}
+
+function whConfirmReturn(){
+  if(!whReturnItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  const reason = document.getElementById('wh-return-reason').value||'—';
+  const qty = whReturnItems.reduce((s,i)=>s+i.qty,0);
+  const type = document.getElementById('wh-return-type');
+
+  const tbody = document.getElementById('wh-return-history');
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${type.options[type.selectedIndex].text}</td><td>${whReturnItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${reason}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  tbody.prepend(row);
+
+  whClearReturn();
+  showToast('Буцаалт бүртгэгдлээ — '+qty+' ширхэг','success');
+}
+function whClearReturn(){whReturnItems=[];whRenderReturn();}
 
 // ── INIT ──
 // Token байвал шууд нэвтрэх

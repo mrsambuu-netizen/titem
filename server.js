@@ -797,6 +797,38 @@ app.get('/api/suppliers', authMiddleware(['warehouse','admin','super_admin']), a
   }
 });
 
+// ── НИЙЛҮҮЛЭГЧ НЭМЭХ ──
+app.post('/api/suppliers', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { name, phone, email, address, total_debt } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO suppliers (name, phone, email, address, total_debt) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [name, phone||null, email||null, address||null, total_debt||0]
+    );
+    res.json(result.rows[0]);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── НИЙЛҮҮЛЭГЧ ЗАСАХ ──
+app.put('/api/suppliers/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { name, phone, email, address, total_debt } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE suppliers SET name=$1, phone=$2, email=$3, address=$4, total_debt=$5 WHERE id=$6 RETURNING *',
+      [name, phone||null, email||null, address||null, total_debt||0, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── НИЙЛҮҮЛЭГЧ УСТГАХ ──
+app.delete('/api/suppliers/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
+  try {
+    await pool.query('UPDATE suppliers SET is_active = false WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── САНУУЛГА ──
 app.get('/api/alerts', authMiddleware(['admin','super_admin']), async (req, res) => {
   try {

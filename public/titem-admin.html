@@ -980,7 +980,15 @@ function handleImageUpload(input){
     showToast('Хамгийн ихдээ 5 зураг оруулна уу','error');
     return;
   }
+  const maxSize = 800 * 1024; // 800KB
+  let hasError = false;
+  
   files.forEach(file => {
+    if(file.size > maxSize){
+      showToast(file.name + ' — 800KB-аас том байна. Жижигрүүлнэ үү.','error');
+      hasError = true;
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       uploadedImages.push(e.target.result);

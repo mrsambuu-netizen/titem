@@ -751,6 +751,43 @@ app.get('/pos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem-admin.html')));
 app.get('/warehouse', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem-warehouse.html')));
 
+// ── НУУЦ ҮГ RESET (зөвхөн нэг удаа ашиглана) ──
+app.get('/api/reset-passwords', async (req, res) => {
+  try {
+    const adminHash = await bcrypt.hash('admin123', 10);
+    const cashierHash = await bcrypt.hash('1234', 10);
+    
+    // Хэрэглэгч байхгүй бол нэмнэ
+    const check = await pool.query('SELECT COUNT(*) FROM users');
+    if (parseInt(check.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO users (username, password_hash, full_name, role, branch_id) VALUES
+          ('admin', $1, 'Супер Админ', 'super_admin', NULL),
+          ('manager', $1, 'Менежер', 'admin', NULL),
+          ('cashier01', $2, 'Б.Болд', 'cashier', 2),
+          ('cashier02', $2, 'Н.Нарaa', 'cashier', 3),
+          ('cashier03', $2, 'Д.Дорж', 'cashier', 4),
+          ('cashier04', $2, 'С.Сарнай', 'cashier', 5),
+          ('cashier05', $2, 'Г.Ганaa', 'cashier', 6),
+          ('warehouse01', $2, 'Агуулахын ажилтан', 'warehouse', 1)
+      `, [adminHash, cashierHash]);
+      res.json({ message: 'Хэрэглэгчид нэмэгдлээ', count: 8 });
+    } else {
+      // Нууц үг шинэчилнэ
+      await pool.query('UPDATE users SET password_hash = $1 WHERE role IN ($2,$3,$4,$5)', 
+        [cashierHash, 'cashier', 'warehouse', 'admin', 'super_admin']);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', 
+        [adminHash, 'admin']);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', 
+        [adminHash, 'manager']);
+      const users = await pool.query('SELECT username, role FROM users ORDER BY id');
+      res.json({ message: 'Нууц үг шинэчлэгдлээ', users: users.rows });
+    }
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── HEALTH CHECK ──
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });

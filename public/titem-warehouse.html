@@ -145,6 +145,25 @@ table.main-table tr:hover td{background:#fafafa}
 <body>
 
 <!-- SIDEBAR -->
+<!-- НЭВТРЭХ ХУУДАС -->
+<div id="wh-login-page" style="display:none;position:fixed;inset:0;background:#fafafa;z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;border:1px solid var(--gray-light);border-radius:10px;padding:40px;width:380px">
+    <div style="font-family:var(--font-head);font-size:26px;font-weight:500;letter-spacing:4px;text-align:center;margin-bottom:6px">Титэм</div>
+    <div style="font-size:11px;color:var(--gray);text-align:center;letter-spacing:2px;text-transform:uppercase;margin-bottom:28px">Агуулахын систем</div>
+    <div id="wh-login-err" style="display:none;background:#fff0ee;border:1px solid #fcc;color:var(--red);font-size:12px;padding:10px 14px;border-radius:6px;margin-bottom:14px"></div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нэвтрэх нэр</label>
+      <input id="wh-username" style="width:100%;border:1px solid var(--gray-mid);border-radius:6px;padding:11px 14px;font-size:14px;font-family:var(--font-body);outline:none" placeholder="warehouse01" value="warehouse01">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нууц үг</label>
+      <input id="wh-password" type="password" style="width:100%;border:1px solid var(--gray-mid);border-radius:6px;padding:11px 14px;font-size:14px;font-family:var(--font-body);outline:none" placeholder="••••••" onkeydown="if(event.key==='Enter')doWarehouseLogin()">
+    </div>
+    <button onclick="doWarehouseLogin()" style="width:100%;background:var(--black);color:white;border:none;padding:13px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Нэвтрэх</button>
+  </div>
+</div>
+
+<div id="wh-main" style="display:flex;min-height:100vh;width:100%">
 <div class="sidebar">
   <div class="sidebar-logo">Титэм</div>
   <div class="sidebar-sub">Агуулахын систем</div>
@@ -176,7 +195,7 @@ table.main-table tr:hover td{background:#fafafa}
     </button>
   </div>
   <div class="sidebar-bottom">
-    <button class="btn-logout">← Гарах</button>
+    <button class="btn-logout" onclick="doWarehouseLogout()">← Гарах</button>
   </div>
 </div>
 
@@ -542,20 +561,52 @@ document.getElementById('receive-date').value=new Date().toISOString().split('T'
 // ── НЭВТРЭХ ──
 async function initWarehouse(){
   try{
-    // Token байвал шууд ачаална
     if(TOKEN){
-      await loadAll();
-      return;
+      // Token хүчинтэй эсэхийг шалгах
+      try{
+        await apiGet('/api/categories');
+        await loadAll();
+        return;
+      }catch(e){
+        // Token хүчингүй — устгаж login хуудас харуулна
+        TOKEN='';
+        localStorage.removeItem('warehouse_token');
+        showLoginPage();
+        return;
+      }
     }
-    // Token байхгүй бол admin token ашиглана
-    const data=await apiPost('/api/auth/login',{username:'warehouse01',password:'1234'});
-    TOKEN=data.token;
-    localStorage.setItem('warehouse_token',TOKEN);
-    currentUser=data.user.full_name||'warehouse01';
-    await loadAll();
+    showLoginPage();
   }catch(e){
     showToast('Системд холбогдоход алдаа гарлаа','error');
     console.error(e);
+  }
+}
+
+function showLoginPage(){
+  document.getElementById('wh-login-page').style.display='flex';
+  document.getElementById('wh-main').style.display='none';
+}
+
+async function doWarehouseLogin(){
+  const username=document.getElementById('wh-username').value.trim();
+  const password=document.getElementById('wh-password').value;
+  const err=document.getElementById('wh-login-err');
+  err.style.display='none';
+  try{
+    const data=await apiPost('/api/auth/login',{username,password});
+    if(!['warehouse','admin','super_admin'].includes(data.user.role)){
+      err.style.display='block';err.textContent='Агуулахын эрх байхгүй байна';return;
+    }
+    TOKEN=data.token;
+    localStorage.setItem('warehouse_token',TOKEN);
+    currentUser=data.user.full_name||username;
+    document.getElementById('wh-login-page').style.display='none';
+    document.getElementById('wh-main').style.display='flex';
+    document.querySelector('.sidebar-user-name').textContent=currentUser;
+    await loadAll();
+  }catch(e){
+    err.style.display='block';
+    err.textContent='Нэвтрэх нэр эсвэл нууц үг буруу байна';
   }
 }
 
@@ -1059,8 +1110,17 @@ function whSelectProduct(sku, type){
   }
 }
 
+function doWarehouseLogout(){
+  if(confirm('Системээс гарах уу?')){
+    TOKEN='';
+    localStorage.removeItem('warehouse_token');
+    location.reload();
+  }
+}
+
 // ── INIT ──
 initWarehouse();
 </script>
+</div><!-- /wh-main -->
 </body>
 </html>

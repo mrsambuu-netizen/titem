@@ -508,25 +508,27 @@ table.main-table tr:hover td{background:#fafafa}
 </div>
 
 <script>
-// ── PRODUCTS DATA ──
-const PRODUCTS=[
-  {id:1,name:'Классик Бүргэд',cat:'Малгай',sku:'TIT-001',price:28000,warehouseStock:23,colors:['Хар','Бор','Хөх','Улаан'],sizes:['S','M','L','XL'],min:10},
-  {id:2,name:'Snapback малгай',cat:'Малгай',sku:'TIT-002',price:25000,warehouseStock:15,colors:['Хар','Цагаан','Улаан'],sizes:['M','L','XL'],min:10},
-  {id:3,name:'Өвлийн малгай',cat:'Малгай',sku:'TIT-003',price:22000,warehouseStock:0,colors:['Хар','Бор'],sizes:['S','M','L'],min:10},
-  {id:4,name:'Зусланы малгай',cat:'Малгай',sku:'TIT-004',price:15000,warehouseStock:0,colors:['Цагаан','Бор'],sizes:['M','L'],min:5},
-  {id:5,name:'Зимийн ороолт',cat:'Ороолт',sku:'TIT-005',price:18000,warehouseStock:12,colors:['Улаан','Хөх','Хар'],sizes:['Нэг хэмжээ'],min:8},
-  {id:6,name:'Флис ороолт',cat:'Ороолт',sku:'TIT-006',price:19000,warehouseStock:0,colors:['Ногоон','Улаан','Хар'],sizes:['Нэг хэмжээ'],min:8},
-  {id:7,name:'Утас бээлий',cat:'Бээлий',sku:'TIT-007',price:14000,warehouseStock:0,colors:['Хар','Цагаан','Улаан'],sizes:['S','M','L'],min:10},
-  {id:8,name:'Арьсан бээлий',cat:'Бээлий',sku:'TIT-008',price:32000,warehouseStock:0,colors:['Бор','Хар'],sizes:['M','L','XL'],min:8},
-  {id:9,name:'Өвлийн хамгаалалт',cat:'Faceshield',sku:'TIT-009',price:10000,warehouseStock:23,colors:['Хар','Ногоон','Улаан'],sizes:['Нэг хэмжээ'],min:10},
-  {id:10,name:'Faceshield Pro',cat:'Faceshield',sku:'TIT-010',price:13000,warehouseStock:0,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ'],min:10},
-  {id:11,name:'Хүзүүний алчуур',cat:'Алчуур',sku:'TIT-011',price:8000,warehouseStock:0,colors:['Хар','Хөх','Улаан','Ногоон'],sizes:['Нэг хэмжээ'],min:8},
-  {id:12,name:'Buff ороолт',cat:'Алчуур',sku:'TIT-012',price:11000,warehouseStock:0,colors:['Хар','Цагаан'],sizes:['Нэг хэмжээ'],min:5},
-];
+// ── API ──
+const API='';
+let TOKEN=localStorage.getItem('warehouse_token')||'';
 
+async function apiGet(url){
+  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+async function apiPost(url,data){
+  const res=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:JSON.stringify(data)});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+
+// ── STATE ──
+let PRODUCTS=[], BRANCHES=[], SUPPLIERS_LIST=[];
 let receiveItems=[], distItems=[], returnItems=[], writeoffItems=[];
 let allHistory=[];
 let todayReceived=0;
+let currentUser='warehouse01';
 
 // ── CLOCK ──
 function tick(){
@@ -535,9 +537,89 @@ function tick(){
     String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
 }
 tick(); setInterval(tick,1000);
-
-// Set today date
 document.getElementById('receive-date').value=new Date().toISOString().split('T')[0];
+
+// ── НЭВТРЭХ ──
+async function initWarehouse(){
+  try{
+    // Token байвал шууд ачаална
+    if(TOKEN){
+      await loadAll();
+      return;
+    }
+    // Token байхгүй бол admin token ашиглана
+    const data=await apiPost('/api/auth/login',{username:'warehouse01',password:'1234'});
+    TOKEN=data.token;
+    localStorage.setItem('warehouse_token',TOKEN);
+    currentUser=data.user.full_name||'warehouse01';
+    await loadAll();
+  }catch(e){
+    showToast('Системд холбогдоход алдаа гарлаа','error');
+    console.error(e);
+  }
+}
+
+async function loadAll(){
+  await Promise.all([loadProducts(), loadBranches(), loadSuppliers()]);
+  updateKPIs();
+}
+
+async function loadProducts(){
+  try{
+    const data=await apiGet('/api/products?limit=100');
+    PRODUCTS=data.map(p=>({
+      id:p.id,
+      name:p.name,
+      sku:p.sku,
+      cat:p.category_name||'',
+      price:p.wholesale_price||p.price,
+      warehouseStock:0,
+      totalStock:parseInt(p.total_stock||0),
+      colors:[],sizes:[],variants:[]
+    }));
+    // Variant татах
+    for(const p of PRODUCTS){
+      try{
+        const d=await apiGet('/api/products/'+p.id);
+        p.colors=[...new Set((d.variants||[]).map(v=>v.color).filter(Boolean))];
+        p.sizes=[...new Set((d.variants||[]).map(v=>v.size).filter(Boolean))];
+        p.variants=d.variants||[];
+      }catch(e){}
+    }
+    updateKPIs();
+  }catch(e){showToast('Бараа татах алдаа','error');}
+}
+
+async function loadBranches(){
+  try{
+    const data=await fetch('/api/branches').then(r=>r.json());
+    BRANCHES=data;
+    // Хуваарилах select шинэчлэх
+    const sel=document.getElementById('dist-branch');
+    if(sel) sel.innerHTML=data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name} — ${b.location}</option>`).join('');
+    const tfFrom=document.getElementById('tf-from');
+    const tfTo=document.getElementById('tf-to');
+    if(tfFrom) tfFrom.innerHTML=`<option value="1">🏭 Агуулах</option>`+data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">🏪 ${b.name}</option>`).join('');
+    if(tfTo) tfTo.innerHTML=data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">🏪 ${b.name}</option>`).join('');
+  }catch(e){}
+}
+
+async function loadSuppliers(){
+  try{
+    const data=await apiGet('/api/suppliers');
+    SUPPLIERS_LIST=data;
+    const sel=document.getElementById('receive-supplier');
+    if(sel) sel.innerHTML=data.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }catch(e){}
+}
+
+function updateKPIs(){
+  const total=PRODUCTS.reduce((s,p)=>s+p.totalStock,0);
+  document.getElementById('kpi-total').textContent=total;
+  document.getElementById('kpi-in').textContent=todayReceived;
+  const low=PRODUCTS.filter(p=>p.totalStock<=5&&p.totalStock>0).length;
+  document.getElementById('kpi-alert')||null;
+}
 
 // ── NAV ──
 function showPanel(id,btn){
@@ -562,7 +644,7 @@ function handleReceiveBarcode(e){
   if(!p){showToast('Бараа олдсонгүй: '+sku,'error');return;}
   const ex=receiveItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
-    receiveItems.push({id:p.id,sku:p.sku,name:p.name,color:p.colors[0],size:p.sizes[0],qty:1,price:p.price});
+    receiveItems.push({id:p.id,sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,price:p.price,variants:p.variants});
   }
   e.target.value='';
   renderReceiveItems();
@@ -575,20 +657,18 @@ function renderReceiveItems(){
   const summary=document.getElementById('receive-summary');
   if(!receiveItems.length){empty.style.display='block';tbody.innerHTML='';summary.style.display='none';return;}
   empty.style.display='none'; summary.style.display='block';
-  const p=PRODUCTS;
-  tbody.innerHTML=receiveItems.map((item,i)=>{
-    const prod=PRODUCTS.find(pr=>pr.sku===item.sku);
-    return`<tr>
+  tbody.innerHTML=receiveItems.map((item,i)=>`
+    <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
       <td><b>${item.name}</b></td>
       <td>
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="receiveItems[${i}].color=this.value">
-          ${prod.colors.map(c=>`<option ${c===item.color?'selected':''}>${c}</option>`).join('')}
+          ${(item.variants?[...new Set(item.variants.map(v=>v.color).filter(Boolean))]:[item.color]).map(c=>`<option ${c===item.color?'selected':''}>${c}</option>`).join('')}
         </select>
       </td>
       <td>
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="receiveItems[${i}].size=this.value">
-          ${prod.sizes.map(s=>`<option ${s===item.size?'selected':''}>${s}</option>`).join('')}
+          ${(item.variants?[...new Set(item.variants.map(v=>v.size).filter(Boolean))]:[item.size]).map(s=>`<option ${s===item.size?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
       <td>
@@ -601,8 +681,7 @@ function renderReceiveItems(){
       <td><input type="number" value="${item.price}" style="width:90px;border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="receiveItems[${i}].price=parseInt(this.value)||0;updateReceiveSummary()"></td>
       <td><b>₮${(item.price*item.qty).toLocaleString()}</b></td>
       <td><button class="remove-btn" onclick="receiveItems.splice(${i},1);renderReceiveItems()">×</button></td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
   updateReceiveSummary();
 }
 
@@ -614,7 +693,7 @@ function updateReceiveSummary(){
   document.getElementById('r-total-price').textContent='₮'+price.toLocaleString();
 }
 
-function confirmReceive(){
+async function confirmReceive(){
   if(!receiveItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const supplier=document.getElementById('receive-supplier');
   const invoice=document.getElementById('receive-invoice').value||'—';
@@ -623,28 +702,33 @@ function confirmReceive(){
   const now=new Date();
   const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
-  // Update warehouse stock
-  receiveItems.forEach(item=>{
-    const p=PRODUCTS.find(pr=>pr.sku===item.sku);
-    if(p) p.warehouseStock+=item.qty;
-  });
+  try{
+    // Агуулахад орлого бүртгэх — stock_movements API
+    for(const item of receiveItems){
+      const variant=item.variants?.find(v=>v.color===item.color&&v.size===item.size);
+      if(variant){
+        await apiPost('/api/transfers',{
+          items:[{variant_id:variant.id,quantity:item.qty}],
+          from_branch_id:1,to_branch_id:1,
+          note:'Орлого: '+invoice
+        }).catch(()=>{});
+      }
+    }
+  }catch(e){}
 
   todayReceived+=qty;
   document.getElementById('kpi-in').textContent=todayReceived;
-
   allHistory.unshift({
-    date:now.toLocaleDateString('mn-MN')+' '+time,
-    type:'receive',
-    product:receiveItems.map(i=>i.name).join(', '),
-    qty,detail:'Нийлүүлэгч: '+supplier.options[supplier.selectedIndex].text+' · '+invoice,
-    user:'warehouse01'
+    date:now.toLocaleDateString('mn-MN')+' '+time,type:'receive',
+    product:receiveItems.map(i=>i.name).join(', '),qty,
+    detail:'Нийлүүлэгч: '+(supplier?.options[supplier.selectedIndex]?.text||'—')+' · '+invoice,
+    user:currentUser
   });
 
   const tbody=document.getElementById('today-receive-list');
   const row=document.createElement('tr');
-  row.innerHTML=`<td>${time}</td><td>${supplier.options[supplier.selectedIndex].text}</td><td>${invoice}</td><td>${receiveItems.map(i=>i.name+' ×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  row.innerHTML=`<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'—'}</td><td>${invoice}</td><td>${receiveItems.map(i=>i.name+'×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
   tbody.prepend(row);
-
   clearReceive();
   showToast('Орлого амжилттай бүртгэгдлээ — '+qty+' ширхэг','success');
 }
@@ -657,10 +741,9 @@ function handleDistBarcode(e){
   const sku=e.target.value.trim();
   const p=findProduct(sku);
   if(!p){showToast('Бараа олдсонгүй','error');return;}
-  if(p.warehouseStock<=0){showToast(p.name+' агуулахад үлдэгдэл байхгүй','error');return;}
   const ex=distItems.find(i=>i.sku===p.sku);
-  if(ex){if(ex.qty<p.warehouseStock)ex.qty++;} else {
-    distItems.push({sku:p.sku,name:p.name,color:p.colors[0],size:p.sizes[0],qty:1,warehouseStock:p.warehouseStock});
+  if(ex){ex.qty++;} else {
+    distItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,totalStock:p.totalStock,variants:p.variants});
   }
   e.target.value='';renderDistItems();
   showToast(p.name+' нэмэгдлээ','success');
@@ -671,22 +754,13 @@ function renderDistItems(){
   const empty=document.getElementById('dist-empty');
   if(!distItems.length){empty.style.display='block';tbody.innerHTML='';return;}
   empty.style.display='none';
-  tbody.innerHTML=distItems.map((item,i)=>{
-    const prod=PRODUCTS.find(p=>p.sku===item.sku);
-    return`<tr>
+  tbody.innerHTML=distItems.map((item,i)=>`
+    <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
       <td><b>${item.name}</b></td>
-      <td>
-        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="distItems[${i}].color=this.value">
-          ${prod.colors.map(c=>`<option>${c}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="distItems[${i}].size=this.value">
-          ${prod.sizes.map(s=>`<option>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td><span style="font-weight:700;color:${item.warehouseStock<=5?'var(--red)':'var(--green)'}">${item.warehouseStock}</span></td>
+      <td>${item.color||'—'}</td>
+      <td>${item.size||'—'}</td>
+      <td><span style="font-weight:700;color:${item.totalStock<=5?'var(--red)':'var(--green)'}">${item.totalStock}</span></td>
       <td>
         <div class="qty-ctrl">
           <button onclick="changeDQty(${i},-1)">−</button>
@@ -695,43 +769,45 @@ function renderDistItems(){
         </div>
       </td>
       <td><button class="remove-btn" onclick="distItems.splice(${i},1);renderDistItems()">×</button></td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 }
 
 function changeDQty(i,d){
-  const item=distItems[i];
-  item.qty=Math.max(1,Math.min(item.warehouseStock,item.qty+d));
+  distItems[i].qty=Math.max(1,distItems[i].qty+d);
   renderDistItems();
 }
 
-function confirmDistribute(){
+async function confirmDistribute(){
   if(!distItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const branch=document.getElementById('dist-branch');
+  const branchId=parseInt(branch.value);
   const branchName=branch.options[branch.selectedIndex].text;
   const note=document.getElementById('dist-note').value||'—';
   const qty=distItems.reduce((s,i)=>s+i.qty,0);
-  const now=new Date();
-  const date=now.toLocaleDateString('mn-MN');
 
-  distItems.forEach(item=>{
-    const p=PRODUCTS.find(pr=>pr.sku===item.sku);
-    if(p) p.warehouseStock-=item.qty;
-  });
+  try{
+    const items=distItems.map(item=>{
+      const variant=item.variants?.find(v=>v.color===item.color&&v.size===item.size);
+      return{variant_id:variant?.id,quantity:item.qty};
+    }).filter(i=>i.variant_id);
+
+    if(items.length){
+      await apiPost('/api/transfers',{items,from_branch_id:1,to_branch_id:branchId,note});
+    }
+  }catch(e){showToast('Хуваарилалтад алдаа: '+e.message,'error');return;}
 
   allHistory.unshift({
-    date,type:'distribute',
-    product:distItems.map(i=>i.name+'×'+i.qty).join(', '),
-    qty,detail:'→ '+branchName+' · '+note,user:'warehouse01'
+    date:new Date().toLocaleDateString('mn-MN'),type:'distribute',
+    product:distItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
+    detail:'→ '+branchName+' · '+note,user:currentUser
   });
-
   const tbody=document.getElementById('dist-history');
   const row=document.createElement('tr');
-  row.innerHTML=`<td>${date}</td><td>${branchName}</td><td>${distItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>warehouse01</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  row.innerHTML=`<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${branchName}</td><td>${distItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${currentUser}</td><td><span class="badge badge-green">Дууссан</span></td>`;
   tbody.prepend(row);
-
   clearDist();
   showToast('Хуваарилалт амжилттай — '+qty+' ширхэг '+branchName+' руу явлаа','success');
+  await loadProducts();
 }
 function clearDist(){distItems=[];renderDistItems();}
 
@@ -739,21 +815,17 @@ function clearDist(){distItems=[];renderDistItems();}
 function renderInventory(){
   const tbody=document.getElementById('inv-table-body');
   tbody.innerHTML=PRODUCTS.map(p=>{
-    const st=p.warehouseStock===0?'out':p.warehouseStock<p.min?'low':'ok';
+    const st=p.totalStock===0?'out':p.totalStock<5?'low':'ok';
     const sc=st==='ok'?'badge-green':st==='low'?'badge-amber':'badge-red';
     const sl=st==='ok'?'Хангалттай':st==='low'?'Дутагдаж байна':'Дууссан';
-    const reorder=Math.max(0,p.min*3-p.warehouseStock);
     return`<tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
-      <td><b>${p.name}</b></td>
-      <td>${p.cat}</td>
-      <td style="font-weight:700;font-size:16px;color:${p.warehouseStock===0?'var(--red)':p.warehouseStock<p.min?'var(--amber)':'var(--black)'}">${p.warehouseStock}</td>
-      <td>${p.warehouseStock}</td>
-      <td>${p.min}</td>
-      <td>${reorder>0?`<span style="color:var(--blue);font-weight:600">${reorder} ш захиална</span>`:'—'}</td>
+      <td><b>${p.name}</b></td><td>${p.cat}</td>
+      <td style="font-weight:700;font-size:16px;color:${p.totalStock===0?'var(--red)':p.totalStock<5?'var(--amber)':'var(--black)'}">${p.totalStock}</td>
+      <td>${p.totalStock}</td><td>5</td>
+      <td>${p.totalStock<5?`<span style="color:var(--blue);font-weight:600">${Math.max(0,15-p.totalStock)} ш захиална</span>`:'—'}</td>
       <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;
-  }).join('');
+    </tr>`;}).join('');
 }
 
 // ── RETURN ──
@@ -770,7 +842,7 @@ function handleReturnBarcode(e){
   if(!p){showToast('Бараа олдсонгүй','error');return;}
   const ex=returnItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
-    returnItems.push({sku:p.sku,name:p.name,color:p.colors[0],size:p.sizes[0],qty:1,condition:'good',resell:true});
+    returnItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,condition:'good',resell:true});
   }
   e.target.value='';renderReturnItems();
   showToast(p.name+' нэмэгдлээ','success');
@@ -784,8 +856,7 @@ function renderReturnItems(){
   tbody.innerHTML=returnItems.map((item,i)=>`
     <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
-      <td><b>${item.name}</b></td>
-      <td>${item.color}</td><td>${item.size}</td>
+      <td><b>${item.name}</b></td><td>${item.color}</td><td>${item.size}</td>
       <td>
         <div class="qty-ctrl">
           <button onclick="returnItems[${i}].qty=Math.max(1,returnItems[${i}].qty-1);renderReturnItems()">−</button>
@@ -814,27 +885,16 @@ function confirmReturn(){
   if(!returnItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const reason=document.getElementById('return-reason').value||'—';
   const qty=returnItems.reduce((s,i)=>s+i.qty,0);
-  const now=new Date();
-
-  returnItems.forEach(item=>{
-    if(item.resell){
-      const p=PRODUCTS.find(pr=>pr.sku===item.sku);
-      if(p) p.warehouseStock+=item.qty;
-    }
-  });
-
   allHistory.unshift({
-    date:now.toLocaleDateString('mn-MN'),type:'return',
-    product:returnItems.map(i=>i.name+'×'+i.qty).join(', '),
-    qty,detail:'Шалтгаан: '+reason,user:'warehouse01'
+    date:new Date().toLocaleDateString('mn-MN'),type:'return',
+    product:returnItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
+    detail:'Шалтгаан: '+reason,user:currentUser
   });
-
   const tbody=document.getElementById('return-history');
   const row=document.createElement('tr');
   const type=document.getElementById('return-type');
-  row.innerHTML=`<td>${now.toLocaleDateString('mn-MN')}</td><td>${type.options[type.selectedIndex].text}</td><td>${returnItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${reason}</td><td><span class="badge badge-green">Тийм</span></td><td><span class="badge badge-green">Дууссан</span></td>`;
+  row.innerHTML=`<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${type.options[type.selectedIndex].text}</td><td>${returnItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${reason}</td><td><span class="badge badge-green">Тийм</span></td><td><span class="badge badge-green">Дууссан</span></td>`;
   tbody.prepend(row);
-
   clearReturn();
   showToast('Буцаалт бүртгэгдлээ — '+qty+' ширхэг','success');
 }
@@ -848,7 +908,7 @@ function handleWriteoffBarcode(e){
   if(!p){showToast('Бараа олдсонгүй','error');return;}
   const ex=writeoffItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
-    writeoffItems.push({sku:p.sku,name:p.name,color:p.colors[0],size:p.sizes[0],qty:1,reason:''});
+    writeoffItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,reason:''});
   }
   e.target.value='';renderWriteoffItems();
   showToast(p.name+' нэмэгдлээ','warn');
@@ -862,8 +922,7 @@ function renderWriteoffItems(){
   tbody.innerHTML=writeoffItems.map((item,i)=>`
     <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
-      <td><b>${item.name}</b></td>
-      <td>${item.color}</td><td>${item.size}</td>
+      <td><b>${item.name}</b></td><td>${item.color}</td><td>${item.size}</td>
       <td>
         <div class="qty-ctrl">
           <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">−</button>
@@ -896,26 +955,17 @@ function confirmWriteoff(){
 
 function doWriteoff(){
   const qty=writeoffItems.reduce((s,i)=>s+i.qty,0);
-  const now=new Date();
-
-  writeoffItems.forEach(item=>{
-    const p=PRODUCTS.find(pr=>pr.sku===item.sku);
-    if(p) p.warehouseStock=Math.max(0,p.warehouseStock-item.qty);
-  });
-
   allHistory.unshift({
-    date:now.toLocaleDateString('mn-MN'),type:'writeoff',
-    product:writeoffItems.map(i=>i.name+'×'+i.qty).join(', '),
-    qty,detail:writeoffItems.map(i=>i.reason).join(', '),user:'warehouse01'
+    date:new Date().toLocaleDateString('mn-MN'),type:'writeoff',
+    product:writeoffItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
+    detail:writeoffItems.map(i=>i.reason).join(', '),user:currentUser
   });
-
   const tbody=document.getElementById('writeoff-history');
   writeoffItems.forEach(item=>{
     const row=document.createElement('tr');
-    row.innerHTML=`<td>${now.toLocaleDateString('mn-MN')}</td><td><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${item.sku}</code></td><td>${item.name}</td><td style="color:var(--red);font-weight:700">${item.qty}</td><td>${item.reason}</td><td>warehouse01</td>`;
+    row.innerHTML=`<td>${new Date().toLocaleDateString('mn-MN')}</td><td><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${item.sku}</code></td><td>${item.name}</td><td style="color:var(--red);font-weight:700">${item.qty}</td><td>${item.reason}</td><td>${currentUser}</td>`;
     tbody.prepend(row);
   });
-
   closeModal('modal-writeoff-confirm');
   clearWriteoff();
   showToast(qty+' ширхэг бараа устгагдлаа','warn');
@@ -940,7 +990,7 @@ function renderAllHistory(filter){
     : '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray)">Одоогоор бичлэг байхгүй байна</td></tr>';
 }
 function filterHistory(f,btn){
-  document.querySelectorAll('#panel-history .btn-secondary').forEach(b=>b.style.background='');
+  document.querySelectorAll('#panel-history .btn-secondary').forEach(b=>{b.style.background='';b.style.color='';});
   btn.style.background='var(--black)';btn.style.color='var(--white)';
   renderAllHistory(f);
 }
@@ -958,6 +1008,9 @@ function showToast(msg,type=''){
   clearTimeout(window._tt);
   window._tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
+
+// ── INIT ──
+initWarehouse();
 </script>
 </body>
 </html>

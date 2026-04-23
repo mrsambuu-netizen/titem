@@ -1009,6 +1009,56 @@ function showToast(msg,type=''){
   window._tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
 
+// ── AUTOCOMPLETE ──
+function whShowSuggestions(query, type){
+  const sugEl = document.getElementById(type+'-suggestions');
+  if(!sugEl) return;
+  if(!query || query.length < 1){sugEl.style.display='none';return;}
+  
+  const q = query.toLowerCase();
+  const filtered = PRODUCTS.filter(p => 
+    p.sku.toLowerCase().includes(q) || 
+    p.name.toLowerCase().includes(q)
+  ).slice(0, 8);
+  
+  if(!filtered.length){sugEl.style.display='none';return;}
+  
+  sugEl.style.display='block';
+  sugEl.innerHTML = filtered.map(p => `
+    <div onclick="whSelectProduct('${p.sku}','${type}')" 
+      style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--gray-light);transition:background .15s"
+      onmouseover="this.style.background='#f8f8f8'" 
+      onmouseout="this.style.background='white'">
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:2px">${p.name}</div>
+        <div style="font-size:11px;color:var(--gray)">${p.sku} · ${p.cat}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:600;color:var(--black)">₮${p.price.toLocaleString()}</div>
+        <div style="font-size:10px;color:${p.totalStock<=5?'var(--red)':'var(--green)'}">${p.totalStock} ширхэг</div>
+      </div>
+    </div>`).join('');
+}
+
+function whHideSuggestions(type){
+  const sugEl = document.getElementById(type+'-suggestions');
+  if(sugEl) sugEl.style.display='none';
+}
+
+function whSelectProduct(sku, type){
+  const inputMap = {receive:'wh-barcode', dist:'wh-dist-barcode', return:'wh-return-barcode'};
+  const input = document.getElementById(inputMap[type]);
+  if(input){
+    input.value = sku;
+    whHideSuggestions(type);
+    // Enter дарсантай адил ажиллуулна
+    const event = {key:'Enter', target:input};
+    if(type==='receive') whHandleBarcode(event);
+    else if(type==='dist') whHandleDistBarcode(event);
+    else if(type==='return') whHandleReturnBarcode(event);
+  }
+}
+
 // ── INIT ──
 initWarehouse();
 </script>

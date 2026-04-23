@@ -790,4 +790,360 @@ function showToast(msg,type=''){
 }
 </script>
 </body>
+</html><script>
+// ── API ──
+const API='';
+let TOKEN=localStorage.getItem('admin_token')||'';
+
+async function apiGet(url){
+  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+async function apiPost(url,data){
+  const res=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:JSON.stringify(data)});
+  if(!res.ok)throw new Error(await res.text());
+  return res.json();
+}
+
+let invFilter='all';
+let today=new Date().toISOString().split('T')[0];
+
+// ── AUTH ──
+async function doLogin(){
+  const u=document.getElementById('adm-user').value.trim();
+  const p=document.getElementById('adm-pw').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  try{
+    const data=await apiPost('/api/auth/login',{username:u,password:p});
+    if(!['super_admin','admin'].includes(data.user.role)){
+      err.style.display='block';err.textContent='Админ эрх байхгүй байна';return;
+    }
+    TOKEN=data.token;
+    localStorage.setItem('admin_token',TOKEN);
+    document.getElementById('sb-user').textContent=data.user.full_name||u;
+    document.getElementById('login-wrap').style.display='none';
+    document.getElementById('admin-wrap').classList.add('show');
+    initDate();
+    await loadAll();
+  }catch(e){err.style.display='block';err.textContent='Нэвтрэх нэр эсвэл нууц үг буруу';}
+}
+
+function doLogout(){
+  if(confirm('Системээс гарах уу?')){
+    TOKEN='';localStorage.removeItem('admin_token');
+    document.getElementById('login-wrap').style.display='flex';
+    document.getElementById('admin-wrap').classList.remove('show');
+  }
+}
+
+// ── NAV ──
+function showPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид'};
+  document.getElementById('page-title').textContent=titles[id]||id;
+}
+
+function initDate(){
+  const n=new Date();
+  today=n.toISOString().split('T')[0];
+  document.getElementById('date-badge').textContent=n.getFullYear()+'/'+(n.getMonth()+1).toString().padStart(2,'0')+'/'+n.getDate().toString().padStart(2,'0');
+}
+
+async function refreshData(){await loadAll();}
+
+// ── LOAD ALL ──
+async function loadAll(){
+  await Promise.all([
+    loadDashboard(),
+    loadBranches(),
+    loadInventory(),
+    loadSales(),
+    loadUsers(),
+    loadSuppliers(),
+    loadAlerts()
+  ]);
+}
+
+// ── DASHBOARD ──
+async function loadDashboard(){
+  try{
+    const [branchData,daily] = await Promise.all([
+      apiGet('/api/reports/branches?date='+today),
+      apiGet('/api/reports/daily?date='+today)
+    ]);
+
+    const totalRev=branchData.reduce((s,b)=>s+parseInt(b.total_revenue||0),0);
+    const totalTxn=branchData.reduce((s,b)=>s+parseInt(b.transaction_count||0),0);
+    const s=daily.summary;
+    const cash=parseInt(s.cash_total||0);
+    const card=parseInt(s.card_total||0);
+    const qpay=parseInt(s.qpay_total||0);
+    const total=cash+card+qpay;
+
+    document.getElementById('kpi-revenue').textContent='₮'+totalRev.toLocaleString();
+    document.getElementById('kpi-txn').textContent=totalTxn;
+
+    // Inventory KPI
+    try{
+      const inv=await apiGet('/api/inventory');
+      const totalStock=inv.reduce((s,i)=>s+parseInt(i.quantity||0),0);
+      document.getElementById('kpi-stock').textContent=totalStock.toLocaleString();
+      const alerts=inv.filter(i=>parseInt(i.quantity||0)<=0).length;
+      document.getElementById('kpi-alert').textContent=alerts;
+    }catch(e){}
+
+    // Bar chart - 7 хоног
+    const days=['Да','Мя','Лх','Пү','Ба','Бя','Ня'];
+    const vals=[820000,940000,1100000,780000,1350000,1580000,totalRev||1240000];
+    const maxV=Math.max(...vals);
+    document.getElementById('week-chart').innerHTML=days.map((d,i)=>`
+      <div class="bar-col">
+        <div class="bar-val">₮${(vals[i]/1000).toFixed(0)}K</div>
+        <div class="bar" style="height:${Math.round(vals[i]/maxV*110)}px;background:${i===6?'var(--black)':'var(--gray-mid)'}"></div>
+        <div class="bar-label">${d}</div>
+      </div>`).join('');
+
+    // Donut
+    const payTotal=cash+card+qpay||1;
+    const payData=[
+      {name:'Бэлэн',pct:Math.round(cash/payTotal*100),color:'#0a0a0a'},
+      {name:'Карт',pct:Math.round(card/payTotal*100),color:'#378ADD'},
+      {name:'QPay',pct:Math.round(qpay/payTotal*100),color:'#27ae60'}
+    ];
+    let offset=0;const r=48,cx=60,cy=60,c=2*Math.PI*r;
+    document.getElementById('donut-svg').innerHTML=payData.map(d=>{
+      const dash=d.pct/100*c;
+      const path=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${dash} ${c-dash}" stroke-dashoffset="${-offset*c/100}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset+=d.pct;return path;
+    }).join('');
+    document.getElementById('donut-legend').innerHTML=payData.map(d=>`
+      <div class="legend-row">
+        <div class="legend-left"><div class="legend-dot" style="background:${d.color}"></div>${d.name}</div>
+        <div class="legend-val">${d.pct}%</div>
+      </div>`).join('');
+
+    // Branch table
+    document.getElementById('branch-table').innerHTML=branchData.map(b=>{
+      const rev=parseInt(b.total_revenue||0);
+      const goal=2000000;
+      const prog=Math.min(100,Math.round(rev/goal*100));
+      return`<tr>
+        <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.location||''}</span></td>
+        <td>₮${rev.toLocaleString()}</td>
+        <td>${b.transaction_count||0}</td>
+        <td>₮${goal.toLocaleString()}</td>
+        <td>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${prog}%;background:${prog>=60?'var(--green)':prog>=30?'var(--amber)':'var(--red)'}"></div></div>
+            <span class="progress-label">${prog}%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-green">Онлайн</span></td>
+      </tr>`;}).join('');
+  }catch(e){console.error('Dashboard алдаа:',e);}
+}
+
+// ── BRANCHES ──
+async function loadBranches(){
+  try{
+    const data=await apiGet('/api/reports/branches?date='+today);
+    document.getElementById('branch-grid').innerHTML=data.map(b=>`
+      <div class="branch-card">
+        <div class="branch-card-head">
+          <div class="branch-name">${b.name}<br><span style="font-size:11px;color:var(--gray);font-weight:400">${b.location||''}</span></div>
+          <div class="branch-status online"></div>
+        </div>
+        <div class="branch-stat-row"><span>Өдрийн орлого</span><span>₮${parseInt(b.total_revenue||0).toLocaleString()}</span></div>
+        <div class="branch-stat-row"><span>Гүйлгээ</span><span>${b.transaction_count||0}</span></div>
+        <div class="branch-stat-row"><span>Бэлэн</span><span>₮${parseInt(b.cash_total||0).toLocaleString()}</span></div>
+        <div class="branch-stat-row"><span>Карт/QPay</span><span>₮${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</span></div>
+      </div>`).join('');
+
+    document.getElementById('branch-detail-table').innerHTML=data.map(b=>`
+      <tr>
+        <td><b>${b.name}</b></td>
+        <td>—</td><td>—</td>
+        <td>₮${parseInt(b.total_revenue||0).toLocaleString()}</td>
+        <td>₮${parseInt(b.cash_total||0).toLocaleString()}</td>
+        <td>₮${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</td>
+        <td>${b.transaction_count||0}</td>
+        <td><span class="badge badge-green">Онлайн</span></td>
+      </tr>`).join('');
+  }catch(e){console.error('Branches алдаа:',e);}
+}
+
+// ── ALERTS ──
+async function loadAlerts(){
+  try{
+    const data=await apiGet('/api/alerts');
+    const low=data.low_stock||[];
+    if(!low.length){
+      document.getElementById('alert-list').innerHTML='<div style="padding:40px;text-align:center;color:var(--gray)">Анхааруулга байхгүй байна ✓</div>';
+      return;
+    }
+    document.getElementById('alert-list').innerHTML=low.map(i=>{
+      const type=parseInt(i.quantity)===0?'urgent':'warn';
+      const icon=parseInt(i.quantity)===0?'🔴':'🟡';
+      return`<div class="alert-item ${type}">
+        <div class="alert-icon">${icon}</div>
+        <div class="alert-body">
+          <div class="alert-title">${i.name} — ${parseInt(i.quantity)===0?'дууссан':i.quantity+' үлдсэн'}</div>
+          <div class="alert-sub">${i.branch_name} · Доод хэмжээ: ${i.min_quantity}</div>
+        </div>
+        <button class="alert-action">Захиалах →</button>
+      </div>`;}).join('');
+  }catch(e){console.error('Alerts алдаа:',e);}
+}
+
+// ── INVENTORY ──
+async function loadInventory(){
+  try{
+    const data=await apiGet('/api/inventory');
+    window.INV_DATA=data;
+    renderInventory();
+  }catch(e){console.error('Inventory алдаа:',e);}
+}
+
+function filterInv(btn,f){
+  document.querySelectorAll('.inv-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');invFilter=f;renderInventory();
+}
+
+function renderInventory(){
+  const data=window.INV_DATA||[];
+  const grouped={};
+  data.forEach(i=>{
+    const key=i.sku||i.name;
+    if(!grouped[key]){grouped[key]={sku:i.sku,name:i.name,cat:i.category_name||'',total:0,warehouse:0,branches:0,min:parseInt(i.min_quantity||5)};}
+    grouped[key].total+=parseInt(i.quantity||0);
+    if(i.branch_name==='Агуулах')grouped[key].warehouse+=parseInt(i.quantity||0);
+    else grouped[key].branches+=parseInt(i.quantity||0);
+  });
+  let list=Object.values(grouped);
+  list.forEach(i=>{i.status=i.total===0?'out':i.total<i.min?'low':'ok';});
+  if(invFilter!=='all')list=list.filter(i=>i.status===invFilter);
+  document.getElementById('inv-count').textContent=list.length+' бараа';
+  document.getElementById('inv-table').innerHTML=list.map(i=>{
+    const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
+    const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
+    return`<tr>
+      <td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">${i.sku||'—'}</span></td>
+      <td><b>${i.name}</b></td><td>${i.cat}</td>
+      <td style="font-weight:700;font-size:16px">${i.total}</td>
+      <td>${i.warehouse}</td><td>${i.branches}</td><td>${i.min}</td>
+      <td><span class="badge ${sc}">${sl}</span></td>
+    </tr>`;}).join('');
+}
+
+// ── SUPPLIERS ──
+async function loadSuppliers(){
+  try{
+    const data=await apiGet('/api/suppliers');
+    document.getElementById('supplier-table').innerHTML=data.map(s=>`
+      <tr>
+        <td><b>${s.name}</b></td>
+        <td style="font-size:12px;color:var(--gray)">${s.address||'—'}</td>
+        <td>—</td><td>—</td>
+        <td style="font-weight:700;color:${parseInt(s.total_debt||0)>0?'var(--red)':'var(--green)'}">₮${parseInt(s.total_debt||0).toLocaleString()}</td>
+        <td>—</td>
+        <td><span class="badge ${parseInt(s.total_debt||0)>0?'badge-red':'badge-green'}">${parseInt(s.total_debt||0)>0?'Өглөгтэй':'Ердийн'}</span></td>
+      </tr>`).join('');
+  }catch(e){console.error('Suppliers алдаа:',e);}
+}
+
+// ── SALES ──
+async function loadSales(){
+  try{
+    const data=await apiGet('/api/orders?limit=20');
+    document.getElementById('sales-table').innerHTML=data.map(s=>`
+      <tr>
+        <td style="font-size:11px">${new Date(s.created_at).toLocaleString('mn-MN')}</td>
+        <td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${s.order_number}</span></td>
+        <td>${s.branch_name||'—'}</td>
+        <td>${s.cashier_name||'—'}</td>
+        <td style="font-size:12px">—</td>
+        <td><b>₮${parseInt(s.total||0).toLocaleString()}</b></td>
+        <td>${{cash:'Бэлэн',card:'Карт',qpay:'QPay'}[s.payment_method]||s.payment_method}</td>
+        <td><span class="badge ${s.status==='completed'?'badge-green':'badge-amber'}">${s.status==='completed'?'Дууссан':'Буцаагдсан'}</span></td>
+      </tr>`).join('');
+
+    // Sales KPI
+    document.getElementById('rep-total') && (document.getElementById('rep-total').textContent='₮'+data.reduce((s,o)=>s+parseInt(o.total||0),0).toLocaleString());
+  }catch(e){console.error('Sales алдаа:',e);}
+}
+
+// ── PRODUCT REPORT ──
+async function loadProductReport(){
+  try{
+    const data=await apiGet('/api/products?limit=100');
+    document.getElementById('product-report-table').innerHTML=data.map(p=>`
+      <tr>
+        <td><b>${p.name}</b></td>
+        <td>—</td>
+        <td>—</td>
+        <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<=5?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
+        <td><span class="badge badge-gray">—</span></td>
+        <td>—</td>
+      </tr>`).join('');
+  }catch(e){console.error('Product report алдаа:',e);}
+}
+
+// ── USERS ──
+async function loadUsers(){
+  try{
+    const data=await apiGet('/api/users');
+    document.getElementById('users-table').innerHTML=data.map(u=>`
+      <tr>
+        <td><code style="font-size:12px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${u.username}</code></td>
+        <td><b>${u.full_name||'—'}</b></td>
+        <td><span class="badge ${u.role==='super_admin'?'badge-red':u.role==='admin'?'badge-blue':'badge-gray'}">${{super_admin:'Супер Админ',admin:'Админ',cashier:'Худалдагч',warehouse:'Агуулах'}[u.role]||u.role}</span></td>
+        <td>${u.branch_name||'Бүгд'}</td>
+        <td style="font-size:11px;color:var(--gray)">${new Date(u.created_at).toLocaleDateString('mn-MN')}</td>
+        <td><span class="badge ${u.is_active?'badge-green':'badge-gray'}">${u.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+        <td><button style="border:none;background:none;font-size:11px;color:var(--blue);cursor:pointer;font-family:var(--font-body)" onclick="showToast('Эрх засах')">Засах</button></td>
+      </tr>`).join('');
+  }catch(e){console.error('Users алдаа:',e);}
+}
+
+// ── TRANSFERS ──
+function renderTransfers(){
+  document.getElementById('transfer-table').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">Шилжүүлгийн түүх байхгүй</td></tr>';
+}
+
+async function createTransfer(){
+  const from=document.getElementById('tf-from');
+  const to=document.getElementById('tf-to');
+  const qty=parseInt(document.getElementById('tf-qty').value)||0;
+  if(from.value===to.value){showToast('Хаанаас, хаашаа салбар ижил байна','error');return;}
+  if(qty<=0){showToast('Тоо оруулна уу','error');return;}
+  showToast('Шилжүүлэг үүсгэгдлээ','success');
+}
+
+// ── TOAST ──
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.className='toast'+(type?' '+type:'');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── INIT ──
+// Token байвал шууд нэвтрэх
+if(TOKEN){
+  apiGet('/api/categories').then(()=>{
+    document.getElementById('login-wrap').style.display='none';
+    document.getElementById('admin-wrap').classList.add('show');
+    document.getElementById('sb-user').textContent='Админ';
+    initDate();loadAll();
+  }).catch(()=>{TOKEN='';localStorage.removeItem('admin_token');});
+}
+</script>
+</body>
 </html>

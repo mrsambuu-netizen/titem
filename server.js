@@ -368,23 +368,27 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { category, search, branch_id } = req.query;
-    let query = `
+    const params = [];
+    let conditions = ['p.is_active = true'];
+    let paramIdx = 1;
+    
+    if (category) { conditions.push(`c.slug = $${paramIdx++}`); params.push(category); }
+    if (search) { conditions.push(`(p.name ILIKE $${paramIdx++} OR p.sku ILIKE $${paramIdx++})`); params.push(`%${search}%`); params.push(`%${search}%`); paramIdx--; }
+    
+    const branchJoin = branch_id 
+      ? `LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = ${parseInt(branch_id)}`
+      : `LEFT JOIN inventory i ON i.variant_id = pv.id`;
+    
+    const query = `
       SELECT p.*, c.name as category_name,
         COALESCE(SUM(i.quantity), 0) as total_stock
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_variants pv ON pv.product_id = p.id
-      LEFT JOIN inventory i ON i.variant_id = pv.id
-        ${branch_id ? 'AND i.branch_id = $3' : ''}
-      WHERE p.is_active = true
-      ${category ? 'AND c.slug = $1' : ''}
-      ${search ? `AND (p.name ILIKE $${category ? 2 : 1} OR p.sku ILIKE $${category ? 2 : 1})` : ''}
-      GROUP BY p.id, c.name ORDER BY p.created_at DESC
+      ${branchJoin}
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY p.id, c.name ORDER BY p.name ASC
     `;
-    const params = [];
-    if (category) params.push(category);
-    if (search) params.push(`%${search}%`);
-    if (branch_id) params.push(branch_id);
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
@@ -735,7 +739,7 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // ── САЛБАРУУД ──
-app.get('/api/branches', authMiddleware(), async (req, res) => {
+app.get('/api/branches', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM branches ORDER BY id');
     res.json(result.rows);

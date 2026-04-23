@@ -460,7 +460,7 @@ tr:hover td{background:#fafafa}
           <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">📷</span>
             <div style="flex:1">
-              <input id="wh-barcode" class="f-input" placeholder="Баркод уншуулах эсвэл SKU бичих (TIT-001)..." onkeydown="whHandleBarcode(event)" style="width:100%">
+              <input id="wh-barcode" class="f-input" placeholder="📡 Баркод уншигч бэлэн — уншуулна уу..." onkeydown="whHandleBarcode(event)" onfocus="this.style.borderColor='var(--green)';this.style.boxShadow='0 0 0 3px rgba(39,174,96,0.15)'" onblur="this.style.borderColor='';this.style.boxShadow=''" style="width:100%">
               <div style="font-size:11px;color:var(--gray);margin-top:4px">Enter дарж нэмнэ</div>
             </div>
           </div>
@@ -510,7 +510,7 @@ tr:hover td{background:#fafafa}
           <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">📷</span>
             <div style="flex:1">
-              <input id="wh-dist-barcode" class="f-input" placeholder="Баркод уншуулах эсвэл SKU бичих..." onkeydown="whHandleDistBarcode(event)" style="width:100%">
+              <input id="wh-dist-barcode" class="f-input" placeholder="📡 Баркод уншигч бэлэн — уншуулна уу..." onkeydown="whHandleDistBarcode(event)" onfocus="this.style.borderColor='var(--green)';this.style.boxShadow='0 0 0 3px rgba(39,174,96,0.15)'" onblur="this.style.borderColor='';this.style.boxShadow=''" style="width:100%">
             </div>
           </div>
           <div class="form-grid g2" style="margin-bottom:16px">
@@ -569,7 +569,7 @@ tr:hover td{background:#fafafa}
           <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">📷</span>
             <div style="flex:1">
-              <input id="wh-return-barcode" class="f-input" placeholder="Буцааж байгаа барааны баркод..." onkeydown="whHandleReturnBarcode(event)" style="width:100%">
+              <input id="wh-return-barcode" class="f-input" placeholder="📡 Баркод уншигч бэлэн — уншуулна уу..." onkeydown="whHandleReturnBarcode(event)" onfocus="this.style.borderColor='var(--green)';this.style.boxShadow='0 0 0 3px rgba(39,174,96,0.15)'" onblur="this.style.borderColor='';this.style.boxShadow=''" style="width:100%">
             </div>
           </div>
           <table class="main-table" style="margin-bottom:12px">
@@ -1244,7 +1244,8 @@ async function loadUsers(){
   try{
     const [data, branches] = await Promise.all([apiGet('/api/users'), fetch('/api/branches').then(r=>r.json())]);
     window.BRANCHES_LIST = branches;
-    document.getElementById('users-count').textContent = data.length+' хэрэглэгч';
+    const ucEl = document.getElementById('users-count');
+    if(ucEl) ucEl.textContent = data.length+' хэрэглэгч';
 
     // Branch select шинэчлэх
     const brSel = document.getElementById('usr-branch');

@@ -220,6 +220,9 @@ tr:hover td{background:#fafafa}
       <button class="nav-item" onclick="showPanel('users',this)">
         <span class="nav-item-icon">👥</span>Хэрэглэгчид
       </button>
+      <button class="nav-item" onclick="showPanel('manage-products',this)">
+        <span class="nav-item-icon">➕</span>Бараа удирдлага
+      </button>
     </div>
     <div class="sidebar-bottom">
       <button class="btn-logout" onclick="doLogout()">Гарах</button>
@@ -402,6 +405,25 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+      <!-- БАРАА УДИРДЛАГА -->
+      <div class="panel" id="panel-manage-products">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <h2 style="font-family:var(--font-head);font-size:28px;font-weight:300">Бараа <em style="font-style:italic">удирдлага</em></h2>
+          <button onclick="openAddProduct()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);display:flex;align-items:center;gap:8px">
+            + Шинэ бараа нэмэх
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-title">Бүх бараа <span class="card-title-right" id="mp-count"></span></div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Зураг</th><th>Нэр</th><th>SKU</th><th>Ангилал</th><th>Үнэ</th><th>Үлдэгдэл</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
+              <tbody id="mp-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- БОРЛУУЛАЛТ ТАЙЛАН -->
       <div class="panel" id="panel-sales">
         <div class="kpi-grid" style="margin-bottom:24px">
@@ -451,266 +473,86 @@ tr:hover td{background:#fafafa}
   </div>
 </div>
 
+<!-- БАРАА НЭМЭХ MODAL -->
+<div class="modal-overlay" id="modal-add-product" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:300" id="modal-product-title">Шинэ бараа нэмэх</div>
+      <button onclick="closeAddProduct()" style="border:none;background:none;font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+
+    <input type="hidden" id="edit-product-id">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Бараа нэр *</label>
+        <input id="mp-name" class="f-input" placeholder="Классик Бүргэд">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">SKU *</label>
+        <input id="mp-sku" class="f-input" placeholder="TIT-013">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Ангилал *</label>
+        <select id="mp-cat" class="f-input" style="cursor:pointer">
+          <option value="1">Малгай</option>
+          <option value="2">Ороолт</option>
+          <option value="3">Бээлий</option>
+          <option value="4">Faceshield</option>
+          <option value="5">Алчуур</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Жижиглэн үнэ (₮) *</label>
+        <input id="mp-price" class="f-input" type="number" placeholder="45000">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Бөөний үнэ (₮)</label>
+        <input id="mp-wholesale" class="f-input" type="number" placeholder="28000">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Хямдрал үнэ (₮)</label>
+        <input id="mp-discount" class="f-input" type="number" placeholder="40000">
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Тайлбар</label>
+      <textarea id="mp-desc" class="f-input" style="resize:vertical;min-height:60px" placeholder="Бараа тайлбар..."></textarea>
+    </div>
+
+    <div id="variant-section" style="margin-bottom:14px">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Өнгө (таслалаар тусгаарлана)</div>
+      <input id="mp-colors" class="f-input" placeholder="Хар, Цагаан, Улаан, Хөх" style="margin-bottom:10px">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Хэмжээ (таслалаар тусгаарлана)</div>
+      <input id="mp-sizes" class="f-input" placeholder="S, M, L, XL">
+    </div>
+
+    <!-- Зураг оруулах -->
+    <div style="margin-bottom:20px">
+      <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:8px">Зураг оруулах</label>
+      <div onclick="document.getElementById('mp-file').click()" style="border:2px dashed var(--gray-mid);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--black)'" onmouseout="this.style.borderColor='var(--gray-mid)'">
+        <div style="font-size:32px;margin-bottom:8px">📸</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px">Зураг сонгох</div>
+        <div style="font-size:11px;color:var(--gray)">PNG, JPG, WEBP · Хамгийн ихдээ 5 зураг</div>
+      </div>
+      <input type="file" id="mp-file" accept="image/*" multiple style="display:none" onchange="handleImageUpload(this)">
+      <div id="mp-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button onclick="closeAddProduct()" style="flex:1;border:1px solid var(--gray-mid);background:var(--white);padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Болих</button>
+      <button onclick="saveProduct()" style="flex:2;background:var(--black);color:var(--white);border:none;padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)" id="save-product-btn">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
 
-<script>
-// ── DATA ──
 
-let invFilter='all';
-
-// ── AUTH ──
-function doLogin(){
-  const u=document.getElementById('adm-user').value.trim();
-  const p=document.getElementById('adm-pw').value;
-  const err=document.getElementById('login-err');
-  if(u==='admin'&&p==='admin123'){
-    err.style.display='none';
-    document.getElementById('sb-user').textContent=u;
-    document.getElementById('login-wrap').style.display='none';
-    document.getElementById('admin-wrap').classList.add('show');
-    initDate();renderAll();
-  } else {err.style.display='block'}
-}
-function doLogout(){
-  if(confirm('Системээс гарах уу?')){
-    document.getElementById('login-wrap').style.display='flex';
-    document.getElementById('admin-wrap').classList.remove('show');
-  }
-}
-
-// ── NAV ──
-function showPanel(id,btn){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид'};
-  document.getElementById('page-title').textContent=titles[id]||id;
-}
-
-function initDate(){
-  const n=new Date();
-  document.getElementById('date-badge').textContent=n.getFullYear()+'/'+(n.getMonth()+1).toString().padStart(2,'0')+'/'+n.getDate().toString().padStart(2,'0');
-}
-function refreshData(){renderAll()}
-
-// ── RENDER ALL ──
-function renderAll(){
-  renderDashboard();renderBranches();renderAlerts();
-  renderInventory();renderTransfers();renderSuppliers();
-  renderSales();renderProductReport();renderUsers();
-}
-
-// DASHBOARD
-function renderDashboard(){
-  const total=BRANCHES_DATA.reduce((s,b)=>s+b.revenue,0);
-  const txn=BRANCHES_DATA.reduce((s,b)=>s+b.txn,0);
-  const stock=INVENTORY.reduce((s,i)=>s+i.total,0);
-  document.getElementById('kpi-revenue').textContent='₮'+total.toLocaleString();
-  document.getElementById('kpi-txn').textContent=txn;
-  document.getElementById('kpi-stock').textContent=stock;
-  document.getElementById('kpi-alert').textContent=ALERTS.filter(a=>a.type!=='info').length;
-
-  // Bar chart
-  const maxV=Math.max(...WEEK_DATA.map(d=>d.val));
-  document.getElementById('week-chart').innerHTML=WEEK_DATA.map(d=>`
-    <div class="bar-col">
-      <div class="bar-val">₮${(d.val/1000).toFixed(0)}K</div>
-      <div class="bar" style="height:${Math.round(d.val/maxV*110)}px;background:${d.day==='Ня'?'var(--black)':'var(--gray-mid)'}"></div>
-      <div class="bar-label">${d.day}</div>
-    </div>`).join('');
-
-  // Donut
-  let offset=0;const r=48,cx=60,cy=60,c=2*Math.PI*r;
-  const paths=PAY_DATA.map(d=>{
-    const dash=d.pct/100*c;
-    const path=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${dash} ${c-dash}" stroke-dashoffset="${-offset*c/100}" transform="rotate(-90 ${cx} ${cy})"/>`;
-    offset+=d.pct;return path;
-  });
-  document.getElementById('donut-svg').innerHTML=paths.join('');
-  document.getElementById('donut-legend').innerHTML=PAY_DATA.map(d=>`
-    <div class="legend-row">
-      <div class="legend-left"><div class="legend-dot" style="background:${d.color}"></div>${d.name}</div>
-      <div class="legend-val">${d.pct}%</div>
-    </div>`).join('');
-
-  // Branch table
-  document.getElementById('branch-table').innerHTML=BRANCHES_DATA.map(b=>`
-    <tr>
-      <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.loc}</span></td>
-      <td>₮${b.revenue.toLocaleString()}</td>
-      <td>${b.txn}</td>
-      <td>₮${b.goal.toLocaleString()}</td>
-      <td>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${b.progress}%;background:${b.progress>=60?'var(--green)':b.progress>=30?'var(--amber)':'var(--red)'}"></div></div>
-          <span class="progress-label">${b.progress}%</span>
-        </div>
-      </td>
-      <td><span class="badge ${b.online?'badge-green':'badge-gray'}">${b.online?'Онлайн':'Офлайн'}</span></td>
-    </tr>`).join('');
-}
-
-// BRANCHES
-function renderBranches(){
-  document.getElementById('branch-grid').innerHTML=BRANCHES_DATA.map(b=>`
-    <div class="branch-card">
-      <div class="branch-card-head">
-        <div class="branch-name">${b.name}<br><span style="font-size:11px;color:var(--gray);font-weight:400">${b.loc}</span></div>
-        <div class="branch-status ${b.online?'online':'offline'}"></div>
-      </div>
-      <div class="branch-stat-row"><span>Өдрийн орлого</span><span>₮${b.revenue.toLocaleString()}</span></div>
-      <div class="branch-stat-row"><span>Гүйлгээ</span><span>${b.txn}</span></div>
-      <div class="branch-stat-row"><span>Бэлэн</span><span>₮${b.cash.toLocaleString()}</span></div>
-      <div class="branch-stat-row"><span>Карт/QPay</span><span>₮${b.digital.toLocaleString()}</span></div>
-      <div class="branch-stat-row"><span>Худалдагч</span><span>${b.cashier}</span></div>
-      <div class="branch-stat-row"><span>Зорилго</span><span>${b.progress}%</span></div>
-    </div>`).join('');
-
-  document.getElementById('branch-detail-table').innerHTML=BRANCHES_DATA.map(b=>`
-    <tr>
-      <td><b>${b.name}</b></td>
-      <td>${b.cashier}</td>
-      <td>${b.open}</td>
-      <td>₮${b.revenue.toLocaleString()}</td>
-      <td>₮${b.cash.toLocaleString()}</td>
-      <td>₮${b.digital.toLocaleString()}</td>
-      <td>${b.txn}</td>
-      <td><span class="badge ${b.online?'badge-green':'badge-gray'}">${b.online?'Онлайн':'Офлайн'}</span></td>
-    </tr>`).join('');
-}
-
-// ALERTS
-function renderAlerts(){
-  document.getElementById('alert-list').innerHTML=ALERTS.map(a=>`
-    <div class="alert-item ${a.type}">
-      <div class="alert-icon">${a.icon}</div>
-      <div class="alert-body">
-        <div class="alert-title">${a.title}</div>
-        <div class="alert-sub">${a.sub}</div>
-      </div>
-      <button class="alert-action" onclick="showToast('${a.action} — удахгүй нэмэгдэнэ')">${a.action} →</button>
-    </div>`).join('');
-}
-
-// INVENTORY
-function filterInv(btn,f){
-  document.querySelectorAll('.inv-filter').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');invFilter=f;renderInventory();
-}
-function renderInventory(){
-  const list=INVENTORY.filter(i=>invFilter==='all'||i.status===invFilter);
-  document.getElementById('inv-count').textContent=list.length+' бараа';
-  document.getElementById('inv-table').innerHTML=list.map(i=>{
-    const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
-    const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
-    return`<tr>
-      <td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">${i.sku}</span></td>
-      <td><b>${i.name}</b></td>
-      <td>${i.cat}</td>
-      <td style="font-weight:700;font-size:16px">${i.total}</td>
-      <td>${i.warehouse}</td>
-      <td>${i.branches}</td>
-      <td>${i.min}</td>
-      <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;}).join('');
-}
-
-// TRANSFERS
-function renderTransfers(){
-  document.getElementById('transfer-table').innerHTML=TRANSFERS.map(t=>`
-    <tr>
-      <td>${t.date}</td>
-      <td>${t.product}</td>
-      <td><b>${t.qty}</b></td>
-      <td>${t.from}</td>
-      <td>${t.to}</td>
-      <td><span class="badge ${t.status==='done'?'badge-green':'badge-amber'}">${t.status==='done'?'Дууссан':'Хүлээгдэж байна'}</span></td>
-      <td>${t.user}</td>
-    </tr>`).join('');
-}
-function createTransfer(){
-  const from=document.getElementById('tf-from');
-  const to=document.getElementById('tf-to');
-  const prod=document.getElementById('tf-product');
-  const qty=document.getElementById('tf-qty').value;
-  if(from.value===to.value){showToast('Хаанаас, хаашаа салбар ижил байна','error');return;}
-  const fromName=from.options[from.selectedIndex].text.replace(/[🏭🏪]/,'').trim();
-  const toName=to.options[to.selectedIndex].text.replace('🏪','').trim();
-  TRANSFERS.unshift({date:new Date().toLocaleDateString('mn-MN'),product:prod.value.split('(')[0].trim(),qty:parseInt(qty),from:fromName,to:toName,status:'pending',user:'admin'});
-  renderTransfers();
-  showToast('Шилжүүлэг амжилттай үүсгэгдлээ','success');
-}
-
-// SUPPLIERS
-function renderSuppliers(){
-  document.getElementById('supplier-table').innerHTML=SUPPLIERS.map(s=>`
-    <tr>
-      <td><b>${s.name}</b></td>
-      <td style="font-size:12px;color:var(--gray)">${s.products}</td>
-      <td>₮${s.total.toLocaleString()}</td>
-      <td>₮${s.paid.toLocaleString()}</td>
-      <td style="font-weight:700;color:${s.debt>0?'var(--red)':'var(--green)'}">₮${s.debt.toLocaleString()}</td>
-      <td>${s.lastDate}</td>
-      <td><span class="badge ${s.status==='ok'?'badge-green':'badge-red'}">${s.status==='ok'?'Ердийн':'Хугацаа хэтэрсэн'}</span></td>
-    </tr>`).join('');
-}
-
-// SALES
-function renderSales(){
-  document.getElementById('sales-table').innerHTML=SALES_HISTORY.map(s=>`
-    <tr>
-      <td style="font-size:11px">${s.date}</td>
-      <td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${s.id}</span></td>
-      <td>${s.branch}</td>
-      <td>${s.cashier}</td>
-      <td style="font-size:12px">${s.items}</td>
-      <td><b>₮${s.amount.toLocaleString()}</b></td>
-      <td>${s.pay}</td>
-      <td><span class="badge ${s.status==='done'?'badge-green':'badge-amber'}">${s.status==='done'?'Дууссан':'Буцаагдсан'}</span></td>
-    </tr>`).join('');
-}
-
-// PRODUCT REPORT
-function renderProductReport(){
-  document.getElementById('product-report-table').innerHTML=PRODUCT_REPORT.map(p=>`
-    <tr>
-      <td><b>${p.name}</b></td>
-      <td>${p.sold}</td>
-      <td>₮${p.revenue.toLocaleString()}</td>
-      <td style="font-weight:700;color:${p.stock===0?'var(--red)':p.stock<=5?'var(--amber)':'var(--black)'}">${p.stock}</td>
-      <td><span class="badge ${p.speed==='high'?'badge-green':p.speed==='medium'?'badge-blue':'badge-red'}">${p.speed==='high'?'Их зарагдана':p.speed==='medium'?'Дундаж':'Удаан'}</span></td>
-      <td>${'★'.repeat(p.speed==='high'?5:p.speed==='medium'?3:1)}${'☆'.repeat(p.speed==='high'?0:p.speed==='medium'?2:4)}</td>
-    </tr>`).join('');
-}
-
-// USERS
-function renderUsers(){
-  document.getElementById('users-table').innerHTML=USERS_DATA.map(u=>`
-    <tr>
-      <td><code style="font-size:12px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${u.username}</code></td>
-      <td><b>${u.name}</b></td>
-      <td><span class="badge ${u.role==='Super Admin'?'badge-red':u.role==='Админ'?'badge-blue':'badge-gray'}">${u.role}</span></td>
-      <td>${u.branch}</td>
-      <td style="font-size:11px;color:var(--gray)">${u.last}</td>
-      <td><span class="badge ${u.active?'badge-green':'badge-gray'}">${u.active?'Идэвхтэй':'Идэвхгүй'}</span></td>
-      <td><button style="border:none;background:none;font-size:11px;color:var(--blue);cursor:pointer;font-family:var(--font-body)" onclick="showToast('Эрх засах — удахгүй')">Засах</button></td>
-    </tr>`).join('');
-}
-
-// TOAST
-function showToast(msg,type=''){
-  const t=document.getElementById('toast');
-  t.className='toast'+(type?' '+type:'');
-  document.getElementById('toast-msg').textContent=msg;
-  t.classList.add('show');
-  clearTimeout(window._tt);
-  window._tt=setTimeout(()=>t.classList.remove('show'),2800);
-}
-</script>
 </body>
 </html><script>
 // ── API ──
@@ -765,7 +607,8 @@ function showPanel(id,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид'};
+  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага'};
+  if(id==='manage-products') loadManageProducts();
   document.getElementById('page-title').textContent=titles[id]||id;
 }
 
@@ -1053,6 +896,184 @@ function showToast(msg,type=''){
   t.classList.add('show');
   clearTimeout(window._tt);
   window._tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── БАРАА УДИРДЛАГА ──
+let uploadedImages = [];
+let editingProductId = null;
+
+async function loadManageProducts(){
+  try{
+    const data = await apiGet('/api/products?limit=200');
+    document.getElementById('mp-count').textContent = data.length + ' бараа';
+    document.getElementById('mp-table').innerHTML = data.map(p => `
+      <tr>
+        <td>
+          ${p.images && p.images.length > 0
+            ? `<img src="${p.images[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-light)">`
+            : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`
+          }
+        </td>
+        <td><b>${p.name}</b></td>
+        <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
+        <td>${p.category_name||'—'}</td>
+        <td>₮${parseInt(p.price||0).toLocaleString()}</td>
+        <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
+        <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+        <td style="display:flex;gap:6px">
+          <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
+          <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+        </td>
+      </tr>`).join('');
+  }catch(e){console.error('Бараа удирдлага:', e);}
+}
+
+function openAddProduct(){
+  editingProductId = null;
+  uploadedImages = [];
+  document.getElementById('modal-product-title').textContent = 'Шинэ бараа нэмэх';
+  document.getElementById('edit-product-id').value = '';
+  document.getElementById('mp-name').value = '';
+  document.getElementById('mp-sku').value = '';
+  document.getElementById('mp-price').value = '';
+  document.getElementById('mp-wholesale').value = '';
+  document.getElementById('mp-discount').value = '';
+  document.getElementById('mp-desc').value = '';
+  document.getElementById('mp-colors').value = 'Хар, Цагаан';
+  document.getElementById('mp-sizes').value = 'S, M, L, XL';
+  document.getElementById('mp-preview').innerHTML = '';
+  document.getElementById('variant-section').style.display = 'block';
+  document.getElementById('modal-add-product').style.display = 'flex';
+}
+
+async function editProduct(id){
+  try{
+    const p = await apiGet('/api/products/' + id);
+    editingProductId = id;
+    uploadedImages = p.images || [];
+    document.getElementById('modal-product-title').textContent = 'Бараа засах';
+    document.getElementById('edit-product-id').value = id;
+    document.getElementById('mp-name').value = p.name || '';
+    document.getElementById('mp-sku').value = p.sku || '';
+    document.getElementById('mp-price').value = p.price || '';
+    document.getElementById('mp-wholesale').value = p.wholesale_price || '';
+    document.getElementById('mp-discount').value = p.discount_price || '';
+    document.getElementById('mp-desc').value = p.description || '';
+    document.getElementById('mp-colors').value = [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))].join(', ');
+    document.getElementById('mp-sizes').value = [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))].join(', ');
+    document.getElementById('variant-section').style.display = 'none';
+    renderImagePreview();
+    document.getElementById('modal-add-product').style.display = 'flex';
+  }catch(e){showToast('Бараа мэдээлэл татахад алдаа','error');}
+}
+
+function closeAddProduct(){
+  document.getElementById('modal-add-product').style.display = 'none';
+  uploadedImages = [];
+  editingProductId = null;
+}
+
+function handleImageUpload(input){
+  const files = Array.from(input.files);
+  if(uploadedImages.length + files.length > 5){
+    showToast('Хамгийн ихдээ 5 зураг оруулна уу','error');
+    return;
+  }
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      uploadedImages.push(e.target.result);
+      renderImagePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderImagePreview(){
+  document.getElementById('mp-preview').innerHTML = uploadedImages.map((img, i) => `
+    <div style="position:relative">
+      <img src="${img}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-light)">
+      <button onclick="uploadedImages.splice(${i},1);renderImagePreview()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">×</button>
+      ${i===0?'<div style="font-size:9px;text-align:center;color:var(--gray);margin-top:2px">Үндсэн</div>':''}
+    </div>`).join('');
+}
+
+async function saveProduct(){
+  const name = document.getElementById('mp-name').value.trim();
+  const sku = document.getElementById('mp-sku').value.trim();
+  const price = parseInt(document.getElementById('mp-price').value) || 0;
+
+  if(!name || !price){showToast('Нэр болон үнэ заавал оруулна уу','error');return;}
+
+  const btn = document.getElementById('save-product-btn');
+  btn.disabled = true; btn.textContent = 'Хадгалж байна...';
+
+  try{
+    if(editingProductId){
+      // Засах
+      await apiPost_put('/api/products/'+editingProductId, {
+        name,
+        price,
+        wholesale_price: parseInt(document.getElementById('mp-wholesale').value)||null,
+        discount_price: parseInt(document.getElementById('mp-discount').value)||null,
+        description: document.getElementById('mp-desc').value,
+        is_active: true
+      });
+      // Зураг хадгалах
+      if(uploadedImages.length > 0){
+        await apiPost('/api/products/'+editingProductId+'/images', {images: uploadedImages});
+      }
+      showToast('Бараа амжилттай шинэчлэгдлээ','success');
+    } else {
+      // Шинэ бараа
+      if(!sku){showToast('SKU заавал оруулна уу','error');btn.disabled=false;btn.textContent='Хадгалах';return;}
+      const colors = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
+      const sizes = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const result = await apiPost('/api/products', {
+        name, sku,
+        category_id: parseInt(document.getElementById('mp-cat').value),
+        price,
+        wholesale_price: parseInt(document.getElementById('mp-wholesale').value)||null,
+        discount_price: parseInt(document.getElementById('mp-discount').value)||null,
+        description: document.getElementById('mp-desc').value,
+        colors, sizes
+      });
+      // Зураг хадгалах
+      if(uploadedImages.length > 0 && result.product){
+        await apiPost('/api/products/'+result.product.id+'/images', {images: uploadedImages});
+      }
+      showToast(name+' амжилттай нэмэгдлээ','success');
+    }
+    closeAddProduct();
+    await loadManageProducts();
+  }catch(e){
+    showToast('Алдаа: '+e.message,'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Хадгалах';
+  }
+}
+
+async function apiPost_put(url, data){
+  const res = await fetch(API+url, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json', ...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function deleteProduct(id, name){
+  if(!confirm('"'+name+'" барааг идэвхгүй болгох уу?')) return;
+  try{
+    await fetch(API+'/api/products/'+id, {
+      method: 'DELETE',
+      headers: TOKEN?{Authorization:'Bearer '+TOKEN}:{}
+    });
+    showToast(name+' устгагдлаа','success');
+    await loadManageProducts();
+  }catch(e){showToast('Устгахад алдаа','error');}
 }
 
 // ── INIT ──

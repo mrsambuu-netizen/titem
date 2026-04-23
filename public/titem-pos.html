@@ -469,7 +469,8 @@ async function doLogin(){
 
 async function loadBranches(){
   try{
-    BRANCHES_LIST=await apiGet('/api/branches');
+    const res=await fetch('/api/branches');
+    BRANCHES_LIST=await res.json();
     const sel=document.getElementById('branch-select');
     sel.innerHTML=BRANCHES_LIST.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name} — ${b.location}</option>`).join('');
   }catch(e){console.error('Салбар татах алдаа:',e)}
@@ -504,7 +505,7 @@ async function loadProducts(){
   try{
     const grid=document.getElementById('product-grid-pos');
     grid.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:#888">Бараа ачааллаж байна...</div>';
-    const data=await apiGet('/api/products?limit=100&branch_id='+currentBranch);
+    const data=await apiGet('/api/products?limit=100');
     PRODUCTS=data.map(p=>({
       id:p.id,
       name:p.name,
@@ -553,7 +554,7 @@ function renderProducts(){
         <div class="pos-product-name">${p.name}</div>
         <div class="pos-product-sku">${p.sku}</div>
         <div class="pos-product-bottom">
-          <div class="pos-product-price">&#8366;${p.price.toLocaleString()}</div>
+          <div class="pos-product-price">₮${p.price.toLocaleString()}</div>
           <div class="pos-product-colors">${p.colors.slice(0,4).map(c=>`<div class="pos-color-dot" style="background:${colorHex(c)}"></div>`).join('')}</div>
         </div>
       </div></div>`;
@@ -601,7 +602,7 @@ function selectProduct(id){
   selectedProduct=p;
   selectedColor=p.colors[0]||'';
   selectedSize=p.sizes[0]||'';
-  document.getElementById('var-product-name').textContent=p.name+' — &#8366;'+p.price.toLocaleString();
+  document.getElementById('var-product-name').textContent=p.name+' — ₮'+p.price.toLocaleString();
   document.getElementById('var-colors').innerHTML=p.colors.map(c=>`
     <div onclick="varSelectColor(this,'${c}')" data-color="${c}"
       style="padding:6px 14px;border:1.5px solid ${c===selectedColor?'var(--black)':'var(--gray-light)'};border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">
@@ -649,13 +650,13 @@ function renderCart(){
   const discAmt=Math.round(subtotal*discountPct/100);
   const total=subtotal-discAmt;
   document.getElementById('pos-cart-count').textContent=cart.reduce((s,i)=>s+i.qty,0);
-  document.getElementById('pos-subtotal').textContent='&#8366;'+subtotal.toLocaleString();
-  document.getElementById('pos-discount').textContent='&#8722;&#8366;'+discAmt.toLocaleString();
-  document.getElementById('pos-total').textContent='&#8366;'+total.toLocaleString();
+  document.getElementById('pos-subtotal').textContent='₮'+subtotal.toLocaleString();
+  document.getElementById('pos-discount').textContent='−₮'+discAmt.toLocaleString();
+  document.getElementById('pos-total').textContent='₮'+total.toLocaleString();
   const btn=document.getElementById('btn-charge');
   btn.disabled=cart.length===0;
   btn.innerHTML=cart.length>0
-    ?`<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> &#8366;${total.toLocaleString()} авах`
+    ?`<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> ₮${total.toLocaleString()} авах`
     :'<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg> Төлбөр авах';
   const items=document.getElementById('pos-cart-items');
   if(!cart.length){
@@ -670,13 +671,13 @@ function renderCart(){
         <div class="pos-cart-item-variant">${item.color} · ${item.size}</div>
       </div>
       <div class="pos-cart-item-right">
-        <div class="pos-cart-item-price">&#8366;${(item.price*item.qty).toLocaleString()}</div>
+        <div class="pos-cart-item-price">₮${(item.price*item.qty).toLocaleString()}</div>
         <div class="pos-item-qty">
-          <button onclick="cartQty('${item.key}',-1)">&#8722;</button>
+          <button onclick="cartQty('${item.key}',-1)">−</button>
           <span>${item.qty}</span>
           <button onclick="cartQty('${item.key}',1)">+</button>
         </div>
-        <button class="pos-item-remove" onclick="removeItem('${item.key}')">&#215;</button>
+        <button class="pos-item-remove" onclick="removeItem('${item.key}')">×</button>
       </div>
     </div>`).join('');
 }
@@ -689,7 +690,7 @@ function applyDiscount(){
   const v=parseFloat(document.getElementById('discount-input').value);
   const msg=document.getElementById('discount-msg');
   if(isNaN(v)||v<0||v>100){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='0–100 хооронд оруулна уу';return;}
-  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='&#10003; '+v+'% хямдрал хэрэглэгдлээ';
+  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='✓ '+v+'% хямдрал хэрэглэгдлээ';
   renderCart();
 }
 
@@ -736,12 +737,12 @@ function showReceipt(sale){
   const ds=now.getFullYear()+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0');
   document.getElementById('receipt-info').innerHTML=`${sale.branch}<br>${ds} ${sale.time}<br>${sale.id}<br>Худалдагч: ${sale.cashier}`;
   document.getElementById('receipt-items').innerHTML=sale.items.map(i=>`
-    <div class="receipt-item-row"><span>${i.name} (${i.color}, ${i.size}) &#215;${i.qty}</span><span>&#8366;${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+    <div class="receipt-item-row"><span>${i.name} (${i.color}, ${i.size}) ×${i.qty}</span><span>₮${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
   const pn={cash:'Бэлэн',card:'Карт',qpay:'QPay'}[sale.payMethod];
   document.getElementById('receipt-totals').innerHTML=`
-    <div class="receipt-total-row"><span>Дүн</span><span>&#8366;${sale.subtotal.toLocaleString()}</span></div>
-    ${sale.discAmt>0?`<div class="receipt-total-row"><span>Хямдрал</span><span style="color:var(--red)">&#8722;&#8366;${sale.discAmt.toLocaleString()}</span></div>`:''}
-    <div class="receipt-total-row grand"><span>Нийт</span><span>&#8366;${sale.total.toLocaleString()}</span></div>
+    <div class="receipt-total-row"><span>Дүн</span><span>₮${sale.subtotal.toLocaleString()}</span></div>
+    ${sale.discAmt>0?`<div class="receipt-total-row"><span>Хямдрал</span><span style="color:var(--red)">−₮${sale.discAmt.toLocaleString()}</span></div>`:''}
+    <div class="receipt-total-row grand"><span>Нийт</span><span>₮${sale.total.toLocaleString()}</span></div>
     <div class="receipt-total-row" style="margin-top:8px"><span>Төлбөр</span><span>${pn}</span></div>`;
   openModal('modal-receipt');
 }
@@ -758,7 +759,13 @@ function newSale(){
 function openCashOpen(){
   const now=new Date();
   document.getElementById('cash-open-date').textContent=now.toLocaleDateString('mn-MN')+' · '+currentBranchName;
-  openModal('modal-cash-open');
+  // Касс аль хэдийн нээгдсэн байж болох тул шууд нээх
+  apiPost('/api/cash/open',{opening_amount:0})
+    .then(r=>{cashSessionId=r.id;openModal('modal-cash-open');})
+    .catch(e=>{
+      // Аль хэдийн нээгдсэн - modal харуулна
+      openModal('modal-cash-open');
+    });
 }
 
 async function confirmCashOpen(){
@@ -766,19 +773,22 @@ async function confirmCashOpen(){
   try{
     const result=await apiPost('/api/cash/open',{opening_amount:cashOpenAmount});
     cashSessionId=result.id;
-  }catch(e){console.log('Касс нээх:',e.message);}
+    showToast('Касс нээгдлээ — ₮'+cashOpenAmount.toLocaleString(),'success');
+  }catch(e){
+    // Аль хэдийн нээгдсэн бол асуудалгүй
+    showToast('Касс бэлэн — ₮'+cashOpenAmount.toLocaleString(),'success');
+  }
   closeModal('modal-cash-open');
-  showToast('Касс нээгдлээ — &#8366;'+cashOpenAmount.toLocaleString(),'success');
 }
 
 function openCashClose(){
   const cashS=todaySales.filter(s=>s.payMethod==='cash').reduce((s,sale)=>s+sale.total,0);
   const digS=todaySales.filter(s=>s.payMethod!=='cash').reduce((s,sale)=>s+sale.total,0);
   const totS=todaySales.reduce((s,sale)=>s+sale.total,0);
-  document.getElementById('cc-sales').textContent='&#8366;'+totS.toLocaleString();
+  document.getElementById('cc-sales').textContent='₮'+totS.toLocaleString();
   document.getElementById('cc-count').textContent=todaySales.length;
-  document.getElementById('cc-cash').textContent='&#8366;'+(cashS+cashOpenAmount).toLocaleString();
-  document.getElementById('cc-digital').textContent='&#8366;'+digS.toLocaleString();
+  document.getElementById('cc-cash').textContent='₮'+(cashS+cashOpenAmount).toLocaleString();
+  document.getElementById('cc-digital').textContent='₮'+digS.toLocaleString();
   openModal('modal-cash-close');
 }
 
@@ -789,7 +799,7 @@ function calcDiff(){
   const row=document.getElementById('cc-diff-row');
   row.style.display='block';
   const el=document.getElementById('cc-diff');
-  el.textContent=(diff>=0?'+':'')+'&#8366;'+Math.abs(diff).toLocaleString();
+  el.textContent=(diff>=0?'+':'')+'₮'+Math.abs(diff).toLocaleString();
   el.style.color=diff===0?'var(--green)':diff>0?'var(--amber)':'var(--red)';
 }
 
@@ -809,13 +819,13 @@ async function openReport(){
     const today=now.toISOString().split('T')[0];
     const data=await apiGet('/api/reports/daily?date='+today+'&branch_id='+currentBranch);
     const s=data.summary;
-    document.getElementById('rep-total').textContent='&#8366;'+parseInt(s.total_revenue||0).toLocaleString();
+    document.getElementById('rep-total').textContent='₮'+parseInt(s.total_revenue||0).toLocaleString();
     document.getElementById('rep-count').textContent=s.transaction_count||0;
-    document.getElementById('rep-cash').textContent='&#8366;'+parseInt(s.cash_total||0).toLocaleString();
-    document.getElementById('rep-digital').textContent='&#8366;'+(parseInt(s.card_total||0)+parseInt(s.qpay_total||0)).toLocaleString();
+    document.getElementById('rep-cash').textContent='₮'+parseInt(s.cash_total||0).toLocaleString();
+    document.getElementById('rep-digital').textContent='₮'+(parseInt(s.card_total||0)+parseInt(s.qpay_total||0)).toLocaleString();
     const tbody=document.getElementById('rep-items');
     tbody.innerHTML=(data.top_products||[]).length
-      ? (data.top_products||[]).map(p=>`<tr><td>${p.product_name}</td><td>${p.sold_qty}</td><td>&#8366;${parseInt(p.revenue).toLocaleString()}</td></tr>`).join('')
+      ? (data.top_products||[]).map(p=>`<tr><td>${p.product_name}</td><td>${p.sold_qty}</td><td>₮${parseInt(p.revenue).toLocaleString()}</td></tr>`).join('')
       : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">Өнөөдөр борлуулалт байхгүй</td></tr>';
   }catch(e){
     document.getElementById('rep-items').innerHTML='<tr><td colspan="3" style="color:red">Тайлан татахад алдаа гарлаа</td></tr>';

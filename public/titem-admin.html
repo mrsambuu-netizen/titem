@@ -1253,7 +1253,9 @@ async function loadUsers(){
       branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
 
     const roleNames={super_admin:'Супер Админ',admin:'Менежер',cashier:'Худалдагч',warehouse:'Агуулах'};
-    document.getElementById('users-table').innerHTML=data.map(u=>`
+    const utEl=document.getElementById('users-table');
+    if(!utEl) return;
+    utEl.innerHTML=data.map(u=>`
       <tr>
         <td><code style="font-size:12px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${u.username}</code></td>
         <td><b>${u.full_name||'—'}</b></td>

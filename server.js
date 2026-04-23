@@ -529,6 +529,42 @@ app.post('/api/products/:id/images', authMiddleware(['super_admin','admin']), as
   }
 });
 
+// ── БАРАА ОРЛОГО (Нийлүүлэгчээс агуулахад нэмэх) ──
+app.post('/api/receive', authMiddleware(['warehouse','admin','super_admin']), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { items, supplier_id, invoice, note } = req.body;
+    
+    for (const item of items) {
+      // Агуулахын inventory-г нэмэх (branch_id = 1)
+      await client.query(`
+        INSERT INTO inventory (variant_id, branch_id, quantity, min_quantity)
+        VALUES ($1, 1, $2, 5)
+        ON CONFLICT (variant_id, branch_id) 
+        DO UPDATE SET quantity = inventory.quantity + $2
+      `, [item.variant_id, item.quantity]);
+      
+      // Stock movement бүртгэх
+      await client.query(`
+        INSERT INTO stock_movements 
+          (variant_id, to_branch_id, quantity, movement_type, note, user_id)
+        VALUES ($1, 1, $2, 'receive', $3, $4)
+      `, [item.variant_id, item.quantity, 
+          `Орлого: ${invoice||'—'} | ${note||'—'}`, 
+          req.user.id]);
+    }
+    
+    await client.query('COMMIT');
+    res.json({ success: true, message: `${items.length} төрлийн бараа орлогодлоо` });
+  } catch(err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ── БАРКОДООР БАРАА ХАЙХ ──
 app.get('/api/barcode/:barcode', async (req, res) => {
   try {

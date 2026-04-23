@@ -939,12 +939,17 @@ app.get('/pos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem-admin.html')));
 app.get('/warehouse', (req, res) => res.sendFile(path.join(__dirname, 'public', 'titem-warehouse.html')));
 
-// ── НУУЦ ҮГ RESET (зөвхөн нэг удаа ашиглана) ──
+// ── НУУЦ ҮГ RESET ──
 app.get('/api/reset-passwords', async (req, res) => {
   try {
-    const adminHash = await bcrypt.hash('admin123', 10);
-    const managerHash = await bcrypt.hash('manager123', 10);
-    const cashierHash = await bcrypt.hash('1234', 10);
+    // Railway Variables-аас нууц үг авах
+    const adminPw = process.env.ADMIN_PASSWORD || 'admin123';
+    const managerPw = process.env.MANAGER_PASSWORD || 'manager123';
+    const cashierPw = process.env.CASHIER_PASSWORD || '1234';
+
+    const adminHash = await bcrypt.hash(adminPw, 10);
+    const managerHash = await bcrypt.hash(managerPw, 10);
+    const cashierHash = await bcrypt.hash(cashierPw, 10);
 
     const check = await pool.query('SELECT COUNT(*) FROM users');
     if (parseInt(check.rows[0].count) === 0) {
@@ -965,8 +970,16 @@ app.get('/api/reset-passwords', async (req, res) => {
       await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', [managerHash, 'manager']);
       await pool.query('UPDATE users SET password_hash = $1 WHERE role IN ($2,$3)', [cashierHash, 'cashier', 'warehouse']);
       const users = await pool.query('SELECT username, role FROM users ORDER BY id');
-      res.json({ message: 'Нууц үг шинэчлэгдлээ', users: users.rows,
-        credentials: {admin:'admin123', manager:'manager123', cashier:'1234', warehouse:'1234'} });
+      res.json({ 
+        message: 'Нууц үг шинэчлэгдлээ', 
+        users: users.rows,
+        credentials: {
+          admin: adminPw,
+          manager: managerPw,
+          cashier: cashierPw,
+          warehouse: cashierPw
+        }
+      });
     }
   } catch(err) {
     res.status(500).json({ error: err.message });

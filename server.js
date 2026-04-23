@@ -12,8 +12,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'titem_secret_2024';
 
 // ── MIDDLEWARE ──
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ limit: '5mb', extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── DATABASE ──
@@ -408,7 +408,6 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-});
 
 app.get('/api/products/:id', async (req, res) => {
   try {

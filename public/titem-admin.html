@@ -458,84 +458,6 @@ tr:hover td{background:#fafafa}
 
 <script>
 // ── DATA ──
-const BRANCHES_DATA=[
-  {id:1,name:'Салбар 1',loc:'Сүхбаатар',cashier:'Болд',revenue:420000,txn:18,cash:280000,digital:140000,goal:2000000,progress:67,open:'08:30',online:true},
-  {id:2,name:'Салбар 2',loc:'Баянзүрх',cashier:'Нарaa',revenue:380000,txn:15,cash:200000,digital:180000,goal:2000000,progress:58,open:'09:00',online:true},
-  {id:3,name:'Салбар 3',loc:'Хан-Уул',cashier:'Дорж',revenue:210000,txn:9,cash:210000,digital:0,goal:1500000,progress:42,open:'09:15',online:true},
-  {id:4,name:'Салбар 4',loc:'Баянгол',cashier:'Сарнай',revenue:145000,txn:6,cash:95000,digital:50000,goal:1500000,progress:29,open:'08:45',online:false},
-  {id:5,name:'Салбар 5',loc:'Налайх',cashier:'Ганaa',revenue:85000,txn:4,cash:85000,digital:0,goal:1000000,progress:21,open:'09:30',online:true},
-];
-const INVENTORY=[
-  {sku:'TIT-001',name:'Классик Бүргэд',cat:'Малгай',total:46,warehouse:23,branches:23,min:10,status:'ok'},
-  {sku:'TIT-002',name:'Snapback малгай',cat:'Малгай',total:28,warehouse:15,branches:13,min:10,status:'ok'},
-  {sku:'TIT-003',name:'Өвлийн малгай',cat:'Малгай',total:3,warehouse:0,branches:3,min:10,status:'low'},
-  {sku:'TIT-004',name:'Зусланы малгай',cat:'Малгай',total:0,warehouse:0,branches:0,min:5,status:'out'},
-  {sku:'TIT-005',name:'Зимийн ороолт',cat:'Ороолт',total:30,warehouse:12,branches:18,min:8,status:'ok'},
-  {sku:'TIT-006',name:'Флис ороолт',cat:'Ороолт',total:12,warehouse:0,branches:12,min:8,status:'ok'},
-  {sku:'TIT-007',name:'Утас бээлий',cat:'Бээлий',total:8,warehouse:0,branches:8,min:10,status:'low'},
-  {sku:'TIT-008',name:'Арьсан бээлий',cat:'Бээлий',total:5,warehouse:0,branches:5,min:8,status:'low'},
-  {sku:'TIT-009',name:'Өвлийн хамгаалалт',cat:'Faceshield',total:30,warehouse:23,branches:7,min:10,status:'ok'},
-  {sku:'TIT-010',name:'Faceshield Pro',cat:'Faceshield',total:7,warehouse:0,branches:7,min:10,status:'low'},
-  {sku:'TIT-011',name:'Хүзүүний алчуур',cat:'Алчуур',total:25,warehouse:0,branches:25,min:8,status:'ok'},
-  {sku:'TIT-012',name:'Buff ороолт',cat:'Алчуур',total:0,warehouse:0,branches:0,min:5,status:'out'},
-];
-const TRANSFERS=[
-  {date:'2024/01/15',product:'Классик Бүргэд',qty:10,from:'Агуулах',to:'Салбар 1',status:'done',user:'admin'},
-  {date:'2024/01/15',product:'Утас бээлий',qty:5,from:'Салбар 2',to:'Салбар 3',status:'done',user:'Нарaa'},
-  {date:'2024/01/14',product:'Зимийн ороолт',qty:8,from:'Агуулах',to:'Салбар 2',status:'done',user:'admin'},
-  {date:'2024/01/14',product:'Арьсан бээлий',qty:3,from:'Агуулах',to:'Салбар 4',status:'pending',user:'admin'},
-  {date:'2024/01/13',product:'Faceshield Pro',qty:6,from:'Агуулах',to:'Салбар 5',status:'done',user:'admin'},
-];
-const SUPPLIERS=[
-  {name:'Монгол Малгай ХХК',products:'Малгай, ороолт',total:12400000,paid:10000000,debt:2400000,lastDate:'2024/01/10',status:'ok'},
-  {name:'АзиаТекстайл',products:'Бээлий, алчуур',total:8600000,paid:8600000,debt:0,lastDate:'2024/01/08',status:'ok'},
-  {name:'Өвлийн Тоноглол',products:'Faceshield',total:3200000,paid:2000000,debt:1200000,lastDate:'2023/12/28',status:'overdue'},
-];
-const SALES_HISTORY=[
-  {date:'2024/01/15 10:23',id:'#TIT-241015',branch:'Салбар 1',cashier:'Болд',items:'Классик Бүргэд ×2',amount:90000,pay:'Бэлэн',status:'done'},
-  {date:'2024/01/15 11:05',id:'#TIT-241016',branch:'Салбар 2',cashier:'Нарaa',items:'Зимийн ороолт ×1',amount:30400,pay:'QPay',status:'done'},
-  {date:'2024/01/15 11:42',id:'#TIT-241017',branch:'Салбар 1',cashier:'Болд',items:'Арьсан бээлий ×1',amount:46750,pay:'Карт',status:'done'},
-  {date:'2024/01/15 12:18',id:'#TIT-241018',branch:'Салбар 3',cashier:'Дорж',items:'Хүзүүний алчуур ×3',amount:45000,pay:'Бэлэн',status:'done'},
-  {date:'2024/01/15 13:30',id:'#TIT-241019',branch:'Салбар 2',cashier:'Нарaa',items:'Утас бээлий ×2',amount:50000,pay:'QPay',status:'done'},
-  {date:'2024/01/15 14:05',id:'#TIT-241020',branch:'Салбар 4',cashier:'Сарнай',items:'Snapback малгай ×1',amount:42000,pay:'Бэлэн',status:'returned'},
-];
-const PRODUCT_REPORT=[
-  {name:'Классик Бүргэд',sold:124,revenue:5580000,stock:46,speed:'high'},
-  {name:'Зимийн ороолт',sold:98,revenue:2979200,stock:30,speed:'high'},
-  {name:'Өвлийн хамгаалалт',sold:87,revenue:1566000,stock:30,speed:'high'},
-  {name:'Утас бээлий',sold:62,revenue:1550000,stock:8,speed:'medium'},
-  {name:'Snapback малгай',sold:54,revenue:2268000,stock:28,speed:'medium'},
-  {name:'Арьсан бээлий',sold:38,revenue:1776500,stock:5,speed:'medium'},
-  {name:'Хүзүүний алчуур',sold:71,revenue:1065000,stock:25,speed:'high'},
-  {name:'Зусланы малгай',sold:4,revenue:100000,stock:0,speed:'low'},
-  {name:'Buff ороолт',sold:2,revenue:38000,stock:0,speed:'low'},
-];
-const USERS_DATA=[
-  {username:'admin',name:'Ц.Батболд',role:'Super Admin',branch:'Бүгд',last:'2024/01/15 09:00',active:true},
-  {username:'manager2',name:'Д.Нарцэцэг',role:'Админ',branch:'Бүгд',last:'2024/01/15 10:23',active:true},
-  {username:'cashier01',name:'Б.Болд',role:'Худалдагч',branch:'Салбар 1',last:'2024/01/15 08:31',active:true},
-  {username:'cashier02',name:'Н.Нарaa',role:'Худалдагч',branch:'Салбар 2',last:'2024/01/15 09:02',active:true},
-  {username:'cashier03',name:'Д.Дорж',role:'Худалдагч',branch:'Салбар 3',last:'2024/01/15 09:18',active:true},
-  {username:'cashier04',name:'С.Сарнай',role:'Худалдагч',branch:'Салбар 4',last:'2024/01/14 18:22',active:false},
-  {username:'cashier05',name:'Г.Ганaa',role:'Худалдагч',branch:'Салбар 5',last:'2024/01/15 09:33',active:true},
-];
-const ALERTS=[
-  {type:'urgent',icon:'🔴',title:'Зусланы малгай — дууссан',sub:'TIT-004 · 0 ширхэг үлдсэн · 5 салбарт бэлэн биш',action:'Захиалах'},
-  {type:'urgent',icon:'🔴',title:'Buff ороолт — дууссан',sub:'TIT-012 · 0 ширхэг үлдсэн',action:'Захиалах'},
-  {type:'warn',icon:'🟡',title:'Өвлийн малгай — 3 ширхэг үлдсэн',sub:'TIT-003 · Доод хэмжээ 10 · Шилжүүлэг хийх шаардлагатай',action:'Шилжүүлэх'},
-  {type:'warn',icon:'🟡',title:'Арьсан бээлий — 5 ширхэг үлдсэн',sub:'TIT-008 · Борлуулалт сайн байна',action:'Захиалах'},
-  {type:'warn',icon:'🟡',title:'Утас бээлий — 8 ширхэг үлдсэн',sub:'TIT-007 · Доод хэмжээ 10',action:'Захиалах'},
-  {type:'info',icon:'🔵',title:'Салбар 4 — Өнөөдөр офлайн',sub:'Сарнай нэвтрээгүй байна · Сүүлд нэвтэрсэн: өчигдөр 18:22',action:'Холбоо барих'},
-  {type:'info',icon:'🔵',title:'Өвлийн тоноглол — төлбөр хугацаа хэтэрсэн',sub:'₮1,200,000 өглөгтэй · 2023/12/28-аас хойш',action:'Төлбөр'},
-];
-const WEEK_DATA=[
-  {day:'Да',val:820000},{day:'Мя',val:940000},{day:'Лх',val:1100000},
-  {day:'Пү',val:780000},{day:'Ба',val:1350000},{day:'Бя',val:1580000},{day:'Ня',val:1240000},
-];
-const PAY_DATA=[
-  {name:'Бэлэн',pct:52,color:'#0a0a0a'},{name:'Карт',pct:28,color:'#378ADD'},
-  {name:'QPay',pct:20,color:'#27ae60'},
-];
 
 let invFilter='all';
 
@@ -806,7 +728,6 @@ async function apiPost(url,data){
   return res.json();
 }
 
-let invFilter='all';
 let today=new Date().toISOString().split('T')[0];
 
 // ── AUTH ──

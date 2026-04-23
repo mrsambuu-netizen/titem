@@ -770,8 +770,21 @@ header{
 </div>
 
 <script>
+// ── API ──
+const API = '';
+
+async function apiPost(url, data) {
+  const res = await fetch(API + url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 // ── State ──
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('titem_cart') || '[]');
 let promoApplied = false;
 let qty = 1;
 let selectedColor = 'Хар';
@@ -961,26 +974,79 @@ function toggleEbarimt(el) {
   document.getElementById('ebarimt-form').style.display = el.checked ? 'block' : 'none';
 }
 
-function placeOrder() {
+async function placeOrder() {
+  if (!cart.length) { showToast('Сагс хоосон байна'); return; }
+
+  // Хэрэглэгчийн мэдээлэл
+  const lastName = document.querySelector('input[placeholder="Дорж"]')?.value || '';
+  const firstName = document.querySelector('input[placeholder="Болд"]')?.value || '';
+  const phone = document.querySelector('input[placeholder="9900 0000"]')?.value || '';
+  const ebarimt = document.getElementById('ebarimt-check')?.checked || false;
+  const ebarimtRegno = document.querySelector('input[placeholder="АА00000000"]')?.value || '';
+
+  // Төлбөрийн арга
+  const activePayment = document.querySelector('.payment-opt.active .payment-name')?.textContent || 'QPay';
+  const payMap = {'QPay': 'qpay', 'Карт': 'card', 'Бэлэн': 'cash'};
+  const payMethod = payMap[activePayment] || 'qpay';
+
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal + 5000 - discount;
-  const orderNum = '#TIT-' + Date.now().toString().slice(-6);
-  const now = new Date();
-  const dateStr = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const delivery = 5000;
+  const total = subtotal + delivery - discount;
 
-  document.getElementById('order-num').textContent = orderNum;
-  document.getElementById('sc-num').textContent = orderNum;
-  document.getElementById('sc-date').textContent = dateStr;
-  document.getElementById('sc-total').textContent = '₮' + total.toLocaleString();
+  const btn = document.querySelector('.btn-place-order');
+  if (btn) { btn.disabled = true; btn.textContent = 'Боловсруулж байна...'; }
 
-  showPage('success');
+  try {
+    const orderData = {
+      branch_id: 2, // Салбар 1 — онлайн захиалга
+      customer_name: (lastName + ' ' + firstName).trim() || 'Онлайн хэрэглэгч',
+      customer_phone: phone,
+      items: cart.map(i => ({
+        variant_id: i.variantId || null,
+        name: i.name,
+        color: i.color || '—',
+        size: i.size || '—',
+        quantity: i.qty,
+        price: i.price
+      })),
+      subtotal,
+      discount_amount: discount,
+      total,
+      payment_method: payMethod,
+      ebarimt,
+      ebarimt_regno: ebarimtRegno,
+      note: 'Онлайн захиалга · Хүргэлт: ₮' + delivery.toLocaleString()
+    };
+
+    const result = await apiPost('/api/orders', orderData);
+    const orderNum = result.order?.order_number || '#TIT-' + Date.now().toString().slice(-6);
+    const now = new Date();
+    const dateStr = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+    document.getElementById('order-num').textContent = orderNum;
+    document.getElementById('sc-num').textContent = orderNum;
+    document.getElementById('sc-date').textContent = dateStr;
+    document.getElementById('sc-total').textContent = '₮' + total.toLocaleString();
+    document.getElementById('sc-payment') && (document.getElementById('sc-payment').textContent = activePayment);
+
+    // Сагс цэвэрлэх
+    localStorage.removeItem('titem_cart');
+    showPage('success');
+
+  } catch(e) {
+    console.error('Захиалга:', e);
+    showToast('Захиалга бүртгэхэд алдаа гарлаа. Дахин оролдоно уу.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Захиалга батлах'; }
+  }
 }
 
 function resetCart() {
   cart = [];
   promoApplied = false;
   qty = 1;
+  localStorage.removeItem('titem_cart');
   updateCartCount();
 }
 

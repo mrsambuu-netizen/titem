@@ -367,33 +367,46 @@ app.post('/api/auth/login', async (req, res) => {
 // ── БАРАА ──
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, search, branch_id } = req.query;
-    const params = [];
-    let conditions = ['p.is_active = true'];
-    let paramIdx = 1;
+    const { category, search, limit = 100 } = req.query;
     
-    if (category) { conditions.push(`c.slug = $${paramIdx++}`); params.push(category); }
-    if (search) { conditions.push(`(p.name ILIKE $${paramIdx++} OR p.sku ILIKE $${paramIdx++})`); params.push(`%${search}%`); params.push(`%${search}%`); paramIdx--; }
+    let conditions = ["p.is_active = true"];
+    let params = [];
+    let idx = 1;
     
-    const branchJoin = branch_id 
-      ? `LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = ${parseInt(branch_id)}`
-      : `LEFT JOIN inventory i ON i.variant_id = pv.id`;
+    if (category && category !== 'all') {
+      conditions.push(`c.slug = $${idx++}`);
+      params.push(category);
+    }
+    if (search) {
+      conditions.push(`(p.name ILIKE $${idx++} OR p.sku ILIKE $${idx++})`);
+      params.push(`%${search}%`, `%${search}%`);
+      idx--;
+    }
     
     const query = `
-      SELECT p.*, c.name as category_name,
+      SELECT p.id, p.name, p.sku, p.price, p.wholesale_price, p.discount_price,
+        p.description, p.images, p.is_active, p.created_at,
+        c.name as category_name,
         COALESCE(SUM(i.quantity), 0) as total_stock
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_variants pv ON pv.product_id = p.id
-      ${branchJoin}
+      LEFT JOIN inventory i ON i.variant_id = pv.id
       WHERE ${conditions.join(' AND ')}
-      GROUP BY p.id, c.name ORDER BY p.name ASC
+      GROUP BY p.id, c.name
+      ORDER BY p.name ASC
+      LIMIT $${idx}
     `;
+    params.push(parseInt(limit));
+    
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
+    console.error('Products error:', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
 });
 
 app.get('/api/products/:id', async (req, res) => {
@@ -746,6 +759,12 @@ app.get('/api/branches', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── FAVICON ──
+app.get('/favicon.ico', (req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.send('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧢</text></svg>');
 });
 
 // ── HTML ХУУДАС SERVE ──

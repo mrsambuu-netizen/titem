@@ -442,6 +442,93 @@ app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, r
   }
 });
 
+// ── БАРАА НЭМЭХ ──
+app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, res) => {
+  const { name, sku, category_id, price, wholesale_price, discount_price, description, colors, sizes } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Бараа үүсгэх
+    const result = await client.query(
+      'INSERT INTO products (name, sku, category_id, price, wholesale_price, discount_price, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [name, sku, category_id, price, wholesale_price||null, discount_price||null, description||'']
+    );
+    const product = result.rows[0];
+    
+    // Variant үүсгэх
+    const colorList = colors || ['Хар'];
+    const sizeList = sizes || ['M'];
+    let barcodeNum = Date.now();
+    
+    for (const color of colorList) {
+      for (const size of sizeList) {
+        barcodeNum++;
+        const variantSku = `${sku}-${color.substring(0,2).toUpperCase()}-${size}`;
+        const barcode = `6900${String(barcodeNum).slice(-8)}`;
+        await client.query(
+          'INSERT INTO product_variants (product_id, color, size, barcode, sku) VALUES ($1,$2,$3,$4,$5)',
+          [product.id, color, size, barcode, variantSku]
+        );
+      }
+    }
+    
+    // Агуулахад inventory үүсгэх
+    const variants = await client.query('SELECT id FROM product_variants WHERE product_id = $1', [product.id]);
+    for (const v of variants.rows) {
+      for (let b = 1; b <= 6; b++) {
+        await client.query(
+          'INSERT INTO inventory (variant_id, branch_id, quantity, min_quantity) VALUES ($1,$2,$3,$4)',
+          [v.id, b, 0, 5]
+        );
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.json({ success: true, product });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ── БАРАА ЗАСАХ ──
+app.put('/api/products/:id', authMiddleware(['super_admin','admin']), async (req, res) => {
+  const { name, price, wholesale_price, discount_price, description, is_active } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE products SET name=$1, price=$2, wholesale_price=$3, discount_price=$4, description=$5, is_active=$6 WHERE id=$7 RETURNING *',
+      [name, price, wholesale_price||null, discount_price||null, description||'', is_active!==false, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── БАРАА УСТГАХ ──
+app.delete('/api/products/:id', authMiddleware(['super_admin','admin']), async (req, res) => {
+  try {
+    await pool.query('UPDATE products SET is_active = false WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── ЗУРАГ UPLOAD (Base64) ──
+app.post('/api/products/:id/images', authMiddleware(['super_admin','admin']), async (req, res) => {
+  const { images } = req.body; // Base64 зургийн массив
+  try {
+    await pool.query('UPDATE products SET images = $1 WHERE id = $2', [JSON.stringify(images), req.params.id]);
+    res.json({ success: true, count: images.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── БАРКОДООР БАРАА ХАЙХ ──
 app.get('/api/barcode/:barcode', async (req, res) => {
   try {

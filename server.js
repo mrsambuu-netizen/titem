@@ -865,33 +865,30 @@ app.get('/warehouse', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/api/reset-passwords', async (req, res) => {
   try {
     const adminHash = await bcrypt.hash('admin123', 10);
+    const managerHash = await bcrypt.hash('manager123', 10);
     const cashierHash = await bcrypt.hash('1234', 10);
-    
-    // Хэрэглэгч байхгүй бол нэмнэ
+
     const check = await pool.query('SELECT COUNT(*) FROM users');
     if (parseInt(check.rows[0].count) === 0) {
       await pool.query(`
         INSERT INTO users (username, password_hash, full_name, role, branch_id) VALUES
           ('admin', $1, 'Супер Админ', 'super_admin', NULL),
-          ('manager', $1, 'Менежер', 'admin', NULL),
-          ('cashier01', $2, 'Б.Болд', 'cashier', 2),
-          ('cashier02', $2, 'Н.Нарaa', 'cashier', 3),
-          ('cashier03', $2, 'Д.Дорж', 'cashier', 4),
-          ('cashier04', $2, 'С.Сарнай', 'cashier', 5),
-          ('cashier05', $2, 'Г.Ганaa', 'cashier', 6),
-          ('warehouse01', $2, 'Агуулахын ажилтан', 'warehouse', 1)
-      `, [adminHash, cashierHash]);
+          ('manager', $2, 'Менежер', 'admin', NULL),
+          ('cashier01', $3, 'Б.Болд', 'cashier', 2),
+          ('cashier02', $3, 'Н.Нарaa', 'cashier', 3),
+          ('cashier03', $3, 'Д.Дорж', 'cashier', 4),
+          ('cashier04', $3, 'С.Сарнай', 'cashier', 5),
+          ('cashier05', $3, 'Г.Ганaa', 'cashier', 6),
+          ('warehouse01', $3, 'Агуулахын ажилтан', 'warehouse', 1)
+      `, [adminHash, managerHash, cashierHash]);
       res.json({ message: 'Хэрэглэгчид нэмэгдлээ', count: 8 });
     } else {
-      // Нууц үг шинэчилнэ
-      await pool.query('UPDATE users SET password_hash = $1 WHERE role IN ($2,$3,$4,$5)', 
-        [cashierHash, 'cashier', 'warehouse', 'admin', 'super_admin']);
-      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', 
-        [adminHash, 'admin']);
-      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', 
-        [adminHash, 'manager']);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', [adminHash, 'admin']);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', [managerHash, 'manager']);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE role IN ($2,$3)', [cashierHash, 'cashier', 'warehouse']);
       const users = await pool.query('SELECT username, role FROM users ORDER BY id');
-      res.json({ message: 'Нууц үг шинэчлэгдлээ', users: users.rows });
+      res.json({ message: 'Нууц үг шинэчлэгдлээ', users: users.rows,
+        credentials: {admin:'admin123', manager:'manager123', cashier:'1234', warehouse:'1234'} });
     }
   } catch(err) {
     res.status(500).json({ error: err.message });

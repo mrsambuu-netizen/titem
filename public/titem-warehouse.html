@@ -754,18 +754,35 @@ async function confirmReceive(){
   const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
   try{
-    // Агуулахад орлого бүртгэх — stock_movements API
-    for(const item of receiveItems){
-      const variant=item.variants?.find(v=>v.color===item.color&&v.size===item.size);
-      if(variant){
-        await apiPost('/api/transfers',{
-          items:[{variant_id:variant.id,quantity:item.qty}],
-          from_branch_id:1,to_branch_id:1,
-          note:'Орлого: '+invoice
-        }).catch(()=>{});
-      }
+    // Орлого API-д бүртгэх
+    const supplier=document.getElementById('receive-supplier');
+    const supplierId=supplier?.value||null;
+    
+    const items=receiveItems.map(item=>{
+      const variant=item.variants?.find(v=>v.color===item.color&&v.size===item.size)
+        || item.variants?.[0];
+      return variant ? {variant_id:variant.id, quantity:item.qty, price:item.price} : null;
+    }).filter(Boolean);
+    
+    if(items.length){
+      await apiPost('/api/receive',{
+        items,
+        supplier_id:supplierId,
+        invoice,
+        note:'Орлого бүртгэл'
+      });
     }
-  }catch(e){}
+    
+    // PRODUCTS-н totalStock шинэчлэх
+    receiveItems.forEach(item=>{
+      const p=PRODUCTS.find(pr=>pr.sku===item.sku);
+      if(p) p.totalStock+=item.qty;
+    });
+  }catch(e){
+    console.error('Орлого API алдаа:',e);
+    showToast('Орлого бүртгэхэд алдаа: '+e.message,'error');
+    return;
+  }
 
   todayReceived+=qty;
   document.getElementById('kpi-in').textContent=todayReceived;

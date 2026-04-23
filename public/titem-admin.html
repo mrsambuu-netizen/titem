@@ -404,11 +404,15 @@ tr:hover td{background:#fafafa}
 
       <!-- НИЙЛҮҮЛЭГЧ -->
       <div class="panel" id="panel-suppliers">
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-title">Нийлүүлэгчид</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <h2 style="font-family:var(--font-head);font-size:28px;font-weight:300">Нийлүүлэгч <em style="font-style:italic">удирдлага</em></h2>
+          <button onclick="openAddSupplier()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">+ Нийлүүлэгч нэмэх</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Нийлүүлэгчийн жагсаалт <span class="card-title-right" id="supplier-count"></span></div>
           <div class="table-wrap">
-            <table>
-              <thead><tr><th>Нийлүүлэгч</th><th>Бараа</th><th>Нийт авсан</th><th>Төлсөн</th><th>Өглөг</th><th>Сүүлд авсан</th><th>Статус</th></tr></thead>
+            <table class="main-table">
+              <thead><tr><th>Нэр</th><th>Утас</th><th>И-мэйл</th><th>Хаяг</th><th>Өглөг</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
               <tbody id="supplier-table"></tbody>
             </table>
           </div>
@@ -625,6 +629,43 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- НИЙЛҮҮЛЭГЧ НЭМЭХ MODAL -->
+<div class="modal-overlay" id="modal-add-supplier" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:300" id="supplier-modal-title">Нийлүүлэгч нэмэх</div>
+      <button onclick="closeAddSupplier()" style="border:none;background:none;font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <input type="hidden" id="edit-supplier-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div style="grid-column:span 2">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нийлүүлэгчийн нэр *</label>
+        <input id="sup-name" class="f-input" placeholder="Монгол Малгай ХХК">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Утасны дугаар</label>
+        <input id="sup-phone" class="f-input" placeholder="99001122">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">И-мэйл</label>
+        <input id="sup-email" class="f-input" placeholder="info@company.mn" type="email">
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Хаяг</label>
+        <input id="sup-address" class="f-input" placeholder="Улаанбаатар хот...">
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Өглөг (₮)</label>
+        <input id="sup-debt" class="f-input" type="number" placeholder="0" value="0">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeAddSupplier()" style="flex:1;border:1px solid var(--gray-mid);background:var(--white);padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Болих</button>
+      <button onclick="saveSupplier()" style="flex:2;background:var(--black);color:var(--white);border:none;padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Хадгалах</button>
     </div>
   </div>
 </div>
@@ -966,16 +1007,81 @@ function renderInventory(){
 async function loadSuppliers(){
   try{
     const data=await apiGet('/api/suppliers');
-    document.getElementById('supplier-table').innerHTML=data.map(s=>`
+    document.getElementById('supplier-count').textContent=data.length+' нийлүүлэгч';
+    document.getElementById('supplier-table').innerHTML=data.length ? data.map(s=>`
       <tr>
         <td><b>${s.name}</b></td>
+        <td>${s.phone||'—'}</td>
+        <td style="font-size:12px">${s.email||'—'}</td>
         <td style="font-size:12px;color:var(--gray)">${s.address||'—'}</td>
-        <td>—</td><td>—</td>
         <td style="font-weight:700;color:${parseInt(s.total_debt||0)>0?'var(--red)':'var(--green)'}">₮${parseInt(s.total_debt||0).toLocaleString()}</td>
-        <td>—</td>
         <td><span class="badge ${parseInt(s.total_debt||0)>0?'badge-red':'badge-green'}">${parseInt(s.total_debt||0)>0?'Өглөгтэй':'Ердийн'}</span></td>
-      </tr>`).join('');
+        <td style="display:flex;gap:6px">
+          <button onclick="editSupplier(${s.id},'${s.name}','${s.phone||''}','${s.email||''}','${s.address||''}',${s.total_debt||0})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
+          <button onclick="deleteSupplier(${s.id},'${s.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray)">Нийлүүлэгч байхгүй байна</td></tr>';
   }catch(e){console.error('Suppliers алдаа:',e);}
+}
+
+function openAddSupplier(){
+  document.getElementById('supplier-modal-title').textContent='Нийлүүлэгч нэмэх';
+  document.getElementById('edit-supplier-id').value='';
+  document.getElementById('sup-name').value='';
+  document.getElementById('sup-phone').value='';
+  document.getElementById('sup-email').value='';
+  document.getElementById('sup-address').value='';
+  document.getElementById('sup-debt').value='0';
+  document.getElementById('modal-add-supplier').style.display='flex';
+}
+
+function editSupplier(id,name,phone,email,address,debt){
+  document.getElementById('supplier-modal-title').textContent='Нийлүүлэгч засах';
+  document.getElementById('edit-supplier-id').value=id;
+  document.getElementById('sup-name').value=name;
+  document.getElementById('sup-phone').value=phone;
+  document.getElementById('sup-email').value=email;
+  document.getElementById('sup-address').value=address;
+  document.getElementById('sup-debt').value=debt;
+  document.getElementById('modal-add-supplier').style.display='flex';
+}
+
+function closeAddSupplier(){
+  document.getElementById('modal-add-supplier').style.display='none';
+}
+
+async function saveSupplier(){
+  const name=document.getElementById('sup-name').value.trim();
+  if(!name){showToast('Нэр оруулна уу','error');return;}
+  const id=document.getElementById('edit-supplier-id').value;
+  const body={
+    name,
+    phone:document.getElementById('sup-phone').value,
+    email:document.getElementById('sup-email').value,
+    address:document.getElementById('sup-address').value,
+    total_debt:parseInt(document.getElementById('sup-debt').value)||0
+  };
+  try{
+    if(id){
+      await apiPost_put('/api/suppliers/'+id, body);
+      showToast(name+' шинэчлэгдлээ','success');
+    } else {
+      await apiPost('/api/suppliers', body);
+      showToast(name+' нэмэгдлээ','success');
+    }
+    closeAddSupplier();
+    await loadSuppliers();
+  }catch(e){showToast('Алдаа: '+e.message,'error');}
+}
+
+async function deleteSupplier(id,name){
+  if(!confirm('"'+name+'" устгах уу?')) return;
+  try{
+    await fetch(API+'/api/suppliers/'+id,{method:'DELETE',headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
+    showToast(name+' устгагдлаа','success');
+    await loadSuppliers();
+  }catch(e){showToast('Устгахад алдаа','error');}
 }
 
 // ── SALES ──

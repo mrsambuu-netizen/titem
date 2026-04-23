@@ -155,6 +155,12 @@ tr:hover td{background:#fafafa}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{background:var(--green)}
 .toast.error{background:var(--red)}
+@media print {
+  .sidebar, .topbar, .card-title button, button:not(.barcode-label *) { display: none !important; }
+  .main { margin-left: 0 !important; }
+  #bc-preview-area { border: none !important; }
+  .barcode-label { break-inside: avoid; }
+}
 </style>
 </head>
 <body>
@@ -225,6 +231,9 @@ tr:hover td{background:#fafafa}
       </button>
       <button class="nav-item" onclick="showPanel('products',this)">
         <span class="nav-item-icon">🏷</span>Бараа тайлан
+      </button>
+      <button class="nav-item" onclick="showPanel('barcode',this)">
+        <span class="nav-item-icon">🏷</span>Баркод үүсгэх
       </button>
       <div class="nav-section">Тохиргоо</div>
       <button class="nav-item" onclick="showPanel('users',this)">
@@ -311,10 +320,10 @@ tr:hover td{background:#fafafa}
       <div class="panel" id="panel-branches">
         <div class="branch-grid" id="branch-grid"></div>
         <div class="card">
-          <div class="card-title">Салбар бүрийн дэлгэрэнгүй тайлан</div>
+          <div class="card-title">Салбар бүрийн дэлгэрэнгүй тайлан <span class="card-title-right"><button onclick="openBranchManager()" style="background:var(--black);color:var(--white);border:none;padding:6px 14px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Салбар засах</button></span></div>
           <div class="table-wrap">
-            <table>
-              <thead><tr><th>Салбар</th><th>Худалдагч</th><th>Касс нээсэн</th><th>Өдрийн орлого</th><th>Бэлэн</th><th>Карт/QPay</th><th>Гүйлгээ</th><th>Статус</th></tr></thead>
+            <table class="main-table">
+              <thead><tr><th>Салбар</th><th>Байршил</th><th>Өдрийн орлого</th><th>Бэлэн</th><th>Карт/QPay</th><th>Гүйлгээ</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
               <tbody id="branch-detail-table"></tbody>
             </table>
           </div>
@@ -616,6 +625,47 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+      <!-- БАРКОД -->
+      <div class="panel" id="panel-barcode">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <h2 style="font-family:var(--font-head);font-size:28px;font-weight:300">Баркод <em style="font-style:italic">үүсгэх</em></h2>
+          <button onclick="window.print()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">🖨 Хэвлэх</button>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Баркод тохиргоо</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:end">
+            <div class="f-group">
+              <label class="f-label">Бараа сонгох</label>
+              <select id="bc-product" class="f-input" style="cursor:pointer" onchange="loadBarcodeVariants()">
+                <option value="">— Бараа сонгох —</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label class="f-label">Хэдэн ширхэг хэвлэх</label>
+              <input id="bc-count" class="f-input" type="number" value="1" min="1" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Хэмжээ</label>
+              <select id="bc-size" class="f-input" style="cursor:pointer">
+                <option value="small">Жижиг (40×20мм)</option>
+                <option value="medium" selected>Дунд (60×30мм)</option>
+                <option value="large">Том (80×40мм)</option>
+              </select>
+            </div>
+            <button onclick="generateBarcodes()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Үүсгэх</button>
+          </div>
+          <div id="bc-variants" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Баркод урьдчилан харах <span class="card-title-right" id="bc-preview-count"></span></div>
+          <div id="bc-preview-area" style="display:flex;flex-wrap:wrap;gap:12px;padding:8px;min-height:200px;background:#fafafa;border-radius:8px;border:1px dashed var(--gray-mid)">
+            <div style="width:100%;display:flex;align-items:center;justify-content:center;color:var(--gray);font-size:13px;padding:40px">Бараа сонгоод "Үүсгэх" товч дарна уу</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ХЭРЭГЛЭГЧИД -->
       <div class="panel" id="panel-users">
         <div class="card">
@@ -629,6 +679,70 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- САЛБАР ЗАСАХ MODAL -->
+<div class="modal-overlay" id="modal-branch" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:300">Салбар удирдлага</div>
+      <button onclick="document.getElementById('modal-branch').style.display='none'" style="border:none;background:none;font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div id="branch-edit-list"></div>
+    <div style="margin-top:16px;text-align:right">
+      <button onclick="document.getElementById('modal-branch').style.display='none'" style="background:var(--black);color:var(--white);border:none;padding:11px 24px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<!-- ХЭРЭГЛЭГЧ НЭМЭХ MODAL -->
+<div class="modal-overlay" id="modal-add-user" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:300" id="user-modal-title">Хэрэглэгч нэмэх</div>
+      <button onclick="closeAddUser()" style="border:none;background:none;font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <input type="hidden" id="edit-user-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нэвтрэх нэр *</label>
+        <input id="usr-username" class="f-input" placeholder="cashier06">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нууц үг *</label>
+        <input id="usr-password" class="f-input" type="password" placeholder="••••••">
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Бүтэн нэр</label>
+        <input id="usr-fullname" class="f-input" placeholder="Б.Болд">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Эрх *</label>
+        <select id="usr-role" class="f-input" style="cursor:pointer">
+          <option value="cashier">Худалдагч (Cashier)</option>
+          <option value="warehouse">Агуулах (Warehouse)</option>
+          <option value="admin">Менежер (Admin)</option>
+          <option value="super_admin">Супер Админ</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Салбар</label>
+        <select id="usr-branch" class="f-input" style="cursor:pointer">
+          <option value="">— Сонгох —</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="usr-active" checked style="accent-color:var(--black);width:15px;height:15px">
+          Идэвхтэй хэрэглэгч
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeAddUser()" style="flex:1;border:1px solid var(--gray-mid);background:var(--white);padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Болих</button>
+      <button onclick="saveUser()" style="flex:2;background:var(--black);color:var(--white);border:none;padding:12px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Хадгалах</button>
     </div>
   </div>
 </div>
@@ -805,9 +919,12 @@ function showPanel(id,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт'};
+  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
   if(id==='manage-products') loadManageProducts();
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
+  if(id==='barcode'){loadBarcodeProducts();loadUsers();}
+  if(id==='suppliers') loadSuppliers();
+  if(id==='users') loadUsers();
   document.getElementById('page-title').textContent=titles[id]||id;
 }
 
@@ -828,7 +945,8 @@ async function loadAll(){
     loadSales(),
     loadUsers(),
     loadSuppliers(),
-    loadAlerts()
+    loadAlerts(),
+    loadBarcodeProducts()
   ]);
 }
 
@@ -1124,18 +1242,110 @@ async function loadProductReport(){
 // ── USERS ──
 async function loadUsers(){
   try{
-    const data=await apiGet('/api/users');
+    const [data, branches] = await Promise.all([apiGet('/api/users'), fetch('/api/branches').then(r=>r.json())]);
+    window.BRANCHES_LIST = branches;
+    document.getElementById('users-count').textContent = data.length+' хэрэглэгч';
+
+    // Branch select шинэчлэх
+    const brSel = document.getElementById('usr-branch');
+    if(brSel) brSel.innerHTML = '<option value="">— Сонгох —</option>' +
+      branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+
+    const roleNames={super_admin:'Супер Админ',admin:'Менежер',cashier:'Худалдагч',warehouse:'Агуулах'};
     document.getElementById('users-table').innerHTML=data.map(u=>`
       <tr>
         <td><code style="font-size:12px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${u.username}</code></td>
         <td><b>${u.full_name||'—'}</b></td>
-        <td><span class="badge ${u.role==='super_admin'?'badge-red':u.role==='admin'?'badge-blue':'badge-gray'}">${{super_admin:'Супер Админ',admin:'Админ',cashier:'Худалдагч',warehouse:'Агуулах'}[u.role]||u.role}</span></td>
+        <td><span class="badge ${u.role==='super_admin'?'badge-red':u.role==='admin'?'badge-blue':u.role==='cashier'?'badge-gray':'badge-amber'}">${roleNames[u.role]||u.role}</span></td>
         <td>${u.branch_name||'Бүгд'}</td>
-        <td style="font-size:11px;color:var(--gray)">${new Date(u.created_at).toLocaleDateString('mn-MN')}</td>
         <td><span class="badge ${u.is_active?'badge-green':'badge-gray'}">${u.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
-        <td><button style="border:none;background:none;font-size:11px;color:var(--blue);cursor:pointer;font-family:var(--font-body)" onclick="showToast('Эрх засах')">Засах</button></td>
+        <td style="display:flex;gap:6px">
+          <button onclick="editUser(${u.id},'${u.username}','${u.full_name||''}','${u.role}',${u.branch_id||'null'},${u.is_active})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
+        </td>
       </tr>`).join('');
   }catch(e){console.error('Users алдаа:',e);}
+}
+
+function openAddUser(){
+  document.getElementById('user-modal-title').textContent='Хэрэглэгч нэмэх';
+  document.getElementById('edit-user-id').value='';
+  document.getElementById('usr-username').value='';
+  document.getElementById('usr-password').value='';
+  document.getElementById('usr-fullname').value='';
+  document.getElementById('usr-role').value='cashier';
+  document.getElementById('usr-branch').value='';
+  document.getElementById('usr-active').checked=true;
+  document.getElementById('usr-username').disabled=false;
+  document.getElementById('modal-add-user').style.display='flex';
+}
+
+function editUser(id,username,fullname,role,branchId,isActive){
+  document.getElementById('user-modal-title').textContent='Хэрэглэгч засах';
+  document.getElementById('edit-user-id').value=id;
+  document.getElementById('usr-username').value=username;
+  document.getElementById('usr-username').disabled=true;
+  document.getElementById('usr-password').value='';
+  document.getElementById('usr-password').placeholder='Хоосон үлдээвэл өөрчлөгдөхгүй';
+  document.getElementById('usr-fullname').value=fullname;
+  document.getElementById('usr-role').value=role;
+  document.getElementById('usr-branch').value=branchId||'';
+  document.getElementById('usr-active').checked=isActive;
+  document.getElementById('modal-add-user').style.display='flex';
+}
+
+function closeAddUser(){
+  document.getElementById('modal-add-user').style.display='none';
+}
+
+async function saveUser(){
+  const id=document.getElementById('edit-user-id').value;
+  const username=document.getElementById('usr-username').value.trim();
+  const password=document.getElementById('usr-password').value;
+  const full_name=document.getElementById('usr-fullname').value.trim();
+  const role=document.getElementById('usr-role').value;
+  const branch_id=document.getElementById('usr-branch').value||null;
+  const is_active=document.getElementById('usr-active').checked;
+
+  if(!id && (!username||!password)){showToast('Нэвтрэх нэр болон нууц үг оруулна уу','error');return;}
+
+  try{
+    if(id){
+      const body={full_name,role,branch_id,is_active};
+      if(password) body.password=password;
+      await apiPost_put('/api/users/'+id, body);
+      showToast(full_name||username+' шинэчлэгдлээ','success');
+    } else {
+      await apiPost('/api/users',{username,password,full_name,role,branch_id,is_active});
+      showToast(username+' нэмэгдлээ','success');
+    }
+    closeAddUser();
+    await loadUsers();
+  }catch(e){showToast('Алдаа: '+e.message,'error');}
+}
+
+// ── САЛБАР ЗАСАХ ──
+async function openBranchManager(){
+  try{
+    const data=await fetch('/api/branches').then(r=>r.json());
+    document.getElementById('branch-edit-list').innerHTML=data.map(b=>`
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-light)">
+        <input value="${b.name}" id="br-name-${b.id}" class="f-input" placeholder="Салбарын нэр">
+        <input value="${b.location||''}" id="br-loc-${b.id}" class="f-input" placeholder="Байршил">
+        <button onclick="saveBranch(${b.id})" style="background:var(--black);color:var(--white);border:none;padding:9px 16px;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Хадгалах</button>
+      </div>`).join('');
+    document.getElementById('modal-branch').style.display='flex';
+  }catch(e){showToast('Салбар татахад алдаа','error');}
+}
+
+async function saveBranch(id){
+  const name=document.getElementById('br-name-'+id).value.trim();
+  const location=document.getElementById('br-loc-'+id).value.trim();
+  if(!name){showToast('Нэр оруулна уу','error');return;}
+  try{
+    await apiPost_put('/api/branches/'+id,{name,location});
+    showToast('Салбар шинэчлэгдлээ','success');
+    await loadBranches();
+  }catch(e){showToast('Алдаа: '+e.message,'error');}
 }
 
 // ── TRANSFERS ──
@@ -1569,6 +1779,106 @@ function whConfirmReturn(){
   showToast('Буцаалт бүртгэгдлээ — '+qty+' ширхэг','success');
 }
 function whClearReturn(){whReturnItems=[];whRenderReturn();}
+
+// ── БАРКОД ──
+let bcProducts = [];
+let selectedVariants = [];
+
+async function loadBarcodeProducts(){
+  try{
+    const data = await apiGet('/api/products?limit=200');
+    bcProducts = data;
+    const sel = document.getElementById('bc-product');
+    if(sel) sel.innerHTML = '<option value="">— Бараа сонгох —</option>' +
+      data.map(p=>`<option value="${p.id}">${p.name} (${p.sku})</option>`).join('');
+  }catch(e){}
+}
+
+async function loadBarcodeVariants(){
+  const productId = document.getElementById('bc-product').value;
+  if(!productId){document.getElementById('bc-variants').innerHTML='';return;}
+  try{
+    const data = await apiGet('/api/products/'+productId);
+    const variants = data.variants||[];
+    selectedVariants = variants.map(v=>({...v, selected:true, productName:data.name, productSku:data.sku, price:data.price}));
+
+    document.getElementById('bc-variants').innerHTML = selectedVariants.length
+      ? `<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:500;width:100%;margin-bottom:4px">Variant сонгох:</div>`+
+        selectedVariants.map((v,i)=>`
+          <label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--gray-light);border-radius:6px;cursor:pointer;font-size:12px;background:var(--white)">
+            <input type="checkbox" checked onchange="selectedVariants[${i}].selected=this.checked" style="accent-color:var(--black)">
+            ${v.color||'—'} / ${v.size||'—'}
+            <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||v.sku||'—'}</code>
+          </label>`).join('')
+      : '<div style="color:var(--gray);font-size:12px">Variant байхгүй байна</div>';
+  }catch(e){}
+}
+
+function generateBarcodes(){
+  const count = parseInt(document.getElementById('bc-count').value)||1;
+  const size = document.getElementById('bc-size').value;
+  const active = selectedVariants.filter(v=>v.selected);
+
+  if(!active.length){showToast('Variant сонгоно уу','error');return;}
+
+  const dims = {small:{w:120,h:60,fs:8},medium:{w:180,h:90,fs:10},large:{w:240,h:120,fs:12}};
+  const d = dims[size];
+
+  const area = document.getElementById('bc-preview-area');
+  let html = '';
+
+  active.forEach(v => {
+    for(let i=0;i<count;i++){
+      const barcode = v.barcode||v.sku||'0000000000';
+      html += `
+        <div class="barcode-label" style="width:${d.w}px;height:${d.h}px;border:1px solid #ddd;border-radius:4px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;background:white;font-family:monospace">
+          <div style="font-size:${d.fs}px;font-weight:700;letter-spacing:1px;text-align:center;font-family:'DM Sans',sans-serif;line-height:1.2">${v.productName||'—'}</div>
+          <div style="font-size:${d.fs-1}px;color:#666;text-align:center;font-family:'DM Sans',sans-serif">${v.color||''} ${v.size?'/ '+v.size:''}</div>
+          <svg id="svg-${v.id}-${i}" width="${d.w-16}" height="${d.h*0.4}"></svg>
+          <div style="font-size:${d.fs}px;letter-spacing:2px;font-family:monospace">${barcode}</div>
+          <div style="font-size:${d.fs+1}px;font-weight:700;font-family:'DM Sans',sans-serif">₮${parseInt(v.price||0).toLocaleString()}</div>
+        </div>`;
+    }
+  });
+
+  area.innerHTML = html;
+  document.getElementById('bc-preview-count').textContent = active.length * count + ' баркод';
+
+  // SVG баркод зурах
+  active.forEach(v => {
+    for(let i=0;i<count;i++){
+      const svg = document.getElementById('svg-'+v.id+'-'+i);
+      if(svg) drawBarcode(svg, v.barcode||v.sku||'0000000000', d.w-16, d.h*0.4);
+    }
+  });
+
+  showToast(active.length*count+' баркод үүслээ','success');
+}
+
+function drawBarcode(svg, code, width, height){
+  // Энгийн баркод зурах (Code 128 хялбаршуулсан)
+  const encoded = code.replace(/[^0-9A-Z]/g,'');
+  const barWidth = width / (encoded.length * 8 + 20);
+  let x = barWidth * 5;
+  let bars = '';
+
+  // Start bar
+  bars += `<rect x="${x}" y="0" width="${barWidth*2}" height="${height*0.85}" fill="black"/>`;
+  x += barWidth * 3;
+
+  for(let c of encoded){
+    const n = parseInt(c, 36);
+    const pattern = [1,0,1,0,1,0,1,0].map((_,i)=>(n>>i)&1);
+    for(let bit of pattern){
+      if(bit) bars += `<rect x="${x}" y="0" width="${barWidth}" height="${height*0.85}" fill="black"/>`;
+      x += barWidth * 1.2;
+    }
+  }
+
+  // End bar
+  bars += `<rect x="${x}" y="0" width="${barWidth*2}" height="${height*0.85}" fill="black"/>`;
+  svg.innerHTML = bars;
+}
 
 // ── INIT ──
 // Token байвал шууд нэвтрэх

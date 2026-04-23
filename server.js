@@ -847,6 +847,52 @@ app.get('/api/alerts', authMiddleware(['admin','super_admin']), async (req, res)
   }
 });
 
+// ── САЛБАР ЗАСАХ ──
+app.put('/api/branches/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { name, location } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE branches SET name=$1, location=$2 WHERE id=$3 RETURNING *',
+      [name, location||null, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ХЭРЭГЛЭГЧ НЭМЭХ ──
+app.post('/api/users', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { username, password, full_name, role, branch_id } = req.body;
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      'INSERT INTO users (username, password_hash, full_name, role, branch_id) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, full_name, role, branch_id',
+      [username, hash, full_name||null, role, branch_id||null]
+    );
+    res.json(result.rows[0]);
+  } catch(err) {
+    if(err.code==='23505') res.status(400).json({ error: 'Нэвтрэх нэр аль хэдийн бүртгэлтэй байна' });
+    else res.status(500).json({ error: err.message });
+  }
+});
+
+// ── ХЭРЭГЛЭГЧ ЗАСАХ ──
+app.put('/api/users/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { full_name, role, branch_id, is_active, password } = req.body;
+  try {
+    let query, params;
+    if(password) {
+      const hash = await bcrypt.hash(password, 10);
+      query = 'UPDATE users SET full_name=$1, role=$2, branch_id=$3, is_active=$4, password_hash=$5 WHERE id=$6 RETURNING id, username, full_name, role, branch_id, is_active';
+      params = [full_name||null, role, branch_id||null, is_active!==false, hash, req.params.id];
+    } else {
+      query = 'UPDATE users SET full_name=$1, role=$2, branch_id=$3, is_active=$4 WHERE id=$5 RETURNING id, username, full_name, role, branch_id, is_active';
+      params = [full_name||null, role, branch_id||null, is_active!==false, req.params.id];
+    }
+    const result = await pool.query(query, params);
+    res.json(result.rows[0]);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── ХЭРЭГЛЭГЧ ──
 app.get('/api/users', authMiddleware(['super_admin','admin']), async (req, res) => {
   try {

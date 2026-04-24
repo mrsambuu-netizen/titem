@@ -215,6 +215,9 @@ tr:hover td{background:#fafafa}
       <button class="nav-item" onclick="showPanel('suppliers',this)">
         <span class="nav-item-icon">🚛</span>Нийлүүлэгч
       </button>
+      <button class="nav-item" onclick="showPanel('partners',this)">
+        <span class="nav-item-icon">🤝</span>Гэрээт борлуулагч
+      </button>
       <div class="nav-section">Агуулах</div>
       <button class="nav-item" onclick="showPanel('wh-receive',this)">
         <span class="nav-item-icon">📥</span>Орлогодох
@@ -320,10 +323,20 @@ tr:hover td{background:#fafafa}
       <div class="panel" id="panel-branches">
         <div class="branch-grid" id="branch-grid"></div>
         <div class="card">
-          <div class="card-title">Салбар бүрийн дэлгэрэнгүй тайлан <span class="card-title-right"><button onclick="openBranchManager()" style="background:var(--black);color:var(--white);border:none;padding:6px 14px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Салбар засах</button></span></div>
+          <div class="card-title">
+            Салбар бүрийн дэлгэрэнгүй тайлан
+            <span class="card-title-right">
+              <button onclick="openBranchManager()" style="background:var(--black);color:var(--white);border:none;padding:6px 14px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">+ Салбар / Гэрээт борлуулагч</button>
+            </span>
+          </div>
+          <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--gray);line-height:1.6">
+            <b style="color:var(--black)">Төрөл:</b>
+            Өөрийн салбар = POS шууд борлуулалт ·
+            Гэрээт борлуулагч = гэрээгээр авч зардаг partner / борлуулах цэг
+          </div>
           <div class="table-wrap">
             <table class="main-table">
-              <thead><tr><th>Салбар</th><th>Байршил</th><th>Өдрийн орлого</th><th>Бэлэн</th><th>Карт/QPay</th><th>Гүйлгээ</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
+              <thead><tr><th>Салбар / Борлуулагч</th><th>Төрөл</th><th>Байршил</th><th>Комисс</th><th>Өдрийн орлого</th><th>Бэлэн</th><th>Карт/QPay</th><th>Гүйлгээ</th><th>Статус</th></tr></thead>
               <tbody id="branch-detail-table"></tbody>
             </table>
           </div>
@@ -440,6 +453,113 @@ tr:hover td{background:#fafafa}
             <table>
               <thead><tr><th>Огноо</th><th>Бараа</th><th>Тоо</th><th>Хаанаас</th><th>Хаашаа</th><th>Статус</th><th>Хариуцсан</th></tr></thead>
               <tbody id="transfer-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ГЭРЭЭТ БОРЛУУЛАГЧ -->
+      <div class="panel" id="panel-partners">
+        <div class="kpi-grid" style="margin-bottom:20px">
+          <div class="kpi-card"><div class="kpi-label">🤝 Гэрээт борлуулагч</div><div class="kpi-val" id="pt-kpi-count">0</div><div class="kpi-sub">идэвхтэй</div></div>
+          <div class="kpi-card"><div class="kpi-label">📦 Борлуулагч дээрх бараа</div><div class="kpi-val" id="pt-kpi-stock">0</div><div class="kpi-sub">ширхэг</div></div>
+          <div class="kpi-card"><div class="kpi-label">💰 Авлага</div><div class="kpi-val" id="pt-kpi-receivable">₮0</div><div class="kpi-sub">тооцоо авах</div></div>
+          <div class="kpi-card"><div class="kpi-label">↩️ Буцаасан</div><div class="kpi-val" id="pt-kpi-returned">0</div><div class="kpi-sub">ширхэг</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Гэрээт борлуулагчийн зөв логик</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12px;line-height:1.6">
+            <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:12px">
+              <b>1. Бараа өгөх</b><br>
+              Агуулахын үлдэгдэл хасагдана, борлуулагчийн үлдэгдэл нэмэгдэнэ. Энэ нь борлуулалт биш.
+            </div>
+            <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:12px">
+              <b>2. Зарсан тооцоо</b><br>
+              Борлуулагчийн үлдэгдэл хасагдаж, борлуулалт болон авлага үүснэ.
+            </div>
+            <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:12px">
+              <b>3. Буцаалт</b><br>
+              Борлуулагчийн үлдэгдэл хасагдаж, агуулахын үлдэгдэл буцааж нэмэгдэнэ.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Гэрээт борлуулагчид бараа өгөх <span class="card-title-right">Өгсөн ≠ Зарсан</span></div>
+          <div class="tf-grid">
+            <div>
+              <label class="tf-label">Гэрээт борлуулагч</label>
+              <select class="tf-select" id="pt-transfer-partner"></select>
+            </div>
+            <div>
+              <label class="tf-label">Бараа</label>
+              <select class="tf-select" id="pt-transfer-product"></select>
+            </div>
+            <div>
+              <label class="tf-label">Тоо</label>
+              <input class="tf-input" id="pt-transfer-qty" type="number" min="1" value="1">
+            </div>
+            <button class="btn-transfer" onclick="partnerTransfer()">Өгөх</button>
+          </div>
+          <div style="font-size:11px;color:var(--gray);margin-top:10px">Үйлдэл: Агуулахын үлдэгдлээс хасна → гэрээт борлуулагчийн үлдэгдэлд нэмнэ.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Зарсан тооцоо оруулах <span class="card-title-right">борлуулалт + авлага үүснэ</span></div>
+          <div class="tf-grid">
+            <div>
+              <label class="tf-label">Гэрээт борлуулагч</label>
+              <select class="tf-select" id="pt-sale-partner"></select>
+            </div>
+            <div>
+              <label class="tf-label">Бараа</label>
+              <select class="tf-select" id="pt-sale-product"></select>
+            </div>
+            <div>
+              <label class="tf-label">Зарсан тоо</label>
+              <input class="tf-input" id="pt-sale-qty" type="number" min="1" value="1">
+            </div>
+            <button class="btn-transfer" onclick="partnerSale()">Тооцоо оруулах</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Буцаалт авах <span class="card-title-right">борлуулагч → агуулах</span></div>
+          <div class="tf-grid">
+            <div>
+              <label class="tf-label">Гэрээт борлуулагч</label>
+              <select class="tf-select" id="pt-return-partner"></select>
+            </div>
+            <div>
+              <label class="tf-label">Бараа</label>
+              <select class="tf-select" id="pt-return-product"></select>
+            </div>
+            <div>
+              <label class="tf-label">Буцаах тоо</label>
+              <input class="tf-input" id="pt-return-qty" type="number" min="1" value="1">
+            </div>
+            <button class="btn-transfer" onclick="partnerReturn()">Буцаалт</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Гэрээт борлуулагчийн үлдэгдэл / авлага <span class="card-title-right" id="pt-count"></span></div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Борлуулагч</th><th>Бараа</th><th>Өгсөн</th><th>Зарсан</th><th>Буцаасан</th><th>Одоо байгаа</th><th>Авлага</th><th>Комисс</th><th>Статус</th></tr></thead>
+              <tbody id="pt-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Гэрээт борлуулагчийн хөдөлгөөний түүх</div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Огноо</th><th>Төрөл</th><th>Борлуулагч</th><th>Бараа</th><th>Тоо</th><th>Дүн</th><th>Тайлбар</th></tr></thead>
+              <tbody id="pt-history"></tbody>
             </table>
           </div>
         </div>
@@ -746,11 +866,34 @@ tr:hover td{background:#fafafa}
 
 <!-- САЛБАР ЗАСАХ MODAL -->
 <div class="modal-overlay" id="modal-branch" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-family:var(--font-head);font-size:24px;font-weight:300">Салбар удирдлага</div>
+  <div style="background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:980px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div>
+        <div style="font-family:var(--font-head);font-size:24px;font-weight:300">Салбар / гэрээт борлуулагч удирдлага</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:3px">Өөрийн салбар болон гэрээт борлуулагчийг тусад нь бүртгэнэ.</div>
+      </div>
       <button onclick="document.getElementById('modal-branch').style.display='none'" style="border:none;background:none;font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
     </div>
+
+    <div style="background:#fafafa;border:1px solid var(--gray-light);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">+ Шинэ салбар / гэрээт борлуулагч нэмэх</div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <input id="br-new-name" class="f-input" placeholder="Нэр: TITEM Сүхбаатар / Гэрээт дэлгүүр">
+        <input id="br-new-loc" class="f-input" placeholder="Байршил">
+        <select id="br-new-type" class="f-input" style="cursor:pointer">
+          <option value="own_branch">Өөрийн салбар</option>
+          <option value="partner">Гэрээт борлуулагч</option>
+        </select>
+        <input id="br-new-phone" class="f-input" placeholder="Утас">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:10px;align-items:center">
+        <input id="br-new-manager" class="f-input" placeholder="Хариуцагч">
+        <input id="br-new-commission" class="f-input" type="number" min="0" max="100" placeholder="Комисс %">
+        <input id="br-new-terms" class="f-input" placeholder="Тооцооны нөхцөл: 7 хоног бүр / сарын эцэст">
+        <button onclick="addBranchLocation()" style="background:var(--black);color:var(--white);border:none;padding:11px 18px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Нэмэх</button>
+      </div>
+    </div>
+
     <div id="branch-edit-list"></div>
     <div style="margin-top:16px;text-align:right">
       <button onclick="document.getElementById('modal-branch').style.display='none'" style="background:var(--black);color:var(--white);border:none;padding:11px 24px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Хаах</button>
@@ -981,11 +1124,12 @@ function showPanel(id,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
+  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',partners:'Гэрээт борлуулагч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
   if(id==='manage-products') loadManageProducts();
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
   if(id==='barcode'){loadBarcodeProducts();loadUsers();}
   if(id==='suppliers') loadSuppliers();
+  if(document.getElementById('panel-partners')?.classList.contains('active')) renderPartners();
   if(id==='users') loadUsers();
   document.getElementById('page-title').textContent=titles[id]||id;
 }
@@ -1092,31 +1236,67 @@ async function loadDashboard(){
 }
 
 // ── BRANCHES ──
+function branchTypeLabel(type){
+  const t = type || 'own_branch';
+  if(t === 'partner') return 'Гэрээт борлуулагч';
+  return 'Өөрийн салбар';
+}
+function branchTypeBadge(type){
+  const t = type || 'own_branch';
+  if(t === 'partner') return 'badge-amber';
+  return 'badge-green';
+}
+function normalizeBranchType(b){
+  const raw = b.branch_type || b.type || (b.is_consignment ? 'partner' : 'own_branch');
+  return raw === 'consignment' ? 'partner' : raw;
+}
+function branchCommissionText(b){
+  const v = b.commission_percent ?? b.commission ?? '';
+  return v !== '' && v !== null && v !== undefined ? `${v}%` : '—';
+}
+
 async function loadBranches(){
   try{
-    const data=await apiGet('/api/reports/branches?date='+today);
-    document.getElementById('branch-grid').innerHTML=data.map(b=>`
+    const [reportData, masterData] = await Promise.all([
+      apiGet('/api/reports/branches?date='+today).catch(()=>[]),
+      fetch('/api/branches').then(r=>r.json()).catch(()=>[])
+    ]);
+
+    const masterMap = {};
+    masterData.forEach(b => masterMap[b.id] = b);
+    const data = reportData.length ? reportData.map(b => ({...b, ...(masterMap[b.id]||{})})) : masterData;
+
+    document.getElementById('branch-grid').innerHTML=data.map(b=>{
+      const type = normalizeBranchType(b);
+      return `
       <div class="branch-card">
         <div class="branch-card-head">
-          <div class="branch-name">${b.name}<br><span style="font-size:11px;color:var(--gray);font-weight:400">${b.location||''}</span></div>
-          <div class="branch-status online"></div>
+          <div class="branch-name">${b.name}<br>
+            <span style="font-size:11px;color:var(--gray);font-weight:400">${b.location||''}</span><br>
+            <span class="badge ${branchTypeBadge(type)}" style="margin-top:6px">${branchTypeLabel(type)}</span>
+          </div>
+          <div class="branch-status ${b.is_active===false?'offline':'online'}"></div>
         </div>
         <div class="branch-stat-row"><span>Өдрийн орлого</span><span>₮${parseInt(b.total_revenue||0).toLocaleString()}</span></div>
         <div class="branch-stat-row"><span>Гүйлгээ</span><span>${b.transaction_count||0}</span></div>
-        <div class="branch-stat-row"><span>Бэлэн</span><span>₮${parseInt(b.cash_total||0).toLocaleString()}</span></div>
-        <div class="branch-stat-row"><span>Карт/QPay</span><span>₮${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</span></div>
-      </div>`).join('');
+        <div class="branch-stat-row"><span>Комисс</span><span>${branchCommissionText(b)}</span></div>
+        <div class="branch-stat-row"><span>Хариуцагч</span><span>${b.manager_name||b.contact_name||'—'}</span></div>
+      </div>`}).join('');
 
-    document.getElementById('branch-detail-table').innerHTML=data.map(b=>`
+    document.getElementById('branch-detail-table').innerHTML=data.map(b=>{
+      const type = normalizeBranchType(b);
+      return `
       <tr>
-        <td><b>${b.name}</b></td>
-        <td>—</td><td>—</td>
+        <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.manager_name||b.contact_name||''} ${b.phone?`· ${b.phone}`:''}</span></td>
+        <td><span class="badge ${branchTypeBadge(type)}">${branchTypeLabel(type)}</span></td>
+        <td>${b.location||'—'}</td>
+        <td>${branchCommissionText(b)}</td>
         <td>₮${parseInt(b.total_revenue||0).toLocaleString()}</td>
         <td>₮${parseInt(b.cash_total||0).toLocaleString()}</td>
         <td>₮${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</td>
         <td>${b.transaction_count||0}</td>
-        <td><span class="badge badge-green">Онлайн</span></td>
-      </tr>`).join('');
+        <td><span class="badge ${b.is_active===false?'badge-gray':'badge-green'}">${b.is_active===false?'Идэвхгүй':'Идэвхтэй'}</span></td>
+      </tr>`}).join('');
   }catch(e){console.error('Branches алдаа:',e);}
 }
 
@@ -1207,6 +1387,193 @@ function renderInventory(){
       <td>${i.warehouse}</td><td>${i.branches}</td><td>${i.min}</td>
       <td><span class="badge ${sc}">${sl}</span></td>
     </tr>`;}).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
+}
+
+
+// ── PARTNER SELLERS ──
+let PARTNER_STOCK = JSON.parse(localStorage.getItem('titem_partner_stock') || '[]');
+let PARTNER_HISTORY = JSON.parse(localStorage.getItem('titem_partner_history') || '[]');
+
+function savePartnerState(){
+  localStorage.setItem('titem_partner_stock', JSON.stringify(PARTNER_STOCK));
+  localStorage.setItem('titem_partner_history', JSON.stringify(PARTNER_HISTORY));
+}
+
+function getPartners(){
+  if(typeof BRANCHES !== 'undefined' && Array.isArray(BRANCHES)){
+    return BRANCHES.filter(b => normalizeBranchType ? normalizeBranchType(b)==='partner' : (b.branch_type==='partner'));
+  }
+  return [];
+}
+
+function getPartnerProductOptions(){
+  const list = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []);
+  return list.map(p => `<option value="${p.id}" data-sku="${p.sku||''}" data-price="${p.price||p.retail_price||0}">${p.name} (${p.sku||'-'})</option>`).join('');
+}
+
+function fillPartnerSelects(){
+  const partners = getPartners();
+  const partnerOptions = partners.map(p => `<option value="${p.id}" data-commission="${p.commission_percent||p.commission||0}">${p.name}</option>`).join('');
+  ['pt-transfer-partner','pt-sale-partner','pt-return-partner'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML = partnerOptions || '<option value="">Гэрээт борлуулагч байхгүй</option>';
+  });
+  const productOptions = getPartnerProductOptions();
+  ['pt-transfer-product','pt-sale-product','pt-return-product'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML = productOptions || '<option value="">Бараа байхгүй</option>';
+  });
+}
+
+function findProductById(id){
+  return (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(p => String(p.id)===String(id));
+}
+
+function findPartnerById(id){
+  return getPartners().find(p => String(p.id)===String(id));
+}
+
+function partnerStockRow(partnerId, productId){
+  let row = PARTNER_STOCK.find(r => String(r.partner_id)===String(partnerId) && String(r.product_id)===String(productId));
+  if(!row){
+    const p=findProductById(productId);
+    const partner=findPartnerById(partnerId);
+    row={
+      partner_id:partnerId,
+      partner_name:partner?.name||'—',
+      product_id:productId,
+      product_name:p?.name||'—',
+      sku:p?.sku||'—',
+      given:0,
+      sold:0,
+      returned:0,
+      on_hand:0,
+      receivable:0,
+      commission_percent:partner?.commission_percent||partner?.commission||0
+    };
+    PARTNER_STOCK.push(row);
+  }
+  return row;
+}
+
+function partnerTransfer(){
+  const partnerId=document.getElementById('pt-transfer-partner')?.value;
+  const productId=document.getElementById('pt-transfer-product')?.value;
+  const qty=parseInt(document.getElementById('pt-transfer-qty')?.value||0);
+  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, тоо сонгоно уу','error');return;}
+  const row=partnerStockRow(partnerId,productId);
+  const product=findProductById(productId);
+  row.given += qty;
+  row.on_hand += qty;
+  PARTNER_HISTORY.unshift({
+    date:new Date().toLocaleString('mn-MN'),
+    type:'Бараа өгсөн',
+    partner:row.partner_name,
+    product:row.product_name,
+    qty,
+    amount:0,
+    note:'Агуулахын үлдэгдлээс хасагдаж, гэрээт борлуулагч дээр нэмэгдэнэ'
+  });
+  if(product && typeof product.totalStock === 'number') product.totalStock = Math.max(0, product.totalStock - qty);
+  savePartnerState();
+  renderPartners();
+  showToast('Гэрээт борлуулагчид '+qty+'ш бараа өглөө','success');
+}
+
+function partnerSale(){
+  const partnerId=document.getElementById('pt-sale-partner')?.value;
+  const productId=document.getElementById('pt-sale-product')?.value;
+  const qty=parseInt(document.getElementById('pt-sale-qty')?.value||0);
+  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, зарсан тоо сонгоно уу','error');return;}
+  const row=partnerStockRow(partnerId,productId);
+  if(row.on_hand < qty){showToast('Борлуулагч дээрх үлдэгдэл хүрэлцэхгүй','error');return;}
+  const product=findProductById(productId);
+  const price=parseInt(product?.price||product?.retail_price||0);
+  const amount=qty*price;
+  row.sold += qty;
+  row.on_hand -= qty;
+  row.receivable += amount;
+  PARTNER_HISTORY.unshift({
+    date:new Date().toLocaleString('mn-MN'),
+    type:'Зарсан тооцоо',
+    partner:row.partner_name,
+    product:row.product_name,
+    qty,
+    amount,
+    note:'Борлуулагчийн үлдэгдэл хасагдаж, авлага үүсэв'
+  });
+  savePartnerState();
+  renderPartners();
+  showToast('Зарсан тооцоо орлоо: ₮'+amount.toLocaleString(),'success');
+}
+
+function partnerReturn(){
+  const partnerId=document.getElementById('pt-return-partner')?.value;
+  const productId=document.getElementById('pt-return-product')?.value;
+  const qty=parseInt(document.getElementById('pt-return-qty')?.value||0);
+  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, буцаах тоо сонгоно уу','error');return;}
+  const row=partnerStockRow(partnerId,productId);
+  if(row.on_hand < qty){showToast('Буцаах тоо үлдэгдлээс их байна','error');return;}
+  const product=findProductById(productId);
+  row.returned += qty;
+  row.on_hand -= qty;
+  if(product && typeof product.totalStock === 'number') product.totalStock += qty;
+  PARTNER_HISTORY.unshift({
+    date:new Date().toLocaleString('mn-MN'),
+    type:'Буцаалт',
+    partner:row.partner_name,
+    product:row.product_name,
+    qty,
+    amount:0,
+    note:'Борлуулагчаас агуулах руу буцаав'
+  });
+  savePartnerState();
+  renderPartners();
+  showToast('Буцаалт бүртгэгдлээ: '+qty+'ш','success');
+}
+
+function renderPartners(){
+  fillPartnerSelects();
+  const partners=getPartners();
+  const tbody=document.getElementById('pt-table');
+  const hist=document.getElementById('pt-history');
+  const activePartners=partners.filter(p=>p.is_active!==false).length;
+  const totalStock=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.on_hand)||0),0);
+  const receivable=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.receivable)||0),0);
+  const returned=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.returned)||0),0);
+  if(document.getElementById('pt-kpi-count')) document.getElementById('pt-kpi-count').textContent=activePartners;
+  if(document.getElementById('pt-kpi-stock')) document.getElementById('pt-kpi-stock').textContent=totalStock;
+  if(document.getElementById('pt-kpi-receivable')) document.getElementById('pt-kpi-receivable').textContent='₮'+receivable.toLocaleString();
+  if(document.getElementById('pt-kpi-returned')) document.getElementById('pt-kpi-returned').textContent=returned;
+  if(document.getElementById('pt-count')) document.getElementById('pt-count').textContent=PARTNER_STOCK.length+' мөр';
+
+  if(tbody){
+    tbody.innerHTML = PARTNER_STOCK.length ? PARTNER_STOCK.map(r=>`
+      <tr>
+        <td><b>${r.partner_name}</b></td>
+        <td>${r.product_name}<br><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${r.sku}</code></td>
+        <td>${r.given}</td>
+        <td>${r.sold}</td>
+        <td>${r.returned}</td>
+        <td style="font-weight:700">${r.on_hand}</td>
+        <td style="font-weight:700;color:var(--blue)">₮${parseInt(r.receivable||0).toLocaleString()}</td>
+        <td>${r.commission_percent||0}%</td>
+        <td><span class="badge ${r.on_hand>0?'badge-green':'badge-gray'}">${r.on_hand>0?'Бараа байгаа':'Үлдэгдэлгүй'}</span></td>
+      </tr>`).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px">Гэрээт борлуулагчид өгсөн бараа одоогоор алга</td></tr>`;
+  }
+
+  if(hist){
+    hist.innerHTML = PARTNER_HISTORY.length ? PARTNER_HISTORY.map(h=>`
+      <tr>
+        <td>${h.date}</td>
+        <td><span class="badge ${h.type==='Зарсан тооцоо'?'badge-blue':h.type==='Буцаалт'?'badge-amber':'badge-green'}">${h.type}</span></td>
+        <td>${h.partner}</td>
+        <td>${h.product}</td>
+        <td>${h.qty}</td>
+        <td>${h.amount ? '₮'+parseInt(h.amount).toLocaleString() : '—'}</td>
+        <td>${h.note||'—'}</td>
+      </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Хөдөлгөөний түүх алга</td></tr>`;
+  }
 }
 
 // ── SUPPLIERS ──
@@ -1418,25 +1785,88 @@ async function saveUser(){
 async function openBranchManager(){
   try{
     const data=await fetch('/api/branches').then(r=>r.json());
-    document.getElementById('branch-edit-list').innerHTML=data.map(b=>`
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-light)">
-        <input value="${b.name}" id="br-name-${b.id}" class="f-input" placeholder="Салбарын нэр">
+    document.getElementById('branch-edit-list').innerHTML=`
+      <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .75fr .8fr .8fr 1.2fr auto;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--gray-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:600">
+        <div>Нэр</div><div>Байршил</div><div>Төрөл</div><div>Утас</div><div>Хариуцагч</div><div>Комисс %</div><div>Тооцооны нөхцөл</div><div>Үйлдэл</div>
+      </div>
+    ` + data.map(b=>{
+      const type = normalizeBranchType(b);
+      return `
+      <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .75fr .8fr .8fr 1.2fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-light)">
+        <input value="${b.name||''}" id="br-name-${b.id}" class="f-input" placeholder="Салбарын нэр">
         <input value="${b.location||''}" id="br-loc-${b.id}" class="f-input" placeholder="Байршил">
-        <button onclick="saveBranch(${b.id})" style="background:var(--black);color:var(--white);border:none;padding:9px 16px;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Хадгалах</button>
-      </div>`).join('');
+        <select id="br-type-${b.id}" class="f-input" style="cursor:pointer">
+          <option value="own_branch" ${type==='own_branch'?'selected':''}>Өөрийн салбар</option>
+          <option value="partner" ${type==='partner'?'selected':''}>Гэрээт борлуулагч</option>
+        </select>
+        <input value="${b.phone||''}" id="br-phone-${b.id}" class="f-input" placeholder="Утас">
+        <input value="${b.manager_name||b.contact_name||''}" id="br-manager-${b.id}" class="f-input" placeholder="Хариуцагч">
+        <input value="${b.commission_percent??b.commission??''}" id="br-commission-${b.id}" class="f-input" type="number" min="0" max="100" placeholder="%">
+        <input value="${b.payment_terms||''}" id="br-terms-${b.id}" class="f-input" placeholder="7 хоног бүр">
+        <div style="display:flex;gap:6px">
+          <button onclick="saveBranch(${b.id})" style="background:var(--black);color:var(--white);border:none;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Хадгалах</button>
+          <button onclick="toggleBranchActive(${b.id},${b.is_active===false?'true':'false'})" style="border:1px solid var(--gray-mid);background:var(--white);padding:9px 10px;font-size:11px;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">${b.is_active===false?'Идэвхжүүлэх':'Идэвхгүй'}</button>
+        </div>
+      </div>`}).join('');
     document.getElementById('modal-branch').style.display='flex';
   }catch(e){showToast('Салбар татахад алдаа','error');}
 }
 
-async function saveBranch(id){
-  const name=document.getElementById('br-name-'+id).value.trim();
-  const location=document.getElementById('br-loc-'+id).value.trim();
-  if(!name){showToast('Нэр оруулна уу','error');return;}
+async function addBranchLocation(){
+  const body={
+    name:document.getElementById('br-new-name').value.trim(),
+    location:document.getElementById('br-new-loc').value.trim(),
+    branch_type:document.getElementById('br-new-type').value,
+    phone:document.getElementById('br-new-phone').value.trim(),
+    manager_name:document.getElementById('br-new-manager').value.trim(),
+    commission_percent:document.getElementById('br-new-commission').value||null,
+    payment_terms:document.getElementById('br-new-terms').value.trim(),
+    is_active:true
+  };
+  if(!body.name){showToast('Нэр оруулна уу','error');return;}
   try{
-    await apiPost_put('/api/branches/'+id,{name,location});
+    try{
+      await apiPost('/api/branches',body);
+    }catch(firstErr){
+      await apiPost('/api/branches',{name:body.name,location:body.location});
+    }
+    ['br-new-name','br-new-loc','br-new-phone','br-new-manager','br-new-commission','br-new-terms'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('br-new-type').value='own_branch';
+    showToast('Салбар / гэрээт борлуулагч нэмэгдлээ','success');
+    await openBranchManager();
+    await loadBranches();
+  }catch(e){showToast('Нэмэхэд алдаа: '+e.message,'error');}
+}
+
+async function saveBranch(id){
+  const body={
+    name:document.getElementById('br-name-'+id).value.trim(),
+    location:document.getElementById('br-loc-'+id).value.trim(),
+    branch_type:document.getElementById('br-type-'+id).value,
+    phone:document.getElementById('br-phone-'+id).value.trim(),
+    manager_name:document.getElementById('br-manager-'+id).value.trim(),
+    commission_percent:document.getElementById('br-commission-'+id).value||null,
+    payment_terms:document.getElementById('br-terms-'+id).value.trim()
+  };
+  if(!body.name){showToast('Нэр оруулна уу','error');return;}
+  try{
+    try{
+      await apiPost_put('/api/branches/'+id,body);
+    }catch(firstErr){
+      await apiPost_put('/api/branches/'+id,{name:body.name,location:body.location});
+    }
     showToast('Салбар шинэчлэгдлээ','success');
     await loadBranches();
   }catch(e){showToast('Алдаа: '+e.message,'error');}
+}
+
+async function toggleBranchActive(id, active){
+  try{
+    await apiPost_put('/api/branches/'+id,{is_active:active});
+    showToast(active?'Идэвхжүүллээ':'Идэвхгүй болголоо','success');
+    await openBranchManager();
+    await loadBranches();
+  }catch(e){showToast('Backend дээр is_active талбар дэмжигдээгүй байж магадгүй','error');}
 }
 
 // ── TRANSFERS ──

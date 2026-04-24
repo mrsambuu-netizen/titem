@@ -257,12 +257,7 @@ tr:hover td{background:#fafafa}
       <div class="page-title" id="page-title">Дашбоард</div>
       <div class="topbar-right">
         <select class="branch-select" id="branch-filter" onchange="refreshData()">
-          <option value="all">Бүх салбар</option>
-          <option value="1">Салбар 1 — Сүхбаатар</option>
-          <option value="2">Салбар 2 — Баянзүрх</option>
-          <option value="3">Салбар 3 — Хан-Уул</option>
-          <option value="4">Салбар 4 — Баянгол</option>
-          <option value="5">Салбар 5 — Налайх</option>
+          <option value="all">Бүх салбар / борлуулагч</option>
         </select>
         <div class="date-badge" id="date-badge"></div>
       </div>
@@ -1140,7 +1135,14 @@ function initDate(){
   document.getElementById('date-badge').textContent=n.getFullYear()+'/'+(n.getMonth()+1).toString().padStart(2,'0')+'/'+n.getDate().toString().padStart(2,'0');
 }
 
-async function refreshData(){await loadAll();}
+async function refreshData(){
+  const activePanel = document.querySelector('.panel.active')?.id || '';
+  if(activePanel === 'panel-inventory'){
+    await loadInventory();
+  } else {
+    await loadAll();
+  }
+}
 
 // ── LOAD ALL ──
 async function loadAll(){
@@ -1255,6 +1257,35 @@ function branchCommissionText(b){
   return v !== '' && v !== null && v !== undefined ? `${v}%` : '—';
 }
 
+
+function refreshBranchFilterOptions(branches){
+  const sel=document.getElementById('branch-filter');
+  if(!sel || !Array.isArray(branches)) return;
+
+  const current=sel.value || 'all';
+  const active=branches.filter(b=>b.is_active!==false);
+
+  const own=active.filter(b=>normalizeBranchType(b)==='own_branch');
+  const partners=active.filter(b=>normalizeBranchType(b)==='partner');
+
+  const optionLabel=b=>{
+    const type=normalizeBranchType(b)==='partner' ? 'Гэрээт борлуулагч' : 'Өөрийн салбар';
+    const loc=b.location ? ' — '+b.location : '';
+    return `${b.name}${loc} (${type})`;
+  };
+
+  sel.innerHTML =
+    `<option value="all">Бүх салбар / борлуулагч</option>` +
+    `<optgroup label="Өөрийн салбар">` +
+      own.map(b=>`<option value="${b.id}">${optionLabel(b)}</option>`).join('') +
+    `</optgroup>` +
+    `<optgroup label="Гэрээт борлуулагч">` +
+      partners.map(b=>`<option value="${b.id}">${optionLabel(b)}</option>`).join('') +
+    `</optgroup>`;
+
+  if([...sel.options].some(o=>o.value===current)) sel.value=current;
+}
+
 async function loadBranches(){
   try{
     const [reportData, masterData] = await Promise.all([
@@ -1266,6 +1297,7 @@ async function loadBranches(){
     masterData.forEach(b => masterMap[b.id] = b);
     const data = reportData.length ? reportData.map(b => ({...b, ...(masterMap[b.id]||{})})) : masterData;
     window.BRANCHES = data;
+    refreshBranchFilterOptions(masterData.length ? masterData : data);
 
     document.getElementById('branch-grid').innerHTML=data.map(b=>{
       const type = normalizeBranchType(b);
@@ -1327,10 +1359,43 @@ async function loadAlerts(){
 // ── INVENTORY ──
 async function loadInventory(){
   try{
-    const data=await apiGet('/api/inventory');
+    const branch=document.getElementById('branch-filter')?.value || 'all';
+    const selectedBranch=(window.BRANCHES||[]).find(b=>String(b.id)===String(branch));
+    const selectedType=selectedBranch ? normalizeBranchType(selectedBranch) : 'all';
+
+    if(branch !== 'all' && selectedType === 'partner'){
+      const partnerInv=await apiGet('/api/partners/inventory');
+      window.INV_DATA=(partnerInv||[])
+        .filter(r=>String(r.partner_id)===String(branch))
+        .map(r=>({
+          name:r.product_name,
+          sku:r.sku,
+          color:r.color,
+          size:r.size,
+          barcode:r.barcode,
+          branch_name:r.partner_name,
+          quantity:r.on_hand_qty,
+          min_quantity:0,
+          category_name:'Гэрээт борлуулагч',
+          status:parseInt(r.on_hand_qty||0)>0?'ok':'out'
+        }));
+      window.CURRENT_INV_BRANCH=branch;
+      renderInventory();
+      return;
+    }
+
+    const url = branch && branch !== 'all'
+      ? '/api/inventory?branch_id=' + encodeURIComponent(branch)
+      : '/api/inventory';
+
+    const data=await apiGet(url);
     window.INV_DATA=data;
+    window.CURRENT_INV_BRANCH=branch;
     renderInventory();
-  }catch(e){console.error('Inventory алдаа:',e);}
+  }catch(e){
+    console.error('Inventory алдаа:',e);
+    showToast('Үлдэгдэл татахад алдаа: '+e.message,'error');
+  }
 }
 
 function filterInv(btn,f){
@@ -1353,8 +1418,17 @@ function renderInventory(){
     const key=i.sku||i.name;
     if(!grouped[key]){grouped[key]={sku:i.sku,name:i.name,cat:i.category_name||'',total:0,warehouse:0,branches:0,min:parseInt(i.min_quantity||5)};}
     grouped[key].total+=parseInt(i.quantity||0);
-    if(i.branch_name==='Агуулах')grouped[key].warehouse+=parseInt(i.quantity||0);
-    else grouped[key].branches+=parseInt(i.quantity||0);
+    const qty=parseInt(i.quantity||0);
+    if(window.CURRENT_INV_BRANCH && window.CURRENT_INV_BRANCH !== 'all'){
+      const selectedBranch=(window.BRANCHES||[]).find(b=>String(b.id)===String(window.CURRENT_INV_BRANCH));
+      const selectedType=selectedBranch ? normalizeBranchType(selectedBranch) : 'own_branch';
+      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
+      else if(selectedType==='partner') grouped[key].branches += qty;
+      else grouped[key].branches += qty;
+    } else {
+      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
+      else grouped[key].branches += qty;
+    }
   });
   let list=Object.values(grouped);
   list.forEach(i=>{i.status=i.total===0?'out':i.total<i.min?'low':'ok';});
@@ -1377,7 +1451,8 @@ function renderInventory(){
     return 0;
   });
 
-  document.getElementById('inv-count').textContent=list.length+' бараа';
+  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || 'Бүх салбар';
+  document.getElementById('inv-count').textContent=list.length+' бараа · '+branchText;
   document.getElementById('inv-table').innerHTML=list.length ? list.map(i=>{
     const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
     const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
@@ -2547,4 +2622,4 @@ if(TOKEN){
 }
 </script>
 </body>
-</html> 
+</html>

@@ -685,7 +685,14 @@ function showPanel(id,btn){
 }
 
 // ── FIND PRODUCT ──
-function findProduct(sku){return PRODUCTS.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim())}
+function findProduct(sku){
+  const q=sku.toLowerCase().trim();
+  return PRODUCTS.find(p=>
+    p.sku.toLowerCase()===q||
+    p.name.toLowerCase()===q||
+    p.sku.toLowerCase().includes(q)
+  );
+}
 
 // ── RECEIVE ──
 function handleReceiveBarcode(e){
@@ -1156,4 +1163,4 @@ initWarehouse();
 </script>
 </div><!-- /wh-main -->
 </body>
-</html> 
+</html>

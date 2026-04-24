@@ -1509,6 +1509,15 @@ async function saveProduct(){
         description: document.getElementById('mp-desc').value,
         is_active: true
       });
+      // Variant нэмэх
+      const newColors = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
+      const newSizes = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(newColors.length && newSizes.length){
+        try{
+          const vResult = await apiPost('/api/products/'+editingProductId+'/variants', {colors:newColors, sizes:newSizes});
+          console.log('Variant нэмэгдлээ:', vResult.added);
+        }catch(ve){console.error('Variant алдаа:', ve);}
+      }
       // Зураг хадгалах
       if(uploadedImages.length > 0){
         await apiPost('/api/products/'+editingProductId+'/images', {images: uploadedImages});

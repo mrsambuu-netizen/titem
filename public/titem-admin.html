@@ -345,6 +345,21 @@ tr:hover td{background:#fafafa}
         </div>
         <div class="card">
           <div class="card-title">Бараа үлдэгдлийн тайлан <span class="card-title-right" id="inv-count"></span></div>
+<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+  <input
+    id="admin-inv-search"
+    class="f-input"
+    style="max-width:340px"
+    placeholder="SKU, бараа, ангиллаар хайх..."
+  >
+  <select id="admin-inv-sort" class="f-input" style="max-width:220px">
+    <option value="">Эрэмбэлэх</option>
+    <option value="stock-asc">Үлдэгдэл багаас их</option>
+    <option value="stock-desc">Үлдэгдэл ихээс бага</option>
+    <option value="name-asc">Нэр A–Z</option>
+  </select>
+</div>
+
           <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
             <div style="position:relative;flex:1;min-width:240px;max-width:420px">
               <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gray);fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>

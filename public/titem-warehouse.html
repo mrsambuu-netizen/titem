@@ -773,14 +773,17 @@ async function confirmReceive(){
           quantity: item.qty,
           price: item.price
         });
-      } else {
-        // Бүх variant-д тэнцүү хуваана
+      } else if(variants.length>=1){
+        // Variant сонгоогүй — бүх variant-д тэнцүү хуваана
         const qtyPerVariant = Math.floor(item.qty / variants.length);
         const remainder = item.qty % variants.length;
         variants.forEach((v, idx) => {
           const q = qtyPerVariant + (idx === 0 ? remainder : 0);
           if(q > 0) allItems.push({variant_id: v.id, quantity: q, price: item.price});
         });
+      } else {
+        showToast(item.name+' барааны variant олдсонгүй — Бараа удирдлагаас variant нэмнэ үү','error');
+        return;
       }
     }
     

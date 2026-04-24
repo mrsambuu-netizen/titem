@@ -700,6 +700,7 @@ app.get('/api/inventory', authMiddleware(), async (req, res) => {
     const result = await pool.query(
       `SELECT p.name, p.sku, pv.color, pv.size, pv.barcode,
         b.name as branch_name, i.quantity, i.min_quantity,
+        c.name as category_name,
         CASE WHEN i.quantity = 0 THEN 'out'
              WHEN i.quantity < i.min_quantity THEN 'low'
              ELSE 'ok' END as status
@@ -707,6 +708,7 @@ app.get('/api/inventory', authMiddleware(), async (req, res) => {
        JOIN product_variants pv ON i.variant_id = pv.id
        JOIN products p ON pv.product_id = p.id
        JOIN branches b ON i.branch_id = b.id
+       LEFT JOIN categories c ON p.category_id = c.id
        WHERE p.is_active = true
        ${branchFilter ? 'AND i.branch_id = $1' : ''}
        ORDER BY p.name, pv.color, pv.size`,

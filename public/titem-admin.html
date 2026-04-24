@@ -345,6 +345,25 @@ tr:hover td{background:#fafafa}
         </div>
         <div class="card">
           <div class="card-title">Бараа үлдэгдлийн тайлан <span class="card-title-right" id="inv-count"></span></div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+            <div style="position:relative;flex:1;min-width:240px;max-width:420px">
+              <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gray);fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+              <input id="inv-search" placeholder="SKU, бараа, ангиллаар хайх..." oninput="renderInventory()"
+                style="width:100%;padding:10px 14px 10px 36px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .15s"
+                onfocus="this.style.borderColor='var(--black)'" onblur="this.style.borderColor='var(--gray-light)'">
+            </div>
+            <select id="inv-sort" onchange="renderInventory()"
+              style="padding:10px 14px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);cursor:pointer;outline:none;min-width:210px;background:var(--white)">
+              <option value="">Эрэмбэлэх</option>
+              <option value="stock-asc">Нийт үлдэгдэл багаас их</option>
+              <option value="stock-desc">Нийт үлдэгдэл ихээс бага</option>
+              <option value="warehouse-asc">Агуулах багаас их</option>
+              <option value="warehouse-desc">Агуулах ихээс бага</option>
+              <option value="name-asc">Нэр A–Z</option>
+              <option value="name-desc">Нэр Z–A</option>
+            </select>
+            <button onclick="clearInvSearchSort()" class="inv-filter" style="padding:10px 14px">Цэвэрлэх</button>
+          </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>SKU</th><th>Бараа</th><th>Ангилал</th><th>Нийт үлдэгдэл</th><th>Агуулах</th><th>Салбарт</th><th>Доод хэмжээ</th><th>Статус</th></tr></thead>
@@ -1123,6 +1142,14 @@ function filterInv(btn,f){
   btn.classList.add('active');invFilter=f;renderInventory();
 }
 
+function clearInvSearchSort(){
+  const search=document.getElementById('inv-search');
+  const sort=document.getElementById('inv-sort');
+  if(search) search.value='';
+  if(sort) sort.value='';
+  renderInventory();
+}
+
 function renderInventory(){
   const data=window.INV_DATA||[];
   const grouped={};
@@ -1135,9 +1162,27 @@ function renderInventory(){
   });
   let list=Object.values(grouped);
   list.forEach(i=>{i.status=i.total===0?'out':i.total<i.min?'low':'ok';});
+
   if(invFilter!=='all')list=list.filter(i=>i.status===invFilter);
+
+  const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
+  if(search){
+    list=list.filter(i=>`${i.sku||''} ${i.name||''} ${i.cat||''}`.toLowerCase().includes(search));
+  }
+
+  const sort=document.getElementById('inv-sort')?.value||'';
+  list.sort((a,b)=>{
+    if(sort==='stock-asc') return a.total-b.total;
+    if(sort==='stock-desc') return b.total-a.total;
+    if(sort==='warehouse-asc') return a.warehouse-b.warehouse;
+    if(sort==='warehouse-desc') return b.warehouse-a.warehouse;
+    if(sort==='name-asc') return (a.name||'').localeCompare(b.name||'','mn');
+    if(sort==='name-desc') return (b.name||'').localeCompare(a.name||'','mn');
+    return 0;
+  });
+
   document.getElementById('inv-count').textContent=list.length+' бараа';
-  document.getElementById('inv-table').innerHTML=list.map(i=>{
+  document.getElementById('inv-table').innerHTML=list.length ? list.map(i=>{
     const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
     const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
     return`<tr>
@@ -1146,7 +1191,7 @@ function renderInventory(){
       <td style="font-weight:700;font-size:16px">${i.total}</td>
       <td>${i.warehouse}</td><td>${i.branches}</td><td>${i.min}</td>
       <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;}).join('');
+    </tr>`;}).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
 }
 
 // ── SUPPLIERS ──

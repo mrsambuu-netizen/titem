@@ -1679,16 +1679,53 @@ async function whConfirmReceive(){
   const now = new Date();
   const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
-  whTodayIn += qty;
-  document.getElementById('wh-kpi-in').textContent = whTodayIn;
+  try{
+    // Variant-уудыг олж API-д явуулах
+    const allItems = [];
+    for(const item of whReceiveItems){
+      const prod = whProducts.find(p=>p.sku===item.sku||p.id===item.id);
+      const variants = prod?.variants||[];
+      if(item.selectedVariantId){
+        allItems.push({variant_id:parseInt(item.selectedVariantId), quantity:item.qty, price:item.price});
+      } else if(variants.length===1){
+        allItems.push({variant_id:variants[0].id, quantity:item.qty, price:item.price});
+      } else if(variants.length>1){
+        // Тэнцүү хуваана
+        const perV = Math.floor(item.qty/variants.length);
+        const rem = item.qty%variants.length;
+        variants.forEach((v,i)=>{
+          const q = perV+(i===0?rem:0);
+          if(q>0) allItems.push({variant_id:v.id, quantity:q, price:item.price});
+        });
+      }
+    }
 
-  const tbody = document.getElementById('wh-receive-history');
-  const row = document.createElement('tr');
-  row.innerHTML = `<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'—'}</td><td>${invoice}</td><td>${whReceiveItems.map(i=>i.name+'×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
-  tbody.prepend(row);
+    if(!allItems.length){
+      showToast('Variant олдсонгүй — бараа шалгана уу','error');
+      return;
+    }
 
-  whClearReceive();
-  showToast('Орлого амжилттай бүртгэгдлээ — '+qty+' ширхэг','success');
+    const result = await apiPost('/api/receive',{
+      items: allItems,
+      supplier_id: supplier?.value||null,
+      invoice,
+      note: 'Админ орлого'
+    });
+
+    whTodayIn += qty;
+    document.getElementById('wh-kpi-in').textContent = whTodayIn;
+
+    const tbody = document.getElementById('wh-receive-history');
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'—'}</td><td>${invoice}</td><td>${whReceiveItems.map(i=>i.name+'×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+    tbody.prepend(row);
+
+    whClearReceive();
+    showToast('Орлого амжилттай бүртгэгдлээ — '+qty+' ширхэг','success');
+  }catch(e){
+    showToast('Орлого бүртгэхэд алдаа: '+e.message,'error');
+    console.error('whConfirmReceive алдаа:', e);
+  }
 }
 
 function whClearReceive(){whReceiveItems=[];whRenderReceive();}

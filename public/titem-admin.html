@@ -833,6 +833,7 @@ tr:hover td{background:#fafafa}
     </div>
 
     <div id="variant-section" style="margin-bottom:14px">
+      <div id="variant-section-label" style="font-size:11px;font-weight:600;margin-bottom:10px;color:var(--black)">Өнгө ба размер (variant)</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Өнгө (таслалаар тусгаарлана)</div>
       <input id="mp-colors" class="f-input" placeholder="Хар, Цагаан, Улаан, Хөх" style="margin-bottom:10px">
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Хэмжээ (таслалаар тусгаарлана)</div>
@@ -1438,7 +1439,10 @@ async function editProduct(id){
     document.getElementById('mp-desc').value = p.description || '';
     document.getElementById('mp-colors').value = [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))].join(', ');
     document.getElementById('mp-sizes').value = [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))].join(', ');
-    document.getElementById('variant-section').style.display = 'none';
+    document.getElementById('variant-section').style.display = 'block';
+    document.getElementById('mp-colors').placeholder = 'Шинэ өнгө нэмэх: Хар, Цагаан...';
+    document.getElementById('mp-sizes').placeholder = 'Шинэ размер нэмэх: S, M, L...';
+    document.getElementById('variant-section-label').textContent = 'Шинэ variant нэмэх (байгаа variant-д нөлөөлөхгүй)';
     renderImagePreview();
     document.getElementById('modal-add-product').style.display = 'flex';
   }catch(e){showToast('Бараа мэдээлэл татахад алдаа','error');}

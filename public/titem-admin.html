@@ -430,11 +430,38 @@ tr:hover td{background:#fafafa}
 
       <!-- БАРАА УДИРДЛАГА -->
       <div class="panel" id="panel-manage-products">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
           <h2 style="font-family:var(--font-head);font-size:28px;font-weight:300">Бараа <em style="font-style:italic">удирдлага</em></h2>
-          <button onclick="openAddProduct()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);display:flex;align-items:center;gap:8px">
-            + Шинэ бараа нэмэх
-          </button>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <!-- Хайлт -->
+            <div style="position:relative">
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gray);fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+              <input id="mp-search" placeholder="Бараа хайх..." oninput="filterManageProducts(this.value)"
+                style="padding:9px 14px 9px 34px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);outline:none;width:220px;transition:border-color .15s"
+                onfocus="this.style.borderColor='var(--black)'" onblur="this.style.borderColor='var(--gray-light)'">
+            </div>
+            <!-- Ангилалаар шүүх -->
+            <select id="mp-cat-filter" onchange="filterManageProducts(document.getElementById('mp-search').value)"
+              style="padding:9px 14px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);cursor:pointer;outline:none">
+              <option value="">Бүх ангилал</option>
+              <option value="Малгай">Малгай</option>
+              <option value="Ороолт">Ороолт</option>
+              <option value="Бээлий">Бээлий</option>
+              <option value="Faceshield">Faceshield</option>
+              <option value="Алчуур">Алчуур</option>
+            </select>
+            <!-- Статусаар шүүх -->
+            <select id="mp-status-filter" onchange="filterManageProducts(document.getElementById('mp-search').value)"
+              style="padding:9px 14px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);cursor:pointer;outline:none">
+              <option value="">Бүх статус</option>
+              <option value="active">Идэвхтэй</option>
+              <option value="inactive">Идэвхгүй</option>
+              <option value="out">Дууссан</option>
+            </select>
+            <button onclick="openAddProduct()" style="background:var(--black);color:var(--white);border:none;padding:9px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">
+              + Шинэ бараа
+            </button>
+          </div>
         </div>
         <div class="card">
           <div class="card-title">Бүх бараа <span class="card-title-right" id="mp-count"></span></div>
@@ -1380,10 +1407,60 @@ function showToast(msg,type=''){
 let uploadedImages = [];
 let editingProductId = null;
 
+let allManageProducts = [];
+
+function filterManageProducts(query){
+  const q = (query||'').toLowerCase();
+  const cat = document.getElementById('mp-cat-filter')?.value||'';
+  const status = document.getElementById('mp-status-filter')?.value||'';
+  
+  let filtered = allManageProducts.filter(p=>{
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+    const matchCat = !cat || p.category_name===cat;
+    const matchStatus = !status || 
+      (status==='active' && p.is_active && parseInt(p.total_stock||0)>0) ||
+      (status==='inactive' && !p.is_active) ||
+      (status==='out' && parseInt(p.total_stock||0)===0);
+    return matchQ && matchCat && matchStatus;
+  });
+
+  const countEl = document.getElementById('mp-count');
+  if(countEl) countEl.textContent = filtered.length+' / '+allManageProducts.length+' бараа';
+
+  document.getElementById('mp-table').innerHTML = filtered.length ? filtered.map(p=>`
+    <tr>
+      <td>
+        ${p.images && p.images.length > 0
+          ? `<img src="${p.images[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-light)">`
+          : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`
+        }
+      </td>
+      <td><b>${p.name}</b></td>
+      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
+      <td>${p.category_name||'—'}</td>
+      <td>₮${parseInt(p.price||0).toLocaleString()}</td>
+      <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
+      <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+      <td style="display:flex;gap:6px">
+        <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
+        <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+      </td>
+    </tr>`).join('')
+  : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Бараа олдсонгүй</td></tr>';
+}
+
 async function loadManageProducts(){
   try{
     const data = await apiGet('/api/products?limit=200');
-    document.getElementById('mp-count').textContent = data.length + ' бараа';
+    allManageProducts = data;
+    const countEl = document.getElementById('mp-count');
+    if(countEl) countEl.textContent = data.length + ' бараа';
+    // Хайлтын утга байвал шүүнэ
+    const searchVal = document.getElementById('mp-search')?.value||'';
+    if(searchVal || document.getElementById('mp-cat-filter')?.value || document.getElementById('mp-status-filter')?.value){
+      filterManageProducts(searchVal);
+      return;
+    }
     document.getElementById('mp-table').innerHTML = data.map(p => `
       <tr>
         <td>

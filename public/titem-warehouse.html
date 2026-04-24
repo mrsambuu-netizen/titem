@@ -903,20 +903,43 @@ async function confirmDistribute(){
 function clearDist(){distItems=[];renderDistItems();}
 
 // ── INVENTORY ──
-function renderInventory(){
+async function renderInventory(){
   const tbody=document.getElementById('inv-table-body');
-  tbody.innerHTML=PRODUCTS.map(p=>{
-    const st=p.totalStock===0?'out':p.totalStock<5?'low':'ok';
-    const sc=st==='ok'?'badge-green':st==='low'?'badge-amber':'badge-red';
-    const sl=st==='ok'?'Хангалттай':st==='low'?'Дутагдаж байна':'Дууссан';
-    return`<tr>
-      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
-      <td><b>${p.name}</b></td><td>${p.cat}</td>
-      <td style="font-weight:700;font-size:16px;color:${p.totalStock===0?'var(--red)':p.totalStock<5?'var(--amber)':'var(--black)'}">${p.totalStock}</td>
-      <td>${p.totalStock}</td><td>5</td>
-      <td>${p.totalStock<5?`<span style="color:var(--blue);font-weight:600">${Math.max(0,15-p.totalStock)} ш захиална</span>`:'—'}</td>
-      <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;}).join('');
+  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">Ачааллаж байна...</td></tr>';
+  try{
+    // Агуулахын (branch_id=1) үлдэгдлийг татах
+    const invData=await apiGet('/api/inventory?branch_id=1');
+    
+    // Бараа бүрийн агуулахын нийт тоог тооцоолох
+    const stockMap={};
+    invData.forEach(i=>{
+      const key=i.sku;
+      if(!stockMap[key]) stockMap[key]={warehouse:0,name:i.name,cat:i.category_name||''};
+      stockMap[key].warehouse+=parseInt(i.quantity||0);
+    });
+
+    // PRODUCTS-тай нэгтгэх
+    const rows=PRODUCTS.map(p=>{
+      const inv=stockMap[p.sku]||{warehouse:0};
+      const warehouseStock=inv.warehouse;
+      const st=warehouseStock===0?'out':warehouseStock<5?'low':'ok';
+      const sc=st==='ok'?'badge-green':st==='low'?'badge-amber':'badge-red';
+      const sl=st==='ok'?'Хангалттай':st==='low'?'Дутагдаж байна':'Дууссан';
+      return`<tr>
+        <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
+        <td><b>${p.name}</b></td>
+        <td>${p.cat}</td>
+        <td style="font-weight:700;font-size:16px;color:${warehouseStock===0?'var(--red)':warehouseStock<5?'var(--amber)':'var(--black)'}">${warehouseStock}</td>
+        <td>${p.totalStock}</td>
+        <td>5</td>
+        <td>${warehouseStock<5?`<span style="color:var(--blue);font-weight:600">${Math.max(0,15-warehouseStock)} ш захиална</span>`:'—'}</td>
+        <td><span class="badge ${sc}">${sl}</span></td>
+      </tr>`;
+    });
+    tbody.innerHTML=rows.join('');
+  }catch(e){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:red">Үлдэгдэл татахад алдаа гарлаа</td></tr>';
+  }
 }
 
 // ── RETURN ──

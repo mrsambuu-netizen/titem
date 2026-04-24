@@ -712,14 +712,10 @@ function renderReceiveItems(){
     <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
       <td><b>${item.name}</b></td>
-      <td>
-        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="receiveItems[${i}].color=this.value">
-          ${(item.variants?[...new Set(item.variants.map(v=>v.color).filter(Boolean))]:[item.color]).map(c=>`<option ${c===item.color?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="receiveItems[${i}].size=this.value">
-          ${(item.variants?[...new Set(item.variants.map(v=>v.size).filter(Boolean))]:[item.size]).map(s=>`<option ${s===item.size?'selected':''}>${s}</option>`).join('')}
+      <td colspan="2">
+        <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body);min-width:140px" onchange="receiveItems[${i}].selectedVariantId=this.value">
+          <option value="">-- Бүгд (нийт) --</option>
+          ${(item.variants||[]).map(v=>`<option value="${v.id}">${v.color} / ${v.size}</option>`).join('')}
         </select>
       </td>
       <td>
@@ -758,19 +754,39 @@ async function confirmReceive(){
     const supplier=document.getElementById('receive-supplier');
     const supplierId=supplier?.value||null;
     
-    const items=receiveItems.map(item=>{
-      const variant=item.variants?.find(v=>v.color===item.color&&v.size===item.size)
-        || item.variants?.[0];
-      return variant ? {variant_id:variant.id, quantity:item.qty, price:item.price} : null;
-    }).filter(Boolean);
+    // Бараа бүрийн БҮГД variant-д тэнцүү хуваан нэмнэ
+    const allItems = [];
+    for(const item of receiveItems){
+      const variants = item.variants||[];
+      if(!variants.length) continue;
+      if(item.selectedVariantId){
+        // Тодорхой variant сонгосон
+        allItems.push({
+          variant_id: parseInt(item.selectedVariantId),
+          quantity: item.qty,
+          price: item.price
+        });
+      } else {
+        // Бүх variant-д тэнцүү хуваана
+        const qtyPerVariant = Math.floor(item.qty / variants.length);
+        const remainder = item.qty % variants.length;
+        variants.forEach((v, idx) => {
+          const q = qtyPerVariant + (idx === 0 ? remainder : 0);
+          if(q > 0) allItems.push({variant_id: v.id, quantity: q, price: item.price});
+        });
+      }
+    }
     
-    if(items.length){
+    if(allItems.length){
       await apiPost('/api/receive',{
-        items,
-        supplier_id:supplierId,
+        items: allItems,
+        supplier_id: supplierId,
         invoice,
-        note:'Орлого бүртгэл'
+        note: 'Орлого бүртгэл'
       });
+    } else {
+      showToast('Variant олдсонгүй — SKU дахин шалгана уу','error');
+      return;
     }
     
     // PRODUCTS-н totalStock шинэчлэх

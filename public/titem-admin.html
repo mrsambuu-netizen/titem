@@ -864,7 +864,7 @@ tr:hover td{background:#fafafa}
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Өнгө (таслалаар тусгаарлана)</div>
       <input id="mp-colors" class="f-input" placeholder="Хар, Цагаан, Улаан, Хөх" style="margin-bottom:10px">
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:8px">Хэмжээ (таслалаар тусгаарлана)</div>
-      <input id="mp-sizes" class="f-input" placeholder="S, M, L, XL">
+      <input id="mp-sizes" class="f-input" placeholder="S, M, L... (хоосон бол 'Нэг хэмжээ' болно)">
     </div>
 
     <!-- Зураг оруулах -->
@@ -1587,8 +1587,10 @@ async function saveProduct(){
         is_active: true
       });
       // Variant нэмэх
-      const newColors = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
-      const newSizes = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const newColorsRaw = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
+      const newSizesRaw = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const newColors = newColorsRaw.length ? newColorsRaw : [];
+      const newSizes = newSizesRaw.length ? newSizesRaw : [];
       if(newColors.length && newSizes.length){
         try{
           const vResult = await apiPost('/api/products/'+editingProductId+'/variants', {colors:newColors, sizes:newSizes});
@@ -1603,8 +1605,11 @@ async function saveProduct(){
     } else {
       // Шинэ бараа
       if(!sku){showToast('SKU заавал оруулна уу','error');btn.disabled=false;btn.textContent='Хадгалах';return;}
-      const colors = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
-      const sizes = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const colorsRaw = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
+      const sizesRaw = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      // Хоосон бол default утга
+      const colors = colorsRaw.length ? colorsRaw : ['Нэг өнгө'];
+      const sizes = sizesRaw.length ? sizesRaw : ['Нэг хэмжээ'];
       const result = await apiPost('/api/products', {
         name, sku,
         category_id: parseInt(document.getElementById('mp-cat').value),

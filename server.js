@@ -457,8 +457,8 @@ app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, r
     const product = result.rows[0];
     
     // Variant үүсгэх
-    const colorList = colors || ['Хар'];
-    const sizeList = sizes || ['M'];
+    const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
+    const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
     let barcodeNum = Date.now();
     
     for (const color of colorList) {
@@ -571,8 +571,8 @@ app.post('/api/products/:id/variants', authMiddleware(['admin','super_admin']), 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const colorList = colors||['Хар'];
-    const sizeList = sizes||['Нэг хэмжээ'];
+    const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
+    const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
     let barcodeNum = Date.now();
     const product = await client.query('SELECT sku FROM products WHERE id=$1', [req.params.id]);
     const sku = product.rows[0]?.sku;

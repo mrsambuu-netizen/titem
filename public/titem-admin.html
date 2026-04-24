@@ -1586,7 +1586,19 @@ async function loadWarehouseData(){
       fetch('/api/branches').then(r=>r.json()),
       apiGet('/api/suppliers')
     ]);
-    whProducts = prods;
+    // Variant татах
+    const details = await Promise.all(
+      prods.map(p=>apiGet('/api/products/'+p.id).catch(()=>({...p,variants:[]})))
+    );
+    whProducts = details.map(p=>({
+      ...p,
+      sku: p.sku,
+      price: p.wholesale_price||p.price,
+      totalStock: parseInt(p.total_stock||0),
+      colors: [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))],
+      sizes: [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))],
+      variants: p.variants||[]
+    }));
     whBranches = branches;
     whSuppliers = suppliers;
 

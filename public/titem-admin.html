@@ -1265,6 +1265,7 @@ async function loadBranches(){
     const masterMap = {};
     masterData.forEach(b => masterMap[b.id] = b);
     const data = reportData.length ? reportData.map(b => ({...b, ...(masterMap[b.id]||{})})) : masterData;
+    window.BRANCHES = data;
 
     document.getElementById('branch-grid').innerHTML=data.map(b=>{
       const type = normalizeBranchType(b);
@@ -1390,187 +1391,195 @@ function renderInventory(){
 }
 
 
-// ── PARTNER SELLERS ──
-let PARTNER_STOCK = JSON.parse(localStorage.getItem('titem_partner_stock') || '[]');
-let PARTNER_HISTORY = JSON.parse(localStorage.getItem('titem_partner_history') || '[]');
-
-function savePartnerState(){
-  localStorage.setItem('titem_partner_stock', JSON.stringify(PARTNER_STOCK));
-  localStorage.setItem('titem_partner_history', JSON.stringify(PARTNER_HISTORY));
-}
+// ── PARTNER SELLERS — BACKEND API CONNECTED ──
+let PARTNER_PRODUCTS = [];
+let PARTNER_INVENTORY = [];
+let PARTNER_HISTORY = [];
 
 function getPartners(){
-  if(typeof BRANCHES !== 'undefined' && Array.isArray(BRANCHES)){
-    return BRANCHES.filter(b => normalizeBranchType ? normalizeBranchType(b)==='partner' : (b.branch_type==='partner'));
-  }
-  return [];
+  const list = window.BRANCHES || [];
+  return list.filter(b => normalizeBranchType(b) === 'partner' && b.is_active !== false);
 }
 
-function getPartnerProductOptions(){
-  const list = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []);
-  return list.map(p => `<option value="${p.id}" data-sku="${p.sku||''}" data-price="${p.price||p.retail_price||0}">${p.name} (${p.sku||'-'})</option>`).join('');
+async function loadPartnerProducts(){
+  if(PARTNER_PRODUCTS.length) return PARTNER_PRODUCTS;
+  const products = await apiGet('/api/products?limit=200');
+  const details = await Promise.all(
+    products.map(p => apiGet('/api/products/' + p.id).catch(() => ({...p, variants:[]})))
+  );
+  PARTNER_PRODUCTS = details;
+  return PARTNER_PRODUCTS;
+}
+
+function getPartnerVariantOptions(){
+  const list = PARTNER_PRODUCTS || [];
+  const opts = [];
+  list.forEach(p => {
+    (p.variants || []).forEach(v => {
+      opts.push(`<option value="${v.id}" data-price="${p.price||0}">
+        ${p.name} · ${v.color||'—'} / ${v.size||'—'} (${v.sku||p.sku||'-'})
+      </option>`);
+    });
+  });
+  return opts.join('');
 }
 
 function fillPartnerSelects(){
   const partners = getPartners();
-  const partnerOptions = partners.map(p => `<option value="${p.id}" data-commission="${p.commission_percent||p.commission||0}">${p.name}</option>`).join('');
+  const partnerOptions = partners.map(p =>
+    `<option value="${p.id}" data-commission="${p.commission_percent||0}">${p.name}</option>`
+  ).join('');
+
   ['pt-transfer-partner','pt-sale-partner','pt-return-partner'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML = partnerOptions || '<option value="">Гэрээт борлуулагч байхгүй</option>';
   });
-  const productOptions = getPartnerProductOptions();
+
+  const variantOptions = getPartnerVariantOptions();
   ['pt-transfer-product','pt-sale-product','pt-return-product'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.innerHTML = productOptions || '<option value="">Бараа байхгүй</option>';
+    if(el) el.innerHTML = variantOptions || '<option value="">Variant байхгүй</option>';
   });
 }
 
-function findProductById(id){
-  return (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(p => String(p.id)===String(id));
+function partnerTypeLabel(type){
+  if(type === 'TRANSFER_TO_PARTNER') return 'Бараа өгсөн';
+  if(type === 'PARTNER_SALE') return 'Зарсан тооцоо';
+  if(type === 'PARTNER_RETURN') return 'Буцаалт';
+  if(type === 'SETTLEMENT_PAID') return 'Тооцоо төлсөн';
+  return type || '—';
 }
 
-function findPartnerById(id){
-  return getPartners().find(p => String(p.id)===String(id));
+function partnerTypeBadge(type){
+  if(type === 'PARTNER_SALE') return 'badge-blue';
+  if(type === 'PARTNER_RETURN') return 'badge-amber';
+  if(type === 'TRANSFER_TO_PARTNER') return 'badge-green';
+  return 'badge-gray';
 }
 
-function partnerStockRow(partnerId, productId){
-  let row = PARTNER_STOCK.find(r => String(r.partner_id)===String(partnerId) && String(r.product_id)===String(productId));
-  if(!row){
-    const p=findProductById(productId);
-    const partner=findPartnerById(partnerId);
-    row={
-      partner_id:partnerId,
-      partner_name:partner?.name||'—',
-      product_id:productId,
-      product_name:p?.name||'—',
-      sku:p?.sku||'—',
-      given:0,
-      sold:0,
-      returned:0,
-      on_hand:0,
-      receivable:0,
-      commission_percent:partner?.commission_percent||partner?.commission||0
-    };
-    PARTNER_STOCK.push(row);
+async function loadPartnerData(){
+  try{
+    await loadBranches();
+    await loadPartnerProducts();
+    const [inv, hist] = await Promise.all([
+      apiGet('/api/partners/inventory').catch(()=>[]),
+      apiGet('/api/partners/transactions').catch(()=>[])
+    ]);
+    PARTNER_INVENTORY = inv || [];
+    PARTNER_HISTORY = hist || [];
+  }catch(e){
+    console.error('Partner data алдаа:', e);
+    showToast('Гэрээт борлуулагчийн мэдээлэл татахад алдаа: '+e.message,'error');
   }
-  return row;
 }
 
-function partnerTransfer(){
-  const partnerId=document.getElementById('pt-transfer-partner')?.value;
-  const productId=document.getElementById('pt-transfer-product')?.value;
-  const qty=parseInt(document.getElementById('pt-transfer-qty')?.value||0);
-  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, тоо сонгоно уу','error');return;}
-  const row=partnerStockRow(partnerId,productId);
-  const product=findProductById(productId);
-  row.given += qty;
-  row.on_hand += qty;
-  PARTNER_HISTORY.unshift({
-    date:new Date().toLocaleString('mn-MN'),
-    type:'Бараа өгсөн',
-    partner:row.partner_name,
-    product:row.product_name,
-    qty,
-    amount:0,
-    note:'Агуулахын үлдэгдлээс хасагдаж, гэрээт борлуулагч дээр нэмэгдэнэ'
-  });
-  if(product && typeof product.totalStock === 'number') product.totalStock = Math.max(0, product.totalStock - qty);
-  savePartnerState();
-  renderPartners();
-  showToast('Гэрээт борлуулагчид '+qty+'ш бараа өглөө','success');
+async function partnerTransfer(){
+  const partner_id=document.getElementById('pt-transfer-partner')?.value;
+  const variant_id=document.getElementById('pt-transfer-product')?.value;
+  const quantity=parseInt(document.getElementById('pt-transfer-qty')?.value||0);
+  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, тоо сонгоно уу','error');return;}
+
+  try{
+    await apiPost('/api/partners/transfer', {
+      partner_id: parseInt(partner_id),
+      variant_id: parseInt(variant_id),
+      quantity,
+      note: 'Admin frontend-с гэрээт борлуулагчид бараа өгсөн'
+    });
+    showToast('Гэрээт борлуулагчид '+quantity+'ш бараа өглөө','success');
+    await renderPartners();
+    if(typeof loadInventory === 'function') loadInventory();
+  }catch(e){
+    showToast('Бараа өгөхөд алдаа: '+e.message,'error');
+  }
 }
 
-function partnerSale(){
-  const partnerId=document.getElementById('pt-sale-partner')?.value;
-  const productId=document.getElementById('pt-sale-product')?.value;
-  const qty=parseInt(document.getElementById('pt-sale-qty')?.value||0);
-  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, зарсан тоо сонгоно уу','error');return;}
-  const row=partnerStockRow(partnerId,productId);
-  if(row.on_hand < qty){showToast('Борлуулагч дээрх үлдэгдэл хүрэлцэхгүй','error');return;}
-  const product=findProductById(productId);
-  const price=parseInt(product?.price||product?.retail_price||0);
-  const amount=qty*price;
-  row.sold += qty;
-  row.on_hand -= qty;
-  row.receivable += amount;
-  PARTNER_HISTORY.unshift({
-    date:new Date().toLocaleString('mn-MN'),
-    type:'Зарсан тооцоо',
-    partner:row.partner_name,
-    product:row.product_name,
-    qty,
-    amount,
-    note:'Борлуулагчийн үлдэгдэл хасагдаж, авлага үүсэв'
-  });
-  savePartnerState();
-  renderPartners();
-  showToast('Зарсан тооцоо орлоо: ₮'+amount.toLocaleString(),'success');
+async function partnerSale(){
+  const partner_id=document.getElementById('pt-sale-partner')?.value;
+  const variant_id=document.getElementById('pt-sale-product')?.value;
+  const quantity=parseInt(document.getElementById('pt-sale-qty')?.value||0);
+  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, зарсан тоо сонгоно уу','error');return;}
+
+  try{
+    const res = await apiPost('/api/partners/sale', {
+      partner_id: parseInt(partner_id),
+      variant_id: parseInt(variant_id),
+      quantity,
+      note: 'Гэрээт борлуулагчийн зарсан тооцоо'
+    });
+    showToast('Зарсан тооцоо орлоо: ₮'+parseInt(res.amount||0).toLocaleString(),'success');
+    await renderPartners();
+  }catch(e){
+    showToast('Зарсан тооцоо оруулахад алдаа: '+e.message,'error');
+  }
 }
 
-function partnerReturn(){
-  const partnerId=document.getElementById('pt-return-partner')?.value;
-  const productId=document.getElementById('pt-return-product')?.value;
-  const qty=parseInt(document.getElementById('pt-return-qty')?.value||0);
-  if(!partnerId||!productId||qty<=0){showToast('Борлуулагч, бараа, буцаах тоо сонгоно уу','error');return;}
-  const row=partnerStockRow(partnerId,productId);
-  if(row.on_hand < qty){showToast('Буцаах тоо үлдэгдлээс их байна','error');return;}
-  const product=findProductById(productId);
-  row.returned += qty;
-  row.on_hand -= qty;
-  if(product && typeof product.totalStock === 'number') product.totalStock += qty;
-  PARTNER_HISTORY.unshift({
-    date:new Date().toLocaleString('mn-MN'),
-    type:'Буцаалт',
-    partner:row.partner_name,
-    product:row.product_name,
-    qty,
-    amount:0,
-    note:'Борлуулагчаас агуулах руу буцаав'
-  });
-  savePartnerState();
-  renderPartners();
-  showToast('Буцаалт бүртгэгдлээ: '+qty+'ш','success');
+async function partnerReturn(){
+  const partner_id=document.getElementById('pt-return-partner')?.value;
+  const variant_id=document.getElementById('pt-return-product')?.value;
+  const quantity=parseInt(document.getElementById('pt-return-qty')?.value||0);
+  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, буцаах тоо сонгоно уу','error');return;}
+
+  try{
+    await apiPost('/api/partners/return', {
+      partner_id: parseInt(partner_id),
+      variant_id: parseInt(variant_id),
+      quantity,
+      note: 'Гэрээт борлуулагчаас буцаалт авсан'
+    });
+    showToast('Буцаалт бүртгэгдлээ: '+quantity+'ш','success');
+    await renderPartners();
+    if(typeof loadInventory === 'function') loadInventory();
+  }catch(e){
+    showToast('Буцаалт хийхэд алдаа: '+e.message,'error');
+  }
 }
 
-function renderPartners(){
+async function renderPartners(){
+  await loadPartnerData();
   fillPartnerSelects();
+
   const partners=getPartners();
   const tbody=document.getElementById('pt-table');
   const hist=document.getElementById('pt-history');
   const activePartners=partners.filter(p=>p.is_active!==false).length;
-  const totalStock=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.on_hand)||0),0);
-  const receivable=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.receivable)||0),0);
-  const returned=PARTNER_STOCK.reduce((s,r)=>s+(parseInt(r.returned)||0),0);
+  const totalStock=PARTNER_INVENTORY.reduce((s,r)=>s+(parseInt(r.on_hand_qty)||0),0);
+  const receivable=PARTNER_INVENTORY.reduce((s,r)=>s+(parseInt(r.receivable_amount)||0),0);
+  const returned=PARTNER_INVENTORY.reduce((s,r)=>s+(parseInt(r.returned_qty)||0),0);
+
   if(document.getElementById('pt-kpi-count')) document.getElementById('pt-kpi-count').textContent=activePartners;
   if(document.getElementById('pt-kpi-stock')) document.getElementById('pt-kpi-stock').textContent=totalStock;
   if(document.getElementById('pt-kpi-receivable')) document.getElementById('pt-kpi-receivable').textContent='₮'+receivable.toLocaleString();
   if(document.getElementById('pt-kpi-returned')) document.getElementById('pt-kpi-returned').textContent=returned;
-  if(document.getElementById('pt-count')) document.getElementById('pt-count').textContent=PARTNER_STOCK.length+' мөр';
+  if(document.getElementById('pt-count')) document.getElementById('pt-count').textContent=PARTNER_INVENTORY.length+' мөр';
 
   if(tbody){
-    tbody.innerHTML = PARTNER_STOCK.length ? PARTNER_STOCK.map(r=>`
+    tbody.innerHTML = PARTNER_INVENTORY.length ? PARTNER_INVENTORY.map(r=>`
       <tr>
-        <td><b>${r.partner_name}</b></td>
-        <td>${r.product_name}<br><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${r.sku}</code></td>
-        <td>${r.given}</td>
-        <td>${r.sold}</td>
-        <td>${r.returned}</td>
-        <td style="font-weight:700">${r.on_hand}</td>
-        <td style="font-weight:700;color:var(--blue)">₮${parseInt(r.receivable||0).toLocaleString()}</td>
+        <td><b>${r.partner_name||'—'}</b></td>
+        <td>${r.product_name||'—'}<br>
+          <code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${r.sku||r.barcode||'—'}</code>
+          <span style="font-size:11px;color:var(--gray);margin-left:6px">${r.color||'—'} / ${r.size||'—'}</span>
+        </td>
+        <td>${parseInt(r.given_qty||0)}</td>
+        <td>${parseInt(r.sold_qty||0)}</td>
+        <td>${parseInt(r.returned_qty||0)}</td>
+        <td style="font-weight:700">${parseInt(r.on_hand_qty||0)}</td>
+        <td style="font-weight:700;color:var(--blue)">₮${parseInt(r.receivable_amount||0).toLocaleString()}</td>
         <td>${r.commission_percent||0}%</td>
-        <td><span class="badge ${r.on_hand>0?'badge-green':'badge-gray'}">${r.on_hand>0?'Бараа байгаа':'Үлдэгдэлгүй'}</span></td>
+        <td><span class="badge ${parseInt(r.on_hand_qty||0)>0?'badge-green':'badge-gray'}">${parseInt(r.on_hand_qty||0)>0?'Бараа байгаа':'Үлдэгдэлгүй'}</span></td>
       </tr>`).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px">Гэрээт борлуулагчид өгсөн бараа одоогоор алга</td></tr>`;
   }
 
   if(hist){
     hist.innerHTML = PARTNER_HISTORY.length ? PARTNER_HISTORY.map(h=>`
       <tr>
-        <td>${h.date}</td>
-        <td><span class="badge ${h.type==='Зарсан тооцоо'?'badge-blue':h.type==='Буцаалт'?'badge-amber':'badge-green'}">${h.type}</span></td>
-        <td>${h.partner}</td>
-        <td>${h.product}</td>
-        <td>${h.qty}</td>
-        <td>${h.amount ? '₮'+parseInt(h.amount).toLocaleString() : '—'}</td>
+        <td>${new Date(h.created_at).toLocaleString('mn-MN')}</td>
+        <td><span class="badge ${partnerTypeBadge(h.type)}">${partnerTypeLabel(h.type)}</span></td>
+        <td>${h.partner_name||'—'}</td>
+        <td>${h.product_name||'—'}<br><span style="font-size:11px;color:var(--gray)">${h.color||'—'} / ${h.size||'—'}</span></td>
+        <td>${parseInt(h.quantity||0)}</td>
+        <td>${parseInt(h.amount||0) ? '₮'+parseInt(h.amount).toLocaleString() : '—'}</td>
         <td>${h.note||'—'}</td>
       </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Хөдөлгөөний түүх алга</td></tr>`;
   }

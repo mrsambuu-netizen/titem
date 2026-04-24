@@ -256,7 +256,10 @@ body{background:#f5f5f5;color:var(--black);font-family:var(--font-body);overflow
           <span class="pos-cart-title">Захиалга</span>
           <span class="pos-cart-count" id="pos-cart-count">0</span>
         </div>
-        <button class="btn-clear" onclick="clearCart()">Цэвэрлэх</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-clear" onclick="openReturn()" style="color:var(--blue)">↩ Буцаалт</button>
+          <button class="btn-clear" onclick="clearCart()">Цэвэрлэх</button>
+        </div>
       </div>
       <div class="pos-cart-items" id="pos-cart-items">
         <div class="pos-cart-empty" id="pos-cart-empty">
@@ -266,10 +269,11 @@ body{background:#f5f5f5;color:var(--black);font-family:var(--font-body);overflow
       </div>
       <div class="pos-discount-wrap">
         <div class="discount-row">
-          <input class="discount-input" id="discount-input" type="number" placeholder="Хямдрал % (жишээ: 10)" min="0" max="100">
+          <input class="discount-input" id="discount-input" type="number" placeholder="Хямдрал % (хамгийн ихдээ 15%)" min="0" max="15">
           <button class="discount-btn" onclick="applyDiscount()">Хэрэглэх</button>
         </div>
         <div id="discount-msg" style="font-size:11px;margin-top:4px;display:none"></div>
+        <div style="font-size:10px;color:var(--gray);margin-top:2px">⚠️ Хамгийн ихдээ 15% хямдрал</div>
       </div>
       <div class="pos-totals">
         <div class="total-row"><span>Дүн</span><span id="pos-subtotal">₮0</span></div>
@@ -301,6 +305,48 @@ body{background:#f5f5f5;color:var(--black);font-family:var(--font-body);overflow
           Төлбөр авах
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- БУЦААЛТ MODAL -->
+<div class="modal-overlay" id="modal-return">
+  <div class="modal">
+    <div class="modal-title">Буцаалт бүртгэх</div>
+    <div class="modal-sub">Захиалгын дугаар эсвэл баркодоор хайна</div>
+    <div class="modal-field">
+      <label class="field-label">Захиалгын дугаар</label>
+      <input class="field-input" id="return-order-num" placeholder="#TIT-XXXXXX" oninput="searchReturnOrder(this.value)">
+    </div>
+    <div id="return-order-info" style="display:none;background:#f8f8f8;border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Захиалгын мэдээлэл:</div>
+      <div id="return-order-detail"></div>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Буцаалтын шалтгаан</label>
+      <select class="field-input" id="return-reason-sel">
+        <option value="Хэмжээ тохирсонгүй">Хэмжээ тохирсонгүй</option>
+        <option value="Чанарын доголдол">Чанарын доголдол</option>
+        <option value="Буруу бараа">Буруу бараа ирсэн</option>
+        <option value="Хэрэглэгч татгалзсан">Хэрэглэгч татгалзсан</option>
+        <option value="Бусад">Бусад</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Буцаах дүн (₮)</label>
+      <input class="field-input" id="return-amount" type="number" placeholder="0">
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Буцаалтын төлбөрийн арга</label>
+      <select class="field-input" id="return-pay-method">
+        <option value="cash">Бэлэн</option>
+        <option value="card">Карт</option>
+        <option value="qpay">QPay</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('modal-return')">Болих</button>
+      <button class="btn-modal-ok" onclick="confirmReturn()">Буцаалт батлах</button>
     </div>
   </div>
 </div>
@@ -686,11 +732,21 @@ function cartQty(key,d){const i=cart.find(c=>c.key===key);if(i){i.qty=Math.max(1
 function removeItem(key){cart=cart.filter(c=>c.key!==key);renderCart();}
 function clearCart(){if(cart.length&&confirm('Захиалгыг цэвэрлэх үү?')){cart=[];discountPct=0;renderCart();}}
 
+const MAX_DISCOUNT = 15; // Хамгийн ихдээ 15%
+
 function applyDiscount(){
   const v=parseFloat(document.getElementById('discount-input').value);
   const msg=document.getElementById('discount-msg');
-  if(isNaN(v)||v<0||v>100){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='0–100 хооронд оруулна уу';return;}
-  discountPct=v;msg.style.display='block';msg.style.color='var(--green)';msg.textContent='✓ '+v+'% хямдрал хэрэглэгдлээ';
+  if(isNaN(v)||v<0){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='0-с дээш тоо оруулна уу';return;}
+  if(v>MAX_DISCOUNT){
+    msg.style.display='block';msg.style.color='var(--red)';
+    msg.textContent='⚠️ Хамгийн ихдээ '+MAX_DISCOUNT+'% хямдрал зөвшөөрөгдөнө';
+    document.getElementById('discount-input').value=MAX_DISCOUNT;
+    discountPct=MAX_DISCOUNT;
+  } else {
+    discountPct=v;msg.style.display='block';msg.style.color='var(--green)';
+    msg.textContent='✓ '+v+'% хямдрал хэрэглэгдлээ';
+  }
   renderCart();
 }
 
@@ -831,6 +887,44 @@ async function openReport(){
     document.getElementById('rep-items').innerHTML='<tr><td colspan="3" style="color:red">Тайлан татахад алдаа гарлаа</td></tr>';
   }
   openModal('modal-report');
+}
+
+function openReturn(){openModal('modal-return');}
+
+function searchReturnOrder(num){
+  const info=document.getElementById('return-order-info');
+  const detail=document.getElementById('return-order-detail');
+  if(num.length<6){info.style.display='none';return;}
+  // Local sales-аас хайх
+  const sale=todaySales.find(s=>s.id.includes(num));
+  if(sale){
+    info.style.display='block';
+    detail.innerHTML=`
+      <div style="font-size:12px;display:flex;flex-direction:column;gap:4px">
+        <div><b>Дугаар:</b> ${sale.id}</div>
+        <div><b>Дүн:</b> ₮${sale.total.toLocaleString()}</div>
+        <div><b>Төлбөр:</b> ${{cash:'Бэлэн',card:'Карт',qpay:'QPay'}[sale.payMethod]}</div>
+        <div><b>Бараа:</b> ${sale.items.map(i=>i.name+'×'+i.qty).join(', ')}</div>
+      </div>`;
+    document.getElementById('return-amount').value=sale.total;
+    document.getElementById('return-pay-method').value=sale.payMethod;
+  } else {
+    info.style.display='none';
+  }
+}
+
+function confirmReturn(){
+  const orderNum=document.getElementById('return-order-num').value.trim();
+  const reason=document.getElementById('return-reason-sel').value;
+  const amount=parseInt(document.getElementById('return-amount').value)||0;
+  if(!orderNum){showToast('Захиалгын дугаар оруулна уу','error');return;}
+  if(amount<=0){showToast('Буцаах дүн оруулна уу','error');return;}
+  closeModal('modal-return');
+  showToast('Буцаалт бүртгэгдлээ — ₮'+amount.toLocaleString(),'success');
+  // Reset
+  document.getElementById('return-order-num').value='';
+  document.getElementById('return-order-info').style.display='none';
+  document.getElementById('return-amount').value='';
 }
 
 function openModal(id){document.getElementById(id).classList.add('show')}

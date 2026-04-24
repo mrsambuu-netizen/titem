@@ -618,7 +618,10 @@ async function loadAll(){
 async function loadProducts(){
   try{
     const data=await apiGet('/api/products?limit=100');
-    PRODUCTS=data.map(p=>({
+    const details=await Promise.all(
+      data.map(p=>apiGet('/api/products/'+p.id).catch(()=>({...p,variants:[]})))
+    );
+    PRODUCTS=details.map(p=>({
       id:p.id,
       name:p.name,
       sku:p.sku,
@@ -626,19 +629,16 @@ async function loadProducts(){
       price:p.wholesale_price||p.price,
       warehouseStock:0,
       totalStock:parseInt(p.total_stock||0),
-      colors:[],sizes:[],variants:[]
+      colors:[...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))],
+      sizes:[...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))],
+      variants:p.variants||[]
     }));
-    // Variant татах
-    for(const p of PRODUCTS){
-      try{
-        const d=await apiGet('/api/products/'+p.id);
-        p.colors=[...new Set((d.variants||[]).map(v=>v.color).filter(Boolean))];
-        p.sizes=[...new Set((d.variants||[]).map(v=>v.size).filter(Boolean))];
-        p.variants=d.variants||[];
-      }catch(e){}
-    }
+    console.log('Бараа татагдлаа:', PRODUCTS.length, '| Жишээ variant:', PRODUCTS[0]?.variants?.length);
     updateKPIs();
-  }catch(e){showToast('Бараа татах алдаа','error');}
+  }catch(e){
+    console.error('loadProducts алдаа:', e);
+    showToast('Бараа татах алдаа: '+e.message,'error');
+  }
 }
 
 async function loadBranches(){
@@ -1163,4 +1163,4 @@ initWarehouse();
 </script>
 </div><!-- /wh-main -->
 </body>
-</html> 
+</html>

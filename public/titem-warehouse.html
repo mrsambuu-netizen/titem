@@ -363,7 +363,31 @@ table.main-table tr:hover td{background:#fafafa}
         <div class="kpi-card"><div class="kpi-label">🔴 Дууссан</div><div class="kpi-val" style="color:var(--red)">2</div><div class="kpi-sub">төрлийн бараа</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Агуулахын үлдэгдэл</div>
+        <div class="card-title">
+          <span>Агуулахын үлдэгдэл</span>
+          <span class="card-title-right" id="inv-result-count"></span>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <input
+            id="inv-search"
+            class="f-input"
+            style="max-width:360px;flex:1;min-width:240px"
+            placeholder="SKU, бараа, ангиллаар хайх..."
+            oninput="renderInventory()"
+          >
+          <select
+            id="inv-sort"
+            class="f-select"
+            style="max-width:230px;min-width:200px"
+            onchange="renderInventory()"
+          >
+            <option value="">Эрэмбэлэх</option>
+            <option value="stock-asc">Үлдэгдэл багаас их</option>
+            <option value="stock-desc">Үлдэгдэл ихээс бага</option>
+            <option value="name-asc">Нэр A–Z</option>
+          </select>
+          <button class="btn-secondary" style="padding:10px 14px;font-size:11px" onclick="document.getElementById('inv-search').value='';document.getElementById('inv-sort').value='';renderInventory()">Цэвэрлэх</button>
+        </div>
         <div class="table-wrap">
           <table class="main-table">
             <thead><tr><th>SKU</th><th>Бараа</th><th>Ангилал</th><th>Агуулахт</th><th>Нийт (агуулах+салбар)</th><th>Доод хэмжээ</th><th>Дараа захиалах</th><th>Статус</th></tr></thead>
@@ -921,8 +945,34 @@ async function renderInventory(){
       stockMap[key].warehouse+=parseInt(i.quantity||0);
     });
 
+    // Хайлт + эрэмбэлэлт
+    const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
+    const sort=document.getElementById('inv-sort')?.value||'';
+
+    let filteredProducts=PRODUCTS.filter(p=>{
+      const text=`${p.sku||''} ${p.name||''} ${p.cat||''}`.toLowerCase();
+      return text.includes(search);
+    });
+
+    filteredProducts.sort((a,b)=>{
+      const aw=stockMap[a.sku]?.warehouse||0;
+      const bw=stockMap[b.sku]?.warehouse||0;
+      if(sort==='stock-asc') return aw-bw;
+      if(sort==='stock-desc') return bw-aw;
+      if(sort==='name-asc') return (a.name||'').localeCompare(b.name||'');
+      return 0;
+    });
+
+    const countEl=document.getElementById('inv-result-count');
+    if(countEl) countEl.textContent=`${filteredProducts.length} / ${PRODUCTS.length} бараа`;
+
+    if(!filteredProducts.length){
+      tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:#888">Хайлтад тохирох бараа олдсонгүй</td></tr>';
+      return;
+    }
+
     // PRODUCTS-тай нэгтгэх
-    const rows=PRODUCTS.map(p=>{
+    const rows=filteredProducts.map(p=>{
       const inv=stockMap[p.sku]||{warehouse:0};
       const warehouseStock=inv.warehouse;
       const st=warehouseStock===0?'out':warehouseStock<5?'low':'ok';

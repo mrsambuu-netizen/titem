@@ -1747,7 +1747,7 @@ app.put('/api/users/:id', authMiddleware(['admin','super_admin']), async (req, r
 app.get('/api/users', authMiddleware(['super_admin','admin']), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.full_name, u.role, u.is_active, b.name as branch_name, u.created_at
+      `SELECT u.id, u.username, u.full_name, u.role, u.branch_id, u.is_active, b.name as branch_name, u.created_at
        FROM users u LEFT JOIN branches b ON u.branch_id = b.id ORDER BY u.created_at DESC`
     );
     res.json(result.rows);

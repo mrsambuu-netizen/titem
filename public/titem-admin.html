@@ -1120,7 +1120,7 @@ function showPanel(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
-  btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',partners:'Гэрээт борлуулагч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
   if(id==='manage-products') loadManageProducts();
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
@@ -2018,6 +2018,7 @@ function filterManageProducts(query){
       <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
       <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
       <td style="display:flex;gap:6px">
+        <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Баркод</button>
         <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
         <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
       </td>
@@ -2052,6 +2053,7 @@ async function loadManageProducts(){
         <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
         <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
         <td style="display:flex;gap:6px">
+          <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Баркод</button>
           <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
           <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
         </td>
@@ -2198,7 +2200,8 @@ async function saveProduct(){
       if(uploadedImages.length > 0 && result.product){
         await apiPost('/api/products/'+result.product.id+'/images', {images: uploadedImages});
       }
-      showToast(name+' амжилттай нэмэгдлээ','success');
+      const barcodeCount = result.variants?.length || 0;
+      showToast(name+' нэмэгдлээ · '+barcodeCount+' barcode автоматаар үүслээ','success');
     }
     closeAddProduct();
     await loadManageProducts();
@@ -2540,6 +2543,15 @@ function whClearReturn(){whReturnItems=[];whRenderReturn();}
 let bcProducts = [];
 let selectedVariants = [];
 
+async function openBarcodeForProduct(productId){
+  showPanel('barcode', document.querySelector('.nav-item[onclick*="barcode"]'));
+  await loadBarcodeProducts();
+  const sel=document.getElementById('bc-product');
+  if(sel) sel.value=String(productId);
+  await loadBarcodeVariants();
+  generateBarcodes();
+}
+
 async function loadBarcodeProducts(){
   try{
     const data = await apiGet('/api/products?limit=200');
@@ -2564,7 +2576,7 @@ async function loadBarcodeVariants(){
           <label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--gray-light);border-radius:6px;cursor:pointer;font-size:12px;background:var(--white)">
             <input type="checkbox" checked onchange="selectedVariants[${i}].selected=this.checked" style="accent-color:var(--black)">
             ${v.color||'—'} / ${v.size||'—'}
-            <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||v.sku||'—'}</code>
+            <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||'код үүсгэ'}</code>
           </label>`).join('')
       : '<div style="color:var(--gray);font-size:12px">Variant байхгүй байна</div>';
   }catch(e){}
@@ -2576,6 +2588,10 @@ function generateBarcodes(){
   const active = selectedVariants.filter(v=>v.selected);
 
   if(!active.length){showToast('Variant сонгоно уу','error');return;}
+  if(active.some(v=>!v.barcode || !/^\d+$/.test(String(v.barcode)))){
+    showToast('Эхлээд "Шинэ код" дарж тоон barcode үүсгэнэ үү','error');
+    return;
+  }
 
   const dims = {small:{w:120,h:60,fs:8},medium:{w:180,h:90,fs:10},large:{w:240,h:120,fs:12}};
   const d = dims[size];
@@ -2585,7 +2601,7 @@ function generateBarcodes(){
 
   active.forEach(v => {
     for(let i=0;i<count;i++){
-      const barcode = v.barcode||v.sku||'0000000000';
+      const barcode = String(v.barcode);
       html += `
         <div class="barcode-label" style="width:${d.w}px;height:${d.h}px;border:1px solid #ddd;border-radius:4px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;background:white;font-family:monospace">
           <div style="font-size:${d.fs}px;font-weight:700;letter-spacing:1px;text-align:center;font-family:'DM Sans',sans-serif;line-height:1.2">${v.productName||'—'}</div>
@@ -2604,7 +2620,7 @@ function generateBarcodes(){
   active.forEach(v => {
     for(let i=0;i<count;i++){
       const svg = document.getElementById('svg-'+v.id+'-'+i);
-      if(svg) drawBarcode(svg, v.barcode||v.sku||'0000000000', d.w-16, d.h*0.4);
+      if(svg) drawBarcode(svg, String(v.barcode), d.w-16, d.h*0.4);
     }
   });
 

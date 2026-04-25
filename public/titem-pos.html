@@ -797,6 +797,7 @@ async function processPayment(){
     const result=await apiPost('/api/orders',orderData);
     const sale={
       id:result.order.order_number,
+      orderDbId:result.order.id,
       time:new Date().toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'}),
       items:[...cart],subtotal,discAmt,total,payMethod,
       branch:currentBranchName,cashier:currentUser
@@ -956,13 +957,30 @@ async function confirmReturn(){
   const method=document.getElementById('return-pay-method').value;
   if(!orderNum){showToast('Захиалгын дугаар оруулна уу','error');return;}
   if(amount<=0){showToast('Буцаах дүн оруулна уу','error');return;}
+  const returnItems=(returnOrderCache?.items||[]).map(i=>({
+    variant_id:i.variantId||i.variant_id,
+    quantity:i.qty||i.quantity,
+    condition:'good',
+    resell:true,
+    action:'restock'
+  })).filter(i=>i.variant_id&&i.quantity>0);
+  if(!returnItems.length){showToast('Буцаах барааны variant мэдээлэл алга байна','error');return;}
   try{
-    await apiPost('/api/returns',{order_number:orderNum,reason,amount,payment_method:method,branch_id:currentBranch});
+    await apiPost('/api/returns',{
+      return_type:'customer',
+      source_branch_id:currentBranch,
+      order_id:returnOrderCache?.orderDbId||returnOrderCache?.id||null,
+      customer_name:returnOrderCache?.customer_name||null,
+      customer_phone:returnOrderCache?.customer_phone||null,
+      reason,
+      note:'POS return '+orderNum+' / '+method+' / ₮'+amount,
+      items:returnItems
+    });
     showToast('Буцаалт бүртгэгдлээ — ₮'+amount.toLocaleString(),'success');
     loadProducts();
   }catch(e){
-    todaySales.push({id:'RET-'+Date.now(),time:new Date().toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'}),items:[],subtotal:-amount,discAmt:0,total:-amount,payMethod:method,branch:currentBranchName,cashier:currentUser,return:true,reason});
-    showToast('Буцаалт local бүртгэгдлээ — backend /api/returns нэмэх шаардлагатай','success');
+    showToast('Буцаалт бүртгэхэд алдаа: '+e.message,'error');
+    return;
   }
   closeModal('modal-return');
   document.getElementById('return-order-num').value='';

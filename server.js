@@ -533,17 +533,17 @@ app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, r
     // Variant үүсгэх
     const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
     const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
-    let barcodeNum = Date.now();
+    const createdVariants = [];
     
     for (const color of colorList) {
       for (const size of sizeList) {
-        barcodeNum++;
         const variantSku = `${sku}-${color.substring(0,2).toUpperCase()}-${size}`;
-        const barcode = `6900${String(barcodeNum).slice(-8)}`;
-        await client.query(
-          'INSERT INTO product_variants (product_id, color, size, barcode, sku) VALUES ($1,$2,$3,$4,$5)',
+        const barcode = await makeUniqueBarcode(client);
+        const variant = await client.query(
+          'INSERT INTO product_variants (product_id, color, size, barcode, sku) VALUES ($1,$2,$3,$4,$5) RETURNING *',
           [product.id, color, size, barcode, variantSku]
         );
+        createdVariants.push(variant.rows[0]);
       }
     }
     
@@ -559,7 +559,7 @@ app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, r
     }
     
     await client.query('COMMIT');
-    res.json({ success: true, product });
+    res.json({ success: true, product, variants: createdVariants });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
@@ -647,15 +647,13 @@ app.post('/api/products/:id/variants', authMiddleware(['admin','super_admin']), 
     await client.query('BEGIN');
     const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
     const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
-    let barcodeNum = Date.now();
     const product = await client.query('SELECT sku FROM products WHERE id=$1', [req.params.id]);
     const sku = product.rows[0]?.sku;
     const added = [];
     for(const color of colorList){
       for(const size of sizeList){
-        barcodeNum++;
         const variantSku = `${sku}-${color.substring(0,2).toUpperCase()}-${size}`;
-        const barcode = `6900${String(barcodeNum).slice(-8)}`;
+        const barcode = await makeUniqueBarcode(client);
         try{
           const v = await client.query(
             'INSERT INTO product_variants (product_id,color,size,barcode,sku) VALUES ($1,$2,$3,$4,$5) RETURNING *',

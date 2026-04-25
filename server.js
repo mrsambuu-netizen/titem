@@ -672,6 +672,54 @@ app.post('/api/products/:id/variants', authMiddleware(['admin','super_admin']), 
   }
 });
 
+function makeBarcode() {
+  return `6900${String(Date.now()).slice(-7)}${Math.floor(Math.random() * 10)}`;
+}
+
+async function makeUniqueBarcode(client) {
+  for (let i = 0; i < 20; i++) {
+    const barcode = makeBarcode();
+    const exists = await client.query('SELECT id FROM product_variants WHERE barcode=$1', [barcode]);
+    if (!exists.rows.length) return barcode;
+  }
+  throw new Error('Давхцахгүй баркод үүсгэж чадсангүй');
+}
+
+app.post('/api/barcodes/generate', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const { variant_ids } = req.body;
+  if (!Array.isArray(variant_ids) || !variant_ids.length) {
+    return res.status(400).json({ error: 'Variant сонгоно уу' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const updated = [];
+
+    for (const id of variant_ids) {
+      const variantId = parseInt(id);
+      if (!variantId) continue;
+      const barcode = await makeUniqueBarcode(client);
+      const result = await client.query(
+        `UPDATE product_variants
+         SET barcode=$1
+         WHERE id=$2
+         RETURNING id, product_id, color, size, barcode, sku`,
+        [barcode, variantId]
+      );
+      if (result.rows[0]) updated.push(result.rows[0]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, updated });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ── БАРКОДООР БАРАА ХАЙХ ──
 app.get('/api/barcode/:barcode', async (req, res) => {
   try {

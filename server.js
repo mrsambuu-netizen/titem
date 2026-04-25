@@ -506,12 +506,22 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+async function generateProductSku(client) {
+  const result = await client.query(
+    "SELECT sku FROM products WHERE sku ~ '^TIT-[0-9]+$' ORDER BY CAST(SUBSTRING(sku FROM 5) AS INTEGER) DESC LIMIT 1"
+  );
+  const lastNum = result.rows[0]?.sku ? parseInt(result.rows[0].sku.replace('TIT-', '')) : 0;
+  return `TIT-${String(lastNum + 1).padStart(4, '0')}`;
+}
+
 // ── БАРАА НЭМЭХ ──
 app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, res) => {
-  const { name, sku, category_id, price, wholesale_price, discount_price, description, colors, sizes } = req.body;
+  let { name, sku, category_id, price, wholesale_price, discount_price, description, colors, sizes } = req.body;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    sku = (sku || '').trim();
+    if (!sku) sku = await generateProductSku(client);
     
     // Бараа үүсгэх
     const result = await client.query(

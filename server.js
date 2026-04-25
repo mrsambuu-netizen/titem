@@ -405,6 +405,17 @@ function authMiddleware(roles = []) {
   };
 }
 
+function optionalAuth(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return next();
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+  } catch {
+    return res.status(401).json({ error: 'Token хүчингүй' });
+  }
+  next();
+}
+
 // ════════════════════════════
 // API ROUTES
 // ════════════════════════════
@@ -490,19 +501,6 @@ app.get('/api/products/:id', async (req, res) => {
       [req.params.id]
     );
     res.json({ ...product.rows[0], variants: variants.rows });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, res) => {
-  const { name, sku, category_id, price, wholesale_price, description } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO products (name, sku, category_id, price, wholesale_price, description) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-      [name, sku, category_id, price, wholesale_price, description]
-    );
-    res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -694,34 +692,48 @@ app.get('/api/barcode/:barcode', async (req, res) => {
 });
 
 // ── ЗАХИАЛГА ──
-app.post('/api/orders', authMiddleware(['cashier','admin','super_admin']), async (req, res) => {
+app.post('/api/orders', optionalAuth, async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     const { branch_id, items, subtotal, discount_amount, total, payment_method, ebarimt, ebarimt_regno, customer_name, customer_phone } = req.body;
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ error: 'Захиалгын бараа дутуу байна' });
+    }
+    if (req.user && !['cashier','admin','super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Эрх байхгүй' });
+    }
+    await client.query('BEGIN');
     const orderNum = '#TIT-' + Date.now().toString().slice(-6);
+    const orderBranchId = branch_id || req.user?.branch_id || 2;
+    const cashierId = req.user?.id || null;
 
     const order = await client.query(
       `INSERT INTO orders (order_number, branch_id, cashier_id, customer_name, customer_phone, subtotal, discount_amount, total, payment_method, ebarimt, ebarimt_regno)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [orderNum, branch_id || req.user.branch_id, req.user.id, customer_name, customer_phone, subtotal, discount_amount, total, payment_method, ebarimt, ebarimt_regno]
+      [orderNum, orderBranchId, cashierId, customer_name, customer_phone, subtotal, discount_amount, total, payment_method, ebarimt, ebarimt_regno]
     );
 
     for (const item of items) {
+      const variantId = item.variant_id ? parseInt(item.variant_id) : null;
+      const quantity = parseInt(item.quantity) || 0;
+      const price = parseInt(item.price) || 0;
+      if (quantity <= 0) throw new Error('Захиалгын тоо буруу байна');
       await client.query(
         `INSERT INTO order_items (order_id, variant_id, product_name, color, size, quantity, unit_price, total_price)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [order.rows[0].id, item.variant_id, item.name, item.color, item.size, item.quantity, item.price, item.price * item.quantity]
+        [order.rows[0].id, variantId, item.name, item.color, item.size, quantity, price, price * quantity]
       );
-      await client.query(
-        `UPDATE inventory SET quantity = quantity - $1 WHERE variant_id = $2 AND branch_id = $3`,
-        [item.quantity, item.variant_id, branch_id || req.user.branch_id]
-      );
-      await client.query(
-        `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, reference_id, user_id)
-         VALUES ($1,$2,$3,'sale',$4,$5)`,
-        [item.variant_id, branch_id || req.user.branch_id, item.quantity, order.rows[0].id, req.user.id]
-      );
+      if (variantId) {
+        await client.query(
+          `UPDATE inventory SET quantity = quantity - $1 WHERE variant_id = $2 AND branch_id = $3`,
+          [quantity, variantId, orderBranchId]
+        );
+        await client.query(
+          `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, reference_id, user_id)
+           VALUES ($1,$2,$3,'sale',$4,$5)`,
+          [variantId, orderBranchId, quantity, order.rows[0].id, cashierId]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -736,21 +748,48 @@ app.post('/api/orders', authMiddleware(['cashier','admin','super_admin']), async
 
 app.get('/api/orders', authMiddleware(), async (req, res) => {
   try {
-    const { branch_id, date, limit = 50 } = req.query;
+    const { branch_id, date, order_number, limit = 50 } = req.query;
     const branchFilter = req.user.role === 'cashier' ? req.user.branch_id : branch_id;
+    const conditions = ['1=1'];
+    const params = [];
+
+    if (branchFilter) {
+      params.push(branchFilter);
+      conditions.push(`o.branch_id = $${params.length}`);
+    }
+    if (date) {
+      params.push(date);
+      conditions.push(`DATE(o.created_at) = $${params.length}`);
+    }
+    if (order_number) {
+      params.push(order_number);
+      conditions.push(`o.order_number = $${params.length}`);
+    }
+
+    const safeLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
     let query = `
       SELECT o.*, b.name as branch_name, u.full_name as cashier_name
+        , COALESCE(
+          json_agg(
+            json_build_object(
+              'variant_id', oi.variant_id,
+              'name', oi.product_name,
+              'color', oi.color,
+              'size', oi.size,
+              'quantity', oi.quantity,
+              'price', oi.unit_price
+            )
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'
+        ) as items
       FROM orders o
       LEFT JOIN branches b ON o.branch_id = b.id
       LEFT JOIN users u ON o.cashier_id = u.id
-      WHERE 1=1
-      ${branchFilter ? 'AND o.branch_id = $1' : ''}
-      ${date ? `AND DATE(o.created_at) = $${branchFilter ? 2 : 1}` : ''}
-      ORDER BY o.created_at DESC LIMIT ${limit}
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY o.id, b.name, u.full_name
+      ORDER BY o.created_at DESC LIMIT ${safeLimit}
     `;
-    const params = [];
-    if (branchFilter) params.push(branchFilter);
-    if (date) params.push(date);
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
@@ -947,7 +986,7 @@ app.post('/api/transfers', authMiddleware(['warehouse','admin','super_admin']), 
 // item.action:
 //   restock         → дахин зарах боломжтой, inventory нэмнэ
 //   damaged         → гэмтэлтэй, inventory нэмэхгүй, зөвхөн түүх бүртгэнэ
-app.post('/api/returns', authMiddleware(['warehouse','admin','super_admin']), async (req, res) => {
+app.post('/api/returns', authMiddleware(['warehouse','admin','super_admin','cashier']), async (req, res) => {
   const client = await pool.connect();
 
   try {

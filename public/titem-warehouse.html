@@ -738,6 +738,8 @@ async function loadBranches(){
     // Хуваарилах select шинэчлэх
     const sel=document.getElementById('dist-branch');
     if(sel) sel.innerHTML=data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name} — ${b.location}</option>`).join('');
+    const returnBranch=document.getElementById('return-branch');
+    if(returnBranch) returnBranch.innerHTML=data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name} — ${b.location}</option>`).join('');
     const tfFrom=document.getElementById('tf-from');
     const tfTo=document.getElementById('tf-to');
     if(tfFrom) tfFrom.innerHTML=`<option value="1">🏭 Агуулах</option>`+data.filter(b=>b.id>1).map(b=>`<option value="${b.id}">🏪 ${b.name}</option>`).join('');
@@ -1108,7 +1110,8 @@ function handleReturnBarcode(e){
   if(!p){showToast('Бараа олдсонгүй','error');return;}
   const ex=returnItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
-    returnItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,condition:'good',resell:true});
+    const variant=(p.variants||[])[0];
+    returnItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',variant_id:variant?.id,qty:1,condition:'good',resell:true});
   }
   e.target.value='';renderReturnItems();
   showToast(p.name+' нэмэгдлээ','success');
@@ -1147,15 +1150,37 @@ function renderReturnItems(){
     </tr>`).join('');
 }
 
-function confirmReturn(){
+async function confirmReturn(){
   if(!returnItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const reason=document.getElementById('return-reason').value||'—';
   const qty=returnItems.reduce((s,i)=>s+i.qty,0);
-  allHistory.unshift({
-    date:new Date().toLocaleDateString('mn-MN'),type:'return',
-    product:returnItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
-    detail:'Шалтгаан: '+reason,user:currentUser
-  });
+  const returnType=document.getElementById('return-type').value;
+  const sourceBranchId=returnType==='branch'?parseInt(document.getElementById('return-branch').value):1;
+  const items=returnItems.map(i=>({
+    variant_id:i.variant_id,
+    quantity:i.qty,
+    condition:i.condition||'good',
+    resell:i.resell!==false,
+    action:i.resell!==false?'restock':'damaged'
+  })).filter(i=>i.variant_id&&i.quantity>0);
+  if(!items.length){showToast('Буцаах барааны variant мэдээлэл алга байна','error');return;}
+  try{
+    await apiPost('/api/returns',{
+      return_type:returnType,
+      source_branch_id:sourceBranchId,
+      reason,
+      note:document.getElementById('return-order').value||'',
+      items
+    });
+    allHistory.unshift({
+      date:new Date().toLocaleDateString('mn-MN'),type:'return',
+      product:returnItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
+      detail:'Шалтгаан: '+reason,user:currentUser
+    });
+  }catch(e){
+    showToast('Буцаалт бүртгэхэд алдаа: '+e.message,'error');
+    return;
+  }
   const tbody=document.getElementById('return-history');
   const row=document.createElement('tr');
   const type=document.getElementById('return-type');

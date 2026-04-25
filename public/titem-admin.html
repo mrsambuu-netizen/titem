@@ -1060,14 +1060,26 @@ tr:hover td{background:#fafafa}
 const API='';
 let TOKEN=localStorage.getItem('admin_token')||'';
 
+async function handleApiError(res){
+  const text=await res.text();
+  if(res.status===401){
+    TOKEN='';
+    localStorage.removeItem('admin_token');
+    document.getElementById('login-wrap').style.display='flex';
+    document.getElementById('admin-wrap').classList.remove('show');
+    showToast('Нэвтрэх хугацаа дууссан. Дахин нэвтэрнэ үү','error');
+  }
+  throw new Error(text);
+}
+
 async function apiGet(url){
-  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
-  if(!res.ok)throw new Error(await res.text());
+  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}}); 
+  if(!res.ok)await handleApiError(res);
   return res.json();
 }
 async function apiPost(url,data){
   const res=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:JSON.stringify(data)});
-  if(!res.ok)throw new Error(await res.text());
+  if(!res.ok)await handleApiError(res);
   return res.json();
 }
 
@@ -2203,7 +2215,7 @@ async function apiPost_put(url, data){
     headers: {'Content-Type':'application/json', ...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},
     body: JSON.stringify(data)
   });
-  if(!res.ok) throw new Error(await res.text());
+  if(!res.ok) await handleApiError(res);
   return res.json();
 }
 

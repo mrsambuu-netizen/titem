@@ -799,7 +799,7 @@ tr:hover td{background:#fafafa}
 
         <div class="card" style="margin-bottom:16px">
           <div class="card-title">Баркод тохиргоо</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:14px;align-items:end">
             <div class="f-group">
               <label class="f-label">Бараа сонгох</label>
               <select id="bc-product" class="f-input" style="cursor:pointer" onchange="loadBarcodeVariants()">
@@ -818,6 +818,7 @@ tr:hover td{background:#fafafa}
                 <option value="large">Том (80×40мм)</option>
               </select>
             </div>
+            <button onclick="regenerateSelectedBarcodes()" style="background:var(--white);color:var(--black);border:1px solid var(--gray-mid);padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Шинэ код</button>
             <button onclick="generateBarcodes()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Үүсгэх</button>
           </div>
           <div id="bc-variants" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px"></div>
@@ -2597,6 +2598,29 @@ function generateBarcodes(){
   });
 
   showToast(active.length*count+' баркод үүслээ','success');
+}
+
+async function regenerateSelectedBarcodes(){
+  const productId = document.getElementById('bc-product').value;
+  const active = selectedVariants.filter(v=>v.selected);
+  if(!productId){showToast('Бараа сонгоно уу','error');return;}
+  if(!active.length){showToast('Variant сонгоно уу','error');return;}
+  if(!confirm('Сонгосон variant-уудын barcode шинээр солигдоно. Үргэлжлүүлэх үү?')) return;
+
+  try{
+    const result = await apiPost('/api/barcodes/generate', {
+      variant_ids: active.map(v=>v.id)
+    });
+    const updated = result.updated || [];
+    selectedVariants = selectedVariants.map(v=>{
+      const found = updated.find(u=>u.id===v.id);
+      return found ? {...v, barcode:found.barcode} : v;
+    });
+    loadBarcodeVariants();
+    showToast(updated.length+' шинэ barcode хадгалагдлаа','success');
+  }catch(e){
+    showToast('Barcode үүсгэхэд алдаа: '+e.message,'error');
+  }
 }
 
 function drawBarcode(svg, code, width, height){

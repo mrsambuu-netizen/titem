@@ -719,6 +719,10 @@ tr:hover td{background:#fafafa}
               </select>
             </div>
             <div class="f-group">
+              <label class="f-label">Салбар</label>
+              <select class="f-input" id="wh-return-branch" style="cursor:pointer"></select>
+            </div>
+            <div class="f-group">
               <label class="f-label">Захиалгын дугаар</label>
               <input class="f-input" id="wh-return-order" placeholder="#TIT-XXXXXX">
             </div>
@@ -2257,6 +2261,8 @@ async function loadWarehouseData(){
     // Салбар dropdown
     const branchSel = document.getElementById('wh-dist-branch');
     if(branchSel) branchSel.innerHTML = branches.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+    const returnBranchSel = document.getElementById('wh-return-branch');
+    if(returnBranchSel) returnBranchSel.innerHTML = branches.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
 
     // Date
     const dateEl = document.getElementById('wh-date');
@@ -2441,7 +2447,8 @@ function whHandleReturnBarcode(e){
   if(!p){showToast('Бараа олдсонгүй','error');return;}
   const ex = whReturnItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
-    whReturnItems.push({sku:p.sku,name:p.name,qty:1,condition:'good',resell:true});
+    const variant=(p.variants||[])[0];
+    whReturnItems.push({sku:p.sku,name:p.name,variant_id:variant?.id,qty:1,condition:'good',resell:true});
   }
   e.target.value='';whRenderReturn();
   showToast(p.name+' нэмэгдлээ','success');
@@ -2479,11 +2486,33 @@ function whRenderReturn(){
     </tr>`).join('');
 }
 
-function whConfirmReturn(){
+async function whConfirmReturn(){
   if(!whReturnItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const reason = document.getElementById('wh-return-reason').value||'—';
   const qty = whReturnItems.reduce((s,i)=>s+i.qty,0);
   const type = document.getElementById('wh-return-type');
+  const returnType = type.value;
+  const sourceBranchId = returnType==='branch' ? parseInt(document.getElementById('wh-return-branch').value) : 1;
+  const items = whReturnItems.map(i=>({
+    variant_id:i.variant_id,
+    quantity:i.qty,
+    condition:i.condition||'good',
+    resell:i.resell!==false,
+    action:i.resell!==false?'restock':'damaged'
+  })).filter(i=>i.variant_id&&i.quantity>0);
+  if(!items.length){showToast('Буцаах барааны variant мэдээлэл алга байна','error');return;}
+  try{
+    await apiPost('/api/returns',{
+      return_type:returnType,
+      source_branch_id:sourceBranchId,
+      reason,
+      note:document.getElementById('wh-return-order').value||'',
+      items
+    });
+  }catch(e){
+    showToast('Буцаалт бүртгэхэд алдаа: '+e.message,'error');
+    return;
+  }
 
   const tbody = document.getElementById('wh-return-history');
   const row = document.createElement('tr');

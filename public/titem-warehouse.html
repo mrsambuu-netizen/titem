@@ -618,14 +618,25 @@ table.main-table tr:hover td{background:#fafafa}
 const API='';
 let TOKEN=localStorage.getItem('warehouse_token')||'';
 
+async function handleApiError(res){
+  const text=await res.text();
+  if(res.status===401){
+    TOKEN='';
+    localStorage.removeItem('warehouse_token');
+    showLoginPage();
+    showToast('Нэвтрэх хугацаа дууссан. Дахин нэвтэрнэ үү','error');
+  }
+  throw new Error(text);
+}
+
 async function apiGet(url){
-  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
-  if(!res.ok)throw new Error(await res.text());
+  const res=await fetch(API+url,{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}}); 
+  if(!res.ok)await handleApiError(res);
   return res.json();
 }
 async function apiPost(url,data){
   const res=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:JSON.stringify(data)});
-  if(!res.ok)throw new Error(await res.text());
+  if(!res.ok)await handleApiError(res);
   return res.json();
 }
 
@@ -654,7 +665,7 @@ async function initWarehouse(){
     if(TOKEN){
       // Token хүчинтэй эсэхийг шалгах
       try{
-        await apiGet('/api/categories');
+        await apiGet('/api/suppliers');
         await loadAll();
         return;
       }catch(e){

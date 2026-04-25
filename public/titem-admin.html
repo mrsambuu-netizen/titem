@@ -989,8 +989,8 @@ tr:hover td{background:#fafafa}
         <input id="mp-name" class="f-input" placeholder="Классик Бүргэд">
       </div>
       <div>
-        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">SKU *</label>
-        <input id="mp-sku" class="f-input" placeholder="TIT-013">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">SKU / Код</label>
+        <input id="mp-sku" class="f-input" placeholder="Хоосон бол автоматаар үүснэ">
       </div>
       <div>
         <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Ангилал *</label>
@@ -2168,7 +2168,6 @@ async function saveProduct(){
       showToast('Бараа амжилттай шинэчлэгдлээ','success');
     } else {
       // Шинэ бараа
-      if(!sku){showToast('SKU заавал оруулна уу','error');btn.disabled=false;btn.textContent='Хадгалах';return;}
       const colorsRaw = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
       const sizesRaw = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
       // Хоосон бол default утга

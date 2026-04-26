@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -1766,6 +1766,27 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+app.post('/api/categories', authMiddleware(['admin','super_admin']), async (req, res) => {
+  const name = String(req.body.name || '').trim();
+  if (!name) return res.status(400).json({ error: 'Бүлгийн нэр оруулна уу' });
+
+  try {
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'cat';
+    const slug = baseSlug + '-' + Date.now().toString().slice(-6);
+    const result = await pool.query(
+      'INSERT INTO categories (name, slug) VALUES ($1,$2) RETURNING *',
+      [name, slug]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') res.status(400).json({ error: 'Ийм бүлэг аль хэдийн байна' });
+    else res.status(500).json({ error: err.message });
+  }
+});
+
 // ── САЛБАРУУД ──
 app.get('/api/branches', async (req, res) => {
   try {
@@ -1847,3 +1868,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+

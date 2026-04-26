@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
@@ -578,11 +578,6 @@ tr:hover td{background:#fafafa}
             <select id="mp-cat-filter" onchange="filterManageProducts(document.getElementById('mp-search').value)"
               style="padding:9px 14px;border:1px solid var(--gray-light);border-radius:6px;font-size:13px;font-family:var(--font-body);cursor:pointer;outline:none">
               <option value="">Бүх ангилал</option>
-              <option value="Малгай">Малгай</option>
-              <option value="Ороолт">Ороолт</option>
-              <option value="Бээлий">Бээлий</option>
-              <option value="Faceshield">Faceshield</option>
-              <option value="Алчуур">Алчуур</option>
             </select>
             <!-- Статусаар шүүх -->
             <select id="mp-status-filter" onchange="filterManageProducts(document.getElementById('mp-search').value)"
@@ -592,6 +587,9 @@ tr:hover td{background:#fafafa}
               <option value="inactive">Идэвхгүй</option>
               <option value="out">Дууссан</option>
             </select>
+            <button onclick="addProductCategory()" style="background:var(--white);color:var(--black);border:1px solid var(--gray-mid);padding:9px 16px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">
+              + Бүлэг
+            </button>
             <button onclick="openAddProduct()" style="background:var(--black);color:var(--white);border:none;padding:9px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">
               + Шинэ бараа
             </button>
@@ -994,13 +992,12 @@ tr:hover td{background:#fafafa}
       </div>
       <div>
         <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Ангилал *</label>
-        <select id="mp-cat" class="f-input" style="cursor:pointer">
-          <option value="1">Малгай</option>
-          <option value="2">Ороолт</option>
-          <option value="3">Бээлий</option>
-          <option value="4">Faceshield</option>
-          <option value="5">Алчуур</option>
-        </select>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="mp-cat" class="f-input" style="cursor:pointer;flex:1">
+            <option value="">Бүлэг сонгох</option>
+          </select>
+          <button type="button" onclick="addProductCategory(true)" title="Шинэ бүлэг нэмэх" style="height:38px;min-width:38px;border:1px solid var(--gray-mid);background:var(--white);border-radius:6px;cursor:pointer;font-size:18px;line-height:1">+</button>
+        </div>
       </div>
       <div>
         <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Жижиглэн үнэ (₮) *</label>
@@ -1122,7 +1119,7 @@ function showPanel(id,btn){
   document.getElementById('panel-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
   const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',partners:'Гэрээт борлуулагч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
-  if(id==='manage-products') loadManageProducts();
+  if(id==='manage-products'){ loadProductCategories(); loadManageProducts(); }
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
   if(id==='barcode'){loadBarcodeProducts();loadUsers();}
   if(id==='suppliers') loadSuppliers();
@@ -1148,6 +1145,7 @@ async function refreshData(){
 
 // ── LOAD ALL ──
 async function loadAll(){
+  await loadProductCategories();
   await Promise.all([
     loadDashboard(),
     loadBranches(),
@@ -1984,6 +1982,37 @@ let uploadedImages = [];
 let editingProductId = null;
 
 let allManageProducts = [];
+let productCategories = [];
+
+async function loadProductCategories(selectedId){
+  try{
+    const data = await apiGet('/api/categories');
+    productCategories = data;
+    const catSel = document.getElementById('mp-cat');
+    if(catSel){
+      const current = selectedId || catSel.value;
+      catSel.innerHTML = '<option value="">Бүлэг сонгох</option>' + data.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('');
+      if(current) catSel.value = String(current);
+    }
+    const filterSel = document.getElementById('mp-cat-filter');
+    if(filterSel){
+      const currentFilter = filterSel.value;
+      filterSel.innerHTML = '<option value="">Бүх ангилал</option>' + data.map(c=>'<option value="'+c.name+'">'+c.name+'</option>').join('');
+      if(currentFilter) filterSel.value = currentFilter;
+    }
+  }catch(e){console.error('Ангилал татахад алдаа:', e);}
+}
+
+async function addProductCategory(selectNew=false){
+  const name = prompt('Шинэ бүлэг / ангиллын нэр оруулна уу');
+  if(!name || !name.trim()) return;
+  try{
+    const cat = await apiPost('/api/categories', {name:name.trim()});
+    await loadProductCategories(cat.id);
+    if(selectNew) document.getElementById('mp-cat').value = String(cat.id);
+    showToast('Бүлэг нэмэгдлээ: '+cat.name,'success');
+  }catch(e){showToast('Бүлэг нэмэхэд алдаа: '+e.message,'error');}
+}
 
 function filterManageProducts(query){
   const q = (query||'').toLowerCase();
@@ -2076,6 +2105,7 @@ function openAddProduct(){
   document.getElementById('mp-sizes').value = 'S, M, L, XL';
   document.getElementById('mp-preview').innerHTML = '';
   document.getElementById('variant-section').style.display = 'block';
+  loadProductCategories();
   document.getElementById('modal-add-product').style.display = 'flex';
 }
 
@@ -2092,6 +2122,8 @@ async function editProduct(id){
     document.getElementById('mp-wholesale').value = p.wholesale_price || '';
     document.getElementById('mp-discount').value = p.discount_price || '';
     document.getElementById('mp-desc').value = p.description || '';
+    await loadProductCategories(p.category_id);
+    document.getElementById('mp-cat').value = p.category_id || '';
     document.getElementById('mp-colors').value = [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))].join(', ');
     document.getElementById('mp-sizes').value = [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))].join(', ');
     document.getElementById('variant-section').style.display = 'block';
@@ -2688,3 +2720,4 @@ if(TOKEN){
 </script>
 </body>
 </html>
+

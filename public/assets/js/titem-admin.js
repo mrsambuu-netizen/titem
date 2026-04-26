@@ -67,6 +67,7 @@ function showPanel(id,btn){
   if(id==='manage-products'){ loadProductCategories(); loadManageProducts(); }
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
   if(id==='barcode'){loadBarcodeProducts();loadUsers();}
+  if(id==='transfer') loadTransferForm();
   if(id==='suppliers') loadSuppliers();
   if(document.getElementById('panel-partners')?.classList.contains('active')) renderPartners();
   if(id==='users') loadUsers();
@@ -101,6 +102,7 @@ async function loadAll(){
     loadAlerts(),
     loadBarcodeProducts()
   ]);
+  await loadTransferForm();
 }
 
 // ── DASHBOARD ──
@@ -898,18 +900,76 @@ async function toggleBranchActive(id, active){
   }catch(e){showToast('Backend дээр is_active талбар дэмжигдээгүй байж магадгүй','error');}
 }
 
-// ── TRANSFERS ──
+// Transfers
+async function loadTransferForm(){
+  const fromSel=document.getElementById('tf-from');
+  const toSel=document.getElementById('tf-to');
+  if(!fromSel || !toSel) return;
+
+  let branches=window.BRANCHES || [];
+  if(!branches.length){
+    branches=await fetch('/api/branches').then(r=>r.json()).catch(()=>[]);
+    window.BRANCHES=branches;
+  }
+  const ownBranches=branches.filter(b=>normalizeBranchType(b)==='own_branch' && b.is_active!==false);
+  const options=ownBranches.map(b=>'<option value="'+b.id+'">'+b.name+'</option>').join('');
+  const fromValue=fromSel.value;
+  const toValue=toSel.value;
+  fromSel.innerHTML=options;
+  toSel.innerHTML=ownBranches.filter(b=>b.id!==1).map(b=>'<option value="'+b.id+'">'+b.name+'</option>').join('') || options;
+  if([...fromSel.options].some(o=>o.value===fromValue)) fromSel.value=fromValue;
+  if([...toSel.options].some(o=>o.value===toValue)) toSel.value=toValue;
+  if(fromSel.value && fromSel.value===toSel.value){
+    const diff=[...toSel.options].find(o=>o.value!==fromSel.value);
+    if(diff) toSel.value=diff.value;
+  }
+  await loadTransferProducts();
+  renderTransfers();
+}
+
+async function loadTransferProducts(){
+  const fromSel=document.getElementById('tf-from');
+  const productSel=document.getElementById('tf-product');
+  if(!fromSel || !productSel || !fromSel.value) return;
+  try{
+    const rows=await apiGet('/api/inventory?branch_id='+encodeURIComponent(fromSel.value));
+    const available=(rows||[]).filter(r=>parseInt(r.quantity||0)>0 && r.variant_id);
+    productSel.innerHTML=available.length ? available.map(r=>{
+      const detail=[r.color,r.size].filter(Boolean).join(' / ');
+      return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'">'+r.name+(detail?' - '+detail:'')+' ('+r.quantity+')</option>';
+    }).join('') : '<option value="">??????????? ????? ????</option>';
+  }catch(e){
+    productSel.innerHTML='<option value="">????? ??????? ?????</option>';
+  }
+}
+
 function renderTransfers(){
-  document.getElementById('transfer-table').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">Шилжүүлгийн түүх байхгүй</td></tr>';
+  const table=document.getElementById('transfer-table');
+  if(table) table.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">??????????? ???? ???????</td></tr>';
 }
 
 async function createTransfer(){
   const from=document.getElementById('tf-from');
   const to=document.getElementById('tf-to');
+  const product=document.getElementById('tf-product');
   const qty=parseInt(document.getElementById('tf-qty').value)||0;
-  if(from.value===to.value){showToast('Хаанаас, хаашаа салбар ижил байна','error');return;}
-  if(qty<=0){showToast('Тоо оруулна уу','error');return;}
-  showToast('Шилжүүлэг үүсгэгдлээ','success');
+  if(!from?.value || !to?.value){showToast('?????? ??????? ??','error');return;}
+  if(from.value===to.value){showToast('???????, ?????? ?????? ???? ?????','error');return;}
+  if(!product?.value){showToast('????? ??????? ??','error');return;}
+  if(qty<=0){showToast('??? ??????? ??','error');return;}
+  const stock=parseInt(product.selectedOptions[0]?.dataset?.stock||0);
+  if(stock && qty>stock){showToast('?????????? ?? ??? ????????? ?????????','error');return;}
+  try{
+    await apiPost('/api/transfers', {
+      from_branch_id:parseInt(from.value),
+      to_branch_id:parseInt(to.value),
+      note:'Admin transfer',
+      items:[{variant_id:parseInt(product.value), quantity:qty}]
+    });
+    showToast('????????? ????????? ????????????','success');
+    await loadTransferProducts();
+    await loadInventory();
+  }catch(e){showToast('????????? ?????: '+e.message,'error');}
 }
 
 // ── TOAST ──

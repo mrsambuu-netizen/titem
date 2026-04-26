@@ -6,7 +6,7 @@ app.get('/api/inventory', authMiddleware(), async (req, res) => {
     const { branch_id } = req.query;
     const branchFilter = req.user.role === 'cashier' ? req.user.branch_id : branch_id;
     const result = await pool.query(
-      `SELECT p.name, p.sku, pv.color, pv.size, pv.barcode,
+      `SELECT pv.id as variant_id, b.id as branch_id, p.name, p.sku, pv.color, pv.size, pv.barcode,
         b.name as branch_name, i.quantity, i.min_quantity,
         c.name as category_name,
         CASE WHEN i.quantity = 0 THEN 'out'

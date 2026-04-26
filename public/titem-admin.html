@@ -232,34 +232,15 @@
           <div class="tf-grid">
             <div>
               <label class="tf-label">Хаанаас</label>
-              <select class="tf-select" id="tf-from">
-                <option value="warehouse">🏭 Агуулах</option>
-                <option value="1">🏪 Салбар 1</option>
-                <option value="2">🏪 Салбар 2</option>
-                <option value="3">🏪 Салбар 3</option>
-                <option value="4">🏪 Салбар 4</option>
-                <option value="5">🏪 Салбар 5</option>
-              </select>
+              <select class="tf-select" id="tf-from" onchange="loadTransferProducts()"></select>
             </div>
             <div>
               <label class="tf-label">Хаашаа</label>
-              <select class="tf-select" id="tf-to">
-                <option value="1">🏪 Салбар 1</option>
-                <option value="2">🏪 Салбар 2</option>
-                <option value="3">🏪 Салбар 3</option>
-                <option value="4">🏪 Салбар 4</option>
-                <option value="5">🏪 Салбар 5</option>
-              </select>
+              <select class="tf-select" id="tf-to"></select>
             </div>
             <div>
               <label class="tf-label">Бараа</label>
-              <select class="tf-select" id="tf-product">
-                <option>Классик Бүргэд (23)</option>
-                <option>Зимийн ороолт (18)</option>
-                <option>Утас бээлий (8)</option>
-                <option>Өвлийн хамгаалалт (30)</option>
-                <option>Хүзүүний алчуур (25)</option>
-              </select>
+              <select class="tf-select" id="tf-product"></select>
             </div>
             <div>
               <label class="tf-label">Тоо</label>

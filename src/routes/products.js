@@ -166,29 +166,30 @@ app.post('/api/receive', authMiddleware(['warehouse','admin','super_admin']), as
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { items, supplier_id, invoice, note } = req.body;
+    const { items, supplier_id, invoice, note, branch_id } = req.body;
+    const receiveBranchId = parseInt(branch_id || 1);
     
     for (const item of items) {
       // Агуулахын inventory-г нэмэх (branch_id = 1)
       await client.query(`
         INSERT INTO inventory (variant_id, branch_id, quantity, min_quantity)
-        VALUES ($1, 1, $2, 5)
+        VALUES ($1, $3, $2, 5)
         ON CONFLICT (variant_id, branch_id) 
         DO UPDATE SET quantity = inventory.quantity + $2
-      `, [item.variant_id, item.quantity]);
+      `, [item.variant_id, item.quantity, receiveBranchId]);
       
       // Stock movement бүртгэх
       await client.query(`
         INSERT INTO stock_movements 
           (variant_id, to_branch_id, quantity, movement_type, note, user_id)
-        VALUES ($1, 1, $2, 'receive', $3, $4)
+        VALUES ($1, $5, $2, 'receive', $3, $4)
       `, [item.variant_id, item.quantity, 
-          `Орлого: ${invoice||'—'} | ${note||'—'}`, 
-          req.user.id]);
+          `Receive: ${invoice||'-'} | ${note||'-'}`, 
+          req.user.id, receiveBranchId]);
     }
     
     await client.query('COMMIT');
-    res.json({ success: true, message: `${items.length} төрлийн бараа орлогодлоо` });
+    res.json({ success: true, message: `${items.length} item received` });
   } catch(err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });

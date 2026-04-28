@@ -1,4 +1,4 @@
-// ── API ──
+﻿// â”€â”€ API â”€â”€
 const API='';
 let TOKEN=localStorage.getItem('admin_token')||'';
 
@@ -9,7 +9,7 @@ async function handleApiError(res){
     localStorage.removeItem('admin_token');
     document.getElementById('login-wrap').style.display='flex';
     document.getElementById('admin-wrap').classList.remove('show');
-    showToast('Нэвтрэх хугацаа дууссан. Дахин нэвтэрнэ үү','error');
+    showToast('ÐÑÐ²Ñ‚Ñ€ÑÑ… Ñ…ÑƒÐ³Ð°Ñ†Ð°Ð° Ð´ÑƒÑƒÑÑÐ°Ð½. Ð”Ð°Ñ…Ð¸Ð½ Ð½ÑÐ²Ñ‚ÑÑ€Ð½Ñ Ò¯Ò¯','error');
   }
   throw new Error(text);
 }
@@ -28,7 +28,7 @@ async function apiPost(url,data){
 let today=new Date().toISOString().split('T')[0];
 let invFilter='all';
 
-// ── AUTH ──
+// â”€â”€ AUTH â”€â”€
 async function doLogin(){
   const u=document.getElementById('adm-user').value.trim();
   const p=document.getElementById('adm-pw').value;
@@ -37,7 +37,7 @@ async function doLogin(){
   try{
     const data=await apiPost('/api/auth/login',{username:u,password:p});
     if(!['super_admin','admin'].includes(data.user.role)){
-      err.style.display='block';err.textContent='Админ эрх байхгүй байна';return;
+      err.style.display='block';err.textContent='ÐÐ´Ð¼Ð¸Ð½ ÑÑ€Ñ… Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°';return;
     }
     TOKEN=data.token;
     localStorage.setItem('admin_token',TOKEN);
@@ -46,29 +46,31 @@ async function doLogin(){
     document.getElementById('admin-wrap').classList.add('show');
     initDate();
     await loadAll();
-  }catch(e){err.style.display='block';err.textContent='Нэвтрэх нэр эсвэл нууц үг буруу';}
+  }catch(e){err.style.display='block';err.textContent='ÐÑÐ²Ñ‚Ñ€ÑÑ… Ð½ÑÑ€ ÑÑÐ²ÑÐ» Ð½ÑƒÑƒÑ† Ò¯Ð³ Ð±ÑƒÑ€ÑƒÑƒ';}
 }
 
 function doLogout(){
-  if(confirm('Системээс гарах уу?')){
+  if(confirm('Ð¡Ð¸ÑÑ‚ÐµÐ¼ÑÑÑ Ð³Ð°Ñ€Ð°Ñ… ÑƒÑƒ?')){
     TOKEN='';localStorage.removeItem('admin_token');
     document.getElementById('login-wrap').style.display='flex';
     document.getElementById('admin-wrap').classList.remove('show');
   }
 }
 
-// ── NAV ──
+// â”€â”€ NAV â”€â”€
 function showPanel(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
-  const titles={dashboard:'Дашбоард',branches:'Салбарууд',alerts:'Сануулга',inventory:'Үлдэгдэл',transfer:'Шилжүүлэг',suppliers:'Нийлүүлэгч',partners:'Гэрээт борлуулагч',sales:'Борлуулалт',products:'Бараа тайлан',users:'Хэрэглэгчид','manage-products':'Бараа удирдлага','wh-receive':'Орлогодох','wh-distribute':'Хуваарилах','wh-return':'Буцаалт',barcode:'Баркод үүсгэх'};
+  const titles={dashboard:'Ð”Ð°ÑˆÐ±Ð¾Ð°Ñ€Ð´',branches:'Ð¡Ð°Ð»Ð±Ð°Ñ€ÑƒÑƒÐ´',alerts:'Ð¡Ð°Ð½ÑƒÑƒÐ»Ð³Ð°',inventory:'Ò®Ð»Ð´ÑÐ³Ð´ÑÐ»',transfer:'Ð¨Ð¸Ð»Ð¶Ò¯Ò¯Ð»ÑÐ³',suppliers:'ÐÐ¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡',partners:'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡',sales:'Ð‘Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð»Ñ‚',products:'Ð‘Ð°Ñ€Ð°Ð° Ñ‚Ð°Ð¹Ð»Ð°Ð½',users:'Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡Ð¸Ð´','manage-products':'Ð‘Ð°Ñ€Ð°Ð° ÑƒÐ´Ð¸Ñ€Ð´Ð»Ð°Ð³Ð°','wh-receive':'ÐžÑ€Ð»Ð¾Ð³Ð¾Ð´Ð¾Ñ…','wh-distribute':'Ð¥ÑƒÐ²Ð°Ð°Ñ€Ð¸Ð»Ð°Ñ…','wh-return':'Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚',barcode:'Ð‘Ð°Ñ€ÐºÐ¾Ð´ Ò¯Ò¯ÑÐ³ÑÑ…'};
   if(id==='manage-products'){ loadProductCategories(); loadManageProducts(); }
   if(id==='wh-receive'||id==='wh-distribute'||id==='wh-return') loadWarehouseData();
   if(id==='barcode'){loadBarcodeProducts();loadUsers();}
   if(id==='transfer') loadTransferForm();
   if(id==='suppliers') loadSuppliers();
+  if(id==='sales') loadSales();
+  if(id==='products') loadProductReport();
   if(document.getElementById('panel-partners')?.classList.contains('active')) renderPartners();
   if(id==='users') loadUsers();
   document.getElementById('page-title').textContent=titles[id]||id;
@@ -82,14 +84,14 @@ function initDate(){
 
 async function refreshData(){
   const activePanel = document.querySelector('.panel.active')?.id || '';
-  if(activePanel === 'panel-inventory'){
-    await loadInventory();
-  } else {
-    await loadAll();
-  }
+  if(activePanel === 'panel-inventory') await loadInventory();
+  else if(activePanel === 'panel-sales') await loadSales();
+  else if(activePanel === 'panel-products') await loadProductReport();
+  else if(activePanel === 'panel-branches') await loadBranches();
+  else await loadAll();
 }
 
-// ── LOAD ALL ──
+// â”€â”€ LOAD ALL â”€â”€
 async function loadAll(){
   await loadProductCategories();
   await Promise.all([
@@ -105,7 +107,7 @@ async function loadAll(){
   await loadTransferForm();
 }
 
-// ── DASHBOARD ──
+// â”€â”€ DASHBOARD â”€â”€
 async function loadDashboard(){
   try{
     const [branchData,daily] = await Promise.all([
@@ -121,7 +123,7 @@ async function loadDashboard(){
     const qpay=parseInt(s.qpay_total||0);
     const total=cash+card+qpay;
 
-    document.getElementById('kpi-revenue').textContent='₮'+totalRev.toLocaleString();
+    document.getElementById('kpi-revenue').textContent='â‚®'+totalRev.toLocaleString();
     document.getElementById('kpi-txn').textContent=totalTxn;
 
     // Inventory KPI
@@ -133,13 +135,13 @@ async function loadDashboard(){
       document.getElementById('kpi-alert').textContent=alerts;
     }catch(e){}
 
-    // Bar chart - 7 хоног
-    const days=['Да','Мя','Лх','Пү','Ба','Бя','Ня'];
+    // Bar chart - 7 Ñ…Ð¾Ð½Ð¾Ð³
+    const days=['Ð”Ð°','ÐœÑ','Ð›Ñ…','ÐŸÒ¯','Ð‘Ð°','Ð‘Ñ','ÐÑ'];
     const vals=[820000,940000,1100000,780000,1350000,1580000,totalRev||1240000];
     const maxV=Math.max(...vals);
     document.getElementById('week-chart').innerHTML=days.map((d,i)=>`
       <div class="bar-col">
-        <div class="bar-val">₮${(vals[i]/1000).toFixed(0)}K</div>
+        <div class="bar-val">â‚®${(vals[i]/1000).toFixed(0)}K</div>
         <div class="bar" style="height:${Math.round(vals[i]/maxV*110)}px;background:${i===6?'var(--black)':'var(--gray-mid)'}"></div>
         <div class="bar-label">${d}</div>
       </div>`).join('');
@@ -147,8 +149,8 @@ async function loadDashboard(){
     // Donut
     const payTotal=cash+card+qpay||1;
     const payData=[
-      {name:'Бэлэн',pct:Math.round(cash/payTotal*100),color:'#0a0a0a'},
-      {name:'Карт',pct:Math.round(card/payTotal*100),color:'#378ADD'},
+      {name:'Ð‘ÑÐ»ÑÐ½',pct:Math.round(cash/payTotal*100),color:'#0a0a0a'},
+      {name:'ÐšÐ°Ñ€Ñ‚',pct:Math.round(card/payTotal*100),color:'#378ADD'},
       {name:'QPay',pct:Math.round(qpay/payTotal*100),color:'#27ae60'}
     ];
     let offset=0;const r=48,cx=60,cy=60,c=2*Math.PI*r;
@@ -170,25 +172,25 @@ async function loadDashboard(){
       const prog=Math.min(100,Math.round(rev/goal*100));
       return`<tr>
         <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.location||''}</span></td>
-        <td>₮${rev.toLocaleString()}</td>
+        <td>â‚®${rev.toLocaleString()}</td>
         <td>${b.transaction_count||0}</td>
-        <td>₮${goal.toLocaleString()}</td>
+        <td>â‚®${goal.toLocaleString()}</td>
         <td>
           <div class="progress-bar-wrap">
             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${prog}%;background:${prog>=60?'var(--green)':prog>=30?'var(--amber)':'var(--red)'}"></div></div>
             <span class="progress-label">${prog}%</span>
           </div>
         </td>
-        <td><span class="badge badge-green">Онлайн</span></td>
+        <td><span class="badge badge-green">ÐžÐ½Ð»Ð°Ð¹Ð½</span></td>
       </tr>`;}).join('');
-  }catch(e){console.error('Dashboard алдаа:',e);}
+  }catch(e){console.error('Dashboard Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
-// ── BRANCHES ──
+// â”€â”€ BRANCHES â”€â”€
 function branchTypeLabel(type){
   const t = type || 'own_branch';
-  if(t === 'partner') return 'Гэрээт борлуулагч';
-  return 'Өөрийн салбар';
+  if(t === 'partner') return 'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡';
+  return 'Ó¨Ó©Ñ€Ð¸Ð¹Ð½ ÑÐ°Ð»Ð±Ð°Ñ€';
 }
 function branchTypeBadge(type){
   const t = type || 'own_branch';
@@ -201,7 +203,7 @@ function normalizeBranchType(b){
 }
 function branchCommissionText(b){
   const v = b.commission_percent ?? b.commission ?? '';
-  return v !== '' && v !== null && v !== undefined ? `${v}%` : '—';
+  return v !== '' && v !== null && v !== undefined ? `${v}%` : 'â€”';
 }
 
 
@@ -216,17 +218,17 @@ function refreshBranchFilterOptions(branches){
   const partners=active.filter(b=>normalizeBranchType(b)==='partner');
 
   const optionLabel=b=>{
-    const type=normalizeBranchType(b)==='partner' ? 'Гэрээт борлуулагч' : 'Өөрийн салбар';
-    const loc=b.location ? ' — '+b.location : '';
+    const type=normalizeBranchType(b)==='partner' ? 'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡' : 'Ó¨Ó©Ñ€Ð¸Ð¹Ð½ ÑÐ°Ð»Ð±Ð°Ñ€';
+    const loc=b.location ? ' â€” '+b.location : '';
     return `${b.name}${loc} (${type})`;
   };
 
   sel.innerHTML =
-    `<option value="all">Бүх салбар / борлуулагч</option>` +
-    `<optgroup label="Өөрийн салбар">` +
+    `<option value="all">Ð‘Ò¯Ñ… ÑÐ°Ð»Ð±Ð°Ñ€ / Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡</option>` +
+    `<optgroup label="Ó¨Ó©Ñ€Ð¸Ð¹Ð½ ÑÐ°Ð»Ð±Ð°Ñ€">` +
       own.map(b=>`<option value="${b.id}">${optionLabel(b)}</option>`).join('') +
     `</optgroup>` +
-    `<optgroup label="Гэрээт борлуулагч">` +
+    `<optgroup label="Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡">` +
       partners.map(b=>`<option value="${b.id}">${optionLabel(b)}</option>`).join('') +
     `</optgroup>`;
 
@@ -257,53 +259,53 @@ async function loadBranches(){
           </div>
           <div class="branch-status ${b.is_active===false?'offline':'online'}"></div>
         </div>
-        <div class="branch-stat-row"><span>Өдрийн орлого</span><span>₮${parseInt(b.total_revenue||0).toLocaleString()}</span></div>
-        <div class="branch-stat-row"><span>Гүйлгээ</span><span>${b.transaction_count||0}</span></div>
-        <div class="branch-stat-row"><span>Комисс</span><span>${branchCommissionText(b)}</span></div>
-        <div class="branch-stat-row"><span>Хариуцагч</span><span>${b.manager_name||b.contact_name||'—'}</span></div>
+        <div class="branch-stat-row"><span>Ó¨Ð´Ñ€Ð¸Ð¹Ð½ Ð¾Ñ€Ð»Ð¾Ð³Ð¾</span><span>â‚®${parseInt(b.total_revenue||0).toLocaleString()}</span></div>
+        <div class="branch-stat-row"><span>Ð“Ò¯Ð¹Ð»Ð³ÑÑ</span><span>${b.transaction_count||0}</span></div>
+        <div class="branch-stat-row"><span>ÐšÐ¾Ð¼Ð¸ÑÑ</span><span>${branchCommissionText(b)}</span></div>
+        <div class="branch-stat-row"><span>Ð¥Ð°Ñ€Ð¸ÑƒÑ†Ð°Ð³Ñ‡</span><span>${b.manager_name||b.contact_name||'â€”'}</span></div>
       </div>`}).join('');
 
     document.getElementById('branch-detail-table').innerHTML=data.map(b=>{
       const type = normalizeBranchType(b);
       return `
       <tr>
-        <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.manager_name||b.contact_name||''} ${b.phone?`· ${b.phone}`:''}</span></td>
+        <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.manager_name||b.contact_name||''} ${b.phone?`Â· ${b.phone}`:''}</span></td>
         <td><span class="badge ${branchTypeBadge(type)}">${branchTypeLabel(type)}</span></td>
-        <td>${b.location||'—'}</td>
+        <td>${b.location||'â€”'}</td>
         <td>${branchCommissionText(b)}</td>
-        <td>₮${parseInt(b.total_revenue||0).toLocaleString()}</td>
-        <td>₮${parseInt(b.cash_total||0).toLocaleString()}</td>
-        <td>₮${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</td>
+        <td>â‚®${parseInt(b.total_revenue||0).toLocaleString()}</td>
+        <td>â‚®${parseInt(b.cash_total||0).toLocaleString()}</td>
+        <td>â‚®${(parseInt(b.card_total||0)+parseInt(b.qpay_total||0)).toLocaleString()}</td>
         <td>${b.transaction_count||0}</td>
-        <td><span class="badge ${b.is_active===false?'badge-gray':'badge-green'}">${b.is_active===false?'Идэвхгүй':'Идэвхтэй'}</span></td>
+        <td><span class="badge ${b.is_active===false?'badge-gray':'badge-green'}">${b.is_active===false?'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹':'Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹'}</span></td>
       </tr>`}).join('');
-  }catch(e){console.error('Branches алдаа:',e);}
+  }catch(e){console.error('Branches Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
-// ── ALERTS ──
+// â”€â”€ ALERTS â”€â”€
 async function loadAlerts(){
   try{
     const data=await apiGet('/api/alerts');
     const low=data.low_stock||[];
     if(!low.length){
-      document.getElementById('alert-list').innerHTML='<div style="padding:40px;text-align:center;color:var(--gray)">Анхааруулга байхгүй байна ✓</div>';
+      document.getElementById('alert-list').innerHTML='<div style="padding:40px;text-align:center;color:var(--gray)">ÐÐ½Ñ…Ð°Ð°Ñ€ÑƒÑƒÐ»Ð³Ð° Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð° âœ“</div>';
       return;
     }
     document.getElementById('alert-list').innerHTML=low.map(i=>{
       const type=parseInt(i.quantity)===0?'urgent':'warn';
-      const icon=parseInt(i.quantity)===0?'🔴':'🟡';
+      const icon=parseInt(i.quantity)===0?'ðŸ”´':'ðŸŸ¡';
       return`<div class="alert-item ${type}">
         <div class="alert-icon">${icon}</div>
         <div class="alert-body">
-          <div class="alert-title">${i.name} — ${parseInt(i.quantity)===0?'дууссан':i.quantity+' үлдсэн'}</div>
-          <div class="alert-sub">${i.branch_name} · Доод хэмжээ: ${i.min_quantity}</div>
+          <div class="alert-title">${i.name} â€” ${parseInt(i.quantity)===0?'Ð´ÑƒÑƒÑÑÐ°Ð½':i.quantity+' Ò¯Ð»Ð´ÑÑÐ½'}</div>
+          <div class="alert-sub">${i.branch_name} Â· Ð”Ð¾Ð¾Ð´ Ñ…ÑÐ¼Ð¶ÑÑ: ${i.min_quantity}</div>
         </div>
-        <button class="alert-action">Захиалах →</button>
+        <button class="alert-action">Ð—Ð°Ñ…Ð¸Ð°Ð»Ð°Ñ… â†’</button>
       </div>`;}).join('');
-  }catch(e){console.error('Alerts алдаа:',e);}
+  }catch(e){console.error('Alerts Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
-// ── INVENTORY ──
+// â”€â”€ INVENTORY â”€â”€
 async function loadInventory(){
   try{
     const branch=document.getElementById('branch-filter')?.value || 'all';
@@ -323,7 +325,7 @@ async function loadInventory(){
           branch_name:r.partner_name,
           quantity:r.on_hand_qty,
           min_quantity:0,
-          category_name:'Гэрээт борлуулагч',
+          category_name:'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡',
           status:parseInt(r.on_hand_qty||0)>0?'ok':'out'
         }));
       window.CURRENT_INV_BRANCH=branch;
@@ -340,8 +342,8 @@ async function loadInventory(){
     window.CURRENT_INV_BRANCH=branch;
     renderInventory();
   }catch(e){
-    console.error('Inventory алдаа:',e);
-    showToast('Үлдэгдэл татахад алдаа: '+e.message,'error');
+    console.error('Inventory Ð°Ð»Ð´Ð°Ð°:',e);
+    showToast('Ò®Ð»Ð´ÑÐ³Ð´ÑÐ» Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
@@ -369,11 +371,11 @@ function renderInventory(){
     if(window.CURRENT_INV_BRANCH && window.CURRENT_INV_BRANCH !== 'all'){
       const selectedBranch=(window.BRANCHES||[]).find(b=>String(b.id)===String(window.CURRENT_INV_BRANCH));
       const selectedType=selectedBranch ? normalizeBranchType(selectedBranch) : 'own_branch';
-      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
+      if(i.branch_name==='ÐÐ³ÑƒÑƒÐ»Ð°Ñ…') grouped[key].warehouse += qty;
       else if(selectedType==='partner') grouped[key].branches += qty;
       else grouped[key].branches += qty;
     } else {
-      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
+      if(i.branch_name==='ÐÐ³ÑƒÑƒÐ»Ð°Ñ…') grouped[key].warehouse += qty;
       else grouped[key].branches += qty;
     }
   });
@@ -398,22 +400,22 @@ function renderInventory(){
     return 0;
   });
 
-  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || 'Бүх салбар';
-  document.getElementById('inv-count').textContent=list.length+' бараа · '+branchText;
+  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || 'Ð‘Ò¯Ñ… ÑÐ°Ð»Ð±Ð°Ñ€';
+  document.getElementById('inv-count').textContent=list.length+' Ð±Ð°Ñ€Ð°Ð° Â· '+branchText;
   document.getElementById('inv-table').innerHTML=list.length ? list.map(i=>{
     const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
-    const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
+    const sl=i.status==='ok'?'Ð¥Ð°Ð½Ð³Ð°Ð»Ñ‚Ñ‚Ð°Ð¹':i.status==='low'?'Ð”ÑƒÑ‚Ð°Ð³Ð´Ð°Ð¶ Ð±Ð°Ð¹Ð½Ð°':'Ð”ÑƒÑƒÑÑÐ°Ð½';
     return`<tr>
-      <td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">${i.sku||'—'}</span></td>
+      <td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">${i.sku||'â€”'}</span></td>
       <td><b>${i.name}</b></td><td>${i.cat}</td>
       <td style="font-weight:700;font-size:16px">${i.total}</td>
       <td>${i.warehouse}</td><td>${i.branches}</td><td>${i.min}</td>
       <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;}).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
+    </tr>`;}).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Ð˜Ð»ÑÑ€Ñ† Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹</td></tr>';
 }
 
 
-// ── PARTNER SELLERS — BACKEND API CONNECTED ──
+// â”€â”€ PARTNER SELLERS â€” BACKEND API CONNECTED â”€â”€
 let PARTNER_PRODUCTS = [];
 let PARTNER_INVENTORY = [];
 let PARTNER_HISTORY = [];
@@ -439,7 +441,7 @@ function getPartnerVariantOptions(){
   list.forEach(p => {
     (p.variants || []).forEach(v => {
       opts.push(`<option value="${v.id}" data-price="${p.price||0}">
-        ${p.name} · ${v.color||'—'} / ${v.size||'—'} (${v.sku||p.sku||'-'})
+        ${p.name} Â· ${v.color||'â€”'} / ${v.size||'â€”'} (${v.sku||p.sku||'-'})
       </option>`);
     });
   });
@@ -454,22 +456,22 @@ function fillPartnerSelects(){
 
   ['pt-transfer-partner','pt-sale-partner','pt-return-partner'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.innerHTML = partnerOptions || '<option value="">Гэрээт борлуулагч байхгүй</option>';
+    if(el) el.innerHTML = partnerOptions || '<option value="">Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡ Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹</option>';
   });
 
   const variantOptions = getPartnerVariantOptions();
   ['pt-transfer-product','pt-sale-product','pt-return-product'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.innerHTML = variantOptions || '<option value="">Variant байхгүй</option>';
+    if(el) el.innerHTML = variantOptions || '<option value="">Variant Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹</option>';
   });
 }
 
 function partnerTypeLabel(type){
-  if(type === 'TRANSFER_TO_PARTNER') return 'Бараа өгсөн';
-  if(type === 'PARTNER_SALE') return 'Зарсан тооцоо';
-  if(type === 'PARTNER_RETURN') return 'Буцаалт';
-  if(type === 'SETTLEMENT_PAID') return 'Тооцоо төлсөн';
-  return type || '—';
+  if(type === 'TRANSFER_TO_PARTNER') return 'Ð‘Ð°Ñ€Ð°Ð° Ó©Ð³ÑÓ©Ð½';
+  if(type === 'PARTNER_SALE') return 'Ð—Ð°Ñ€ÑÐ°Ð½ Ñ‚Ð¾Ð¾Ñ†Ð¾Ð¾';
+  if(type === 'PARTNER_RETURN') return 'Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚';
+  if(type === 'SETTLEMENT_PAID') return 'Ð¢Ð¾Ð¾Ñ†Ð¾Ð¾ Ñ‚Ó©Ð»ÑÓ©Ð½';
+  return type || 'â€”';
 }
 
 function partnerTypeBadge(type){
@@ -490,8 +492,8 @@ async function loadPartnerData(){
     PARTNER_INVENTORY = inv || [];
     PARTNER_HISTORY = hist || [];
   }catch(e){
-    console.error('Partner data алдаа:', e);
-    showToast('Гэрээт борлуулагчийн мэдээлэл татахад алдаа: '+e.message,'error');
+    console.error('Partner data Ð°Ð»Ð´Ð°Ð°:', e);
+    showToast('Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð¸Ð¹Ð½ Ð¼ÑÐ´ÑÑÐ»ÑÐ» Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
@@ -499,20 +501,20 @@ async function partnerTransfer(){
   const partner_id=document.getElementById('pt-transfer-partner')?.value;
   const variant_id=document.getElementById('pt-transfer-product')?.value;
   const quantity=parseInt(document.getElementById('pt-transfer-qty')?.value||0);
-  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, тоо сонгоно уу','error');return;}
+  if(!partner_id||!variant_id||quantity<=0){showToast('Ð‘Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡, Ð±Ð°Ñ€Ð°Ð°, Ñ‚Ð¾Ð¾ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
 
   try{
     await apiPost('/api/partners/transfer', {
       partner_id: parseInt(partner_id),
       variant_id: parseInt(variant_id),
       quantity,
-      note: 'Admin frontend-с гэрээт борлуулагчид бараа өгсөн'
+      note: 'Admin frontend-Ñ Ð³ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð¸Ð´ Ð±Ð°Ñ€Ð°Ð° Ó©Ð³ÑÓ©Ð½'
     });
-    showToast('Гэрээт борлуулагчид '+quantity+'ш бараа өглөө','success');
+    showToast('Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð¸Ð´ '+quantity+'Ñˆ Ð±Ð°Ñ€Ð°Ð° Ó©Ð³Ð»Ó©Ó©','success');
     await renderPartners();
     if(typeof loadInventory === 'function') loadInventory();
   }catch(e){
-    showToast('Бараа өгөхөд алдаа: '+e.message,'error');
+    showToast('Ð‘Ð°Ñ€Ð°Ð° Ó©Ð³Ó©Ñ…Ó©Ð´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
@@ -520,19 +522,19 @@ async function partnerSale(){
   const partner_id=document.getElementById('pt-sale-partner')?.value;
   const variant_id=document.getElementById('pt-sale-product')?.value;
   const quantity=parseInt(document.getElementById('pt-sale-qty')?.value||0);
-  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, зарсан тоо сонгоно уу','error');return;}
+  if(!partner_id||!variant_id||quantity<=0){showToast('Ð‘Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡, Ð±Ð°Ñ€Ð°Ð°, Ð·Ð°Ñ€ÑÐ°Ð½ Ñ‚Ð¾Ð¾ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
 
   try{
     const res = await apiPost('/api/partners/sale', {
       partner_id: parseInt(partner_id),
       variant_id: parseInt(variant_id),
       quantity,
-      note: 'Гэрээт борлуулагчийн зарсан тооцоо'
+      note: 'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð¸Ð¹Ð½ Ð·Ð°Ñ€ÑÐ°Ð½ Ñ‚Ð¾Ð¾Ñ†Ð¾Ð¾'
     });
-    showToast('Зарсан тооцоо орлоо: ₮'+parseInt(res.amount||0).toLocaleString(),'success');
+    showToast('Ð—Ð°Ñ€ÑÐ°Ð½ Ñ‚Ð¾Ð¾Ñ†Ð¾Ð¾ Ð¾Ñ€Ð»Ð¾Ð¾: â‚®'+parseInt(res.amount||0).toLocaleString(),'success');
     await renderPartners();
   }catch(e){
-    showToast('Зарсан тооцоо оруулахад алдаа: '+e.message,'error');
+    showToast('Ð—Ð°Ñ€ÑÐ°Ð½ Ñ‚Ð¾Ð¾Ñ†Ð¾Ð¾ Ð¾Ñ€ÑƒÑƒÐ»Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
@@ -540,20 +542,20 @@ async function partnerReturn(){
   const partner_id=document.getElementById('pt-return-partner')?.value;
   const variant_id=document.getElementById('pt-return-product')?.value;
   const quantity=parseInt(document.getElementById('pt-return-qty')?.value||0);
-  if(!partner_id||!variant_id||quantity<=0){showToast('Борлуулагч, бараа, буцаах тоо сонгоно уу','error');return;}
+  if(!partner_id||!variant_id||quantity<=0){showToast('Ð‘Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡, Ð±Ð°Ñ€Ð°Ð°, Ð±ÑƒÑ†Ð°Ð°Ñ… Ñ‚Ð¾Ð¾ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
 
   try{
     await apiPost('/api/partners/return', {
       partner_id: parseInt(partner_id),
       variant_id: parseInt(variant_id),
       quantity,
-      note: 'Гэрээт борлуулагчаас буцаалт авсан'
+      note: 'Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð°Ð°Ñ Ð±ÑƒÑ†Ð°Ð°Ð»Ñ‚ Ð°Ð²ÑÐ°Ð½'
     });
-    showToast('Буцаалт бүртгэгдлээ: '+quantity+'ш','success');
+    showToast('Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚ Ð±Ò¯Ñ€Ñ‚Ð³ÑÐ³Ð´Ð»ÑÑ: '+quantity+'Ñˆ','success');
     await renderPartners();
     if(typeof loadInventory === 'function') loadInventory();
   }catch(e){
-    showToast('Буцаалт хийхэд алдаа: '+e.message,'error');
+    showToast('Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚ Ñ…Ð¸Ð¹Ñ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
@@ -571,26 +573,26 @@ async function renderPartners(){
 
   if(document.getElementById('pt-kpi-count')) document.getElementById('pt-kpi-count').textContent=activePartners;
   if(document.getElementById('pt-kpi-stock')) document.getElementById('pt-kpi-stock').textContent=totalStock;
-  if(document.getElementById('pt-kpi-receivable')) document.getElementById('pt-kpi-receivable').textContent='₮'+receivable.toLocaleString();
+  if(document.getElementById('pt-kpi-receivable')) document.getElementById('pt-kpi-receivable').textContent='â‚®'+receivable.toLocaleString();
   if(document.getElementById('pt-kpi-returned')) document.getElementById('pt-kpi-returned').textContent=returned;
-  if(document.getElementById('pt-count')) document.getElementById('pt-count').textContent=PARTNER_INVENTORY.length+' мөр';
+  if(document.getElementById('pt-count')) document.getElementById('pt-count').textContent=PARTNER_INVENTORY.length+' Ð¼Ó©Ñ€';
 
   if(tbody){
     tbody.innerHTML = PARTNER_INVENTORY.length ? PARTNER_INVENTORY.map(r=>`
       <tr>
-        <td><b>${r.partner_name||'—'}</b></td>
-        <td>${r.product_name||'—'}<br>
-          <code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${r.sku||r.barcode||'—'}</code>
-          <span style="font-size:11px;color:var(--gray);margin-left:6px">${r.color||'—'} / ${r.size||'—'}</span>
+        <td><b>${r.partner_name||'â€”'}</b></td>
+        <td>${r.product_name||'â€”'}<br>
+          <code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${r.sku||r.barcode||'â€”'}</code>
+          <span style="font-size:11px;color:var(--gray);margin-left:6px">${r.color||'â€”'} / ${r.size||'â€”'}</span>
         </td>
         <td>${parseInt(r.given_qty||0)}</td>
         <td>${parseInt(r.sold_qty||0)}</td>
         <td>${parseInt(r.returned_qty||0)}</td>
         <td style="font-weight:700">${parseInt(r.on_hand_qty||0)}</td>
-        <td style="font-weight:700;color:var(--blue)">₮${parseInt(r.receivable_amount||0).toLocaleString()}</td>
+        <td style="font-weight:700;color:var(--blue)">â‚®${parseInt(r.receivable_amount||0).toLocaleString()}</td>
         <td>${r.commission_percent||0}%</td>
-        <td><span class="badge ${parseInt(r.on_hand_qty||0)>0?'badge-green':'badge-gray'}">${parseInt(r.on_hand_qty||0)>0?'Бараа байгаа':'Үлдэгдэлгүй'}</span></td>
-      </tr>`).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px">Гэрээт борлуулагчид өгсөн бараа одоогоор алга</td></tr>`;
+        <td><span class="badge ${parseInt(r.on_hand_qty||0)>0?'badge-green':'badge-gray'}">${parseInt(r.on_hand_qty||0)>0?'Ð‘Ð°Ñ€Ð°Ð° Ð±Ð°Ð¹Ð³Ð°Ð°':'Ò®Ð»Ð´ÑÐ³Ð´ÑÐ»Ð³Ò¯Ð¹'}</span></td>
+      </tr>`).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px">Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ð¸Ð´ Ó©Ð³ÑÓ©Ð½ Ð±Ð°Ñ€Ð°Ð° Ð¾Ð´Ð¾Ð¾Ð³Ð¾Ð¾Ñ€ Ð°Ð»Ð³Ð°</td></tr>`;
   }
 
   if(hist){
@@ -598,39 +600,39 @@ async function renderPartners(){
       <tr>
         <td>${new Date(h.created_at).toLocaleString('mn-MN')}</td>
         <td><span class="badge ${partnerTypeBadge(h.type)}">${partnerTypeLabel(h.type)}</span></td>
-        <td>${h.partner_name||'—'}</td>
-        <td>${h.product_name||'—'}<br><span style="font-size:11px;color:var(--gray)">${h.color||'—'} / ${h.size||'—'}</span></td>
+        <td>${h.partner_name||'â€”'}</td>
+        <td>${h.product_name||'â€”'}<br><span style="font-size:11px;color:var(--gray)">${h.color||'â€”'} / ${h.size||'â€”'}</span></td>
         <td>${parseInt(h.quantity||0)}</td>
-        <td>${parseInt(h.amount||0) ? '₮'+parseInt(h.amount).toLocaleString() : '—'}</td>
-        <td>${h.note||'—'}</td>
-      </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Хөдөлгөөний түүх алга</td></tr>`;
+        <td>${parseInt(h.amount||0) ? 'â‚®'+parseInt(h.amount).toLocaleString() : 'â€”'}</td>
+        <td>${h.note||'â€”'}</td>
+      </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Ð¥Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½Ð¸Ð¹ Ñ‚Ò¯Ò¯Ñ… Ð°Ð»Ð³Ð°</td></tr>`;
   }
 }
 
-// ── SUPPLIERS ──
+// â”€â”€ SUPPLIERS â”€â”€
 async function loadSuppliers(){
   try{
     const data=await apiGet('/api/suppliers');
-    document.getElementById('supplier-count').textContent=data.length+' нийлүүлэгч';
+    document.getElementById('supplier-count').textContent=data.length+' Ð½Ð¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡';
     document.getElementById('supplier-table').innerHTML=data.length ? data.map(s=>`
       <tr>
         <td><b>${s.name}</b></td>
-        <td>${s.phone||'—'}</td>
-        <td style="font-size:12px">${s.email||'—'}</td>
-        <td style="font-size:12px;color:var(--gray)">${s.address||'—'}</td>
-        <td style="font-weight:700;color:${parseInt(s.total_debt||0)>0?'var(--red)':'var(--green)'}">₮${parseInt(s.total_debt||0).toLocaleString()}</td>
-        <td><span class="badge ${parseInt(s.total_debt||0)>0?'badge-red':'badge-green'}">${parseInt(s.total_debt||0)>0?'Өглөгтэй':'Ердийн'}</span></td>
+        <td>${s.phone||'â€”'}</td>
+        <td style="font-size:12px">${s.email||'â€”'}</td>
+        <td style="font-size:12px;color:var(--gray)">${s.address||'â€”'}</td>
+        <td style="font-weight:700;color:${parseInt(s.total_debt||0)>0?'var(--red)':'var(--green)'}">â‚®${parseInt(s.total_debt||0).toLocaleString()}</td>
+        <td><span class="badge ${parseInt(s.total_debt||0)>0?'badge-red':'badge-green'}">${parseInt(s.total_debt||0)>0?'Ó¨Ð³Ð»Ó©Ð³Ñ‚ÑÐ¹':'Ð•Ñ€Ð´Ð¸Ð¹Ð½'}</span></td>
         <td style="display:flex;gap:6px">
-          <button onclick="editSupplier(${s.id},'${s.name}','${s.phone||''}','${s.email||''}','${s.address||''}',${s.total_debt||0})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
-          <button onclick="deleteSupplier(${s.id},'${s.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+          <button onclick="editSupplier(${s.id},'${s.name}','${s.phone||''}','${s.email||''}','${s.address||''}',${s.total_debt||0})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð—Ð°ÑÐ°Ñ…</button>
+          <button onclick="deleteSupplier(${s.id},'${s.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð£ÑÑ‚Ð³Ð°Ñ…</button>
         </td>
       </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray)">Нийлүүлэгч байхгүй байна</td></tr>';
-  }catch(e){console.error('Suppliers алдаа:',e);}
+    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray)">ÐÐ¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡ Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°</td></tr>';
+  }catch(e){console.error('Suppliers Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
 function openAddSupplier(){
-  document.getElementById('supplier-modal-title').textContent='Нийлүүлэгч нэмэх';
+  document.getElementById('supplier-modal-title').textContent='ÐÐ¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡ Ð½ÑÐ¼ÑÑ…';
   document.getElementById('edit-supplier-id').value='';
   document.getElementById('sup-name').value='';
   document.getElementById('sup-phone').value='';
@@ -641,7 +643,7 @@ function openAddSupplier(){
 }
 
 function editSupplier(id,name,phone,email,address,debt){
-  document.getElementById('supplier-modal-title').textContent='Нийлүүлэгч засах';
+  document.getElementById('supplier-modal-title').textContent='ÐÐ¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡ Ð·Ð°ÑÐ°Ñ…';
   document.getElementById('edit-supplier-id').value=id;
   document.getElementById('sup-name').value=name;
   document.getElementById('sup-phone').value=phone;
@@ -657,7 +659,7 @@ function closeAddSupplier(){
 
 async function saveSupplier(){
   const name=document.getElementById('sup-name').value.trim();
-  if(!name){showToast('Нэр оруулна уу','error');return;}
+  if(!name){showToast('ÐÑÑ€ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
   const id=document.getElementById('edit-supplier-id').value;
   const body={
     name,
@@ -669,94 +671,123 @@ async function saveSupplier(){
   try{
     if(id){
       await apiPost_put('/api/suppliers/'+id, body);
-      showToast(name+' шинэчлэгдлээ','success');
+      showToast(name+' ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ','success');
     } else {
       await apiPost('/api/suppliers', body);
-      showToast(name+' нэмэгдлээ','success');
+      showToast(name+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
     }
     closeAddSupplier();
     await loadSuppliers();
-  }catch(e){showToast('Алдаа: '+e.message,'error');}
+  }catch(e){showToast('ÐÐ»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
 async function deleteSupplier(id,name){
-  if(!confirm('"'+name+'" устгах уу?')) return;
+  if(!confirm('"'+name+'" ÑƒÑÑ‚Ð³Ð°Ñ… ÑƒÑƒ?')) return;
   try{
     await fetch(API+'/api/suppliers/'+id,{method:'DELETE',headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
-    showToast(name+' устгагдлаа','success');
+    showToast(name+' ÑƒÑÑ‚Ð³Ð°Ð³Ð´Ð»Ð°Ð°','success');
     await loadSuppliers();
-  }catch(e){showToast('Устгахад алдаа','error');}
+  }catch(e){showToast('Ð£ÑÑ‚Ð³Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°','error');}
 }
 
-// ── SALES ──
+// â”€â”€ SALES â”€â”€
 async function loadSales(){
   try{
-    const data=await apiGet('/api/orders?limit=20');
-    document.getElementById('sales-table').innerHTML=data.map(s=>`
-      <tr>
-        <td style="font-size:11px">${new Date(s.created_at).toLocaleString('mn-MN')}</td>
-        <td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${s.order_number}</span></td>
-        <td>${s.branch_name||'—'}</td>
-        <td>${s.cashier_name||'—'}</td>
-        <td style="font-size:12px">—</td>
-        <td><b>₮${parseInt(s.total||0).toLocaleString()}</b></td>
-        <td>${{cash:'Бэлэн',card:'Карт',qpay:'QPay'}[s.payment_method]||s.payment_method}</td>
-        <td><span class="badge ${s.status==='completed'?'badge-green':'badge-amber'}">${s.status==='completed'?'Дууссан':'Буцаагдсан'}</span></td>
-      </tr>`).join('');
-
-    // Sales KPI
-    document.getElementById('rep-total') && (document.getElementById('rep-total').textContent='₮'+data.reduce((s,o)=>s+parseInt(o.total||0),0).toLocaleString());
-  }catch(e){console.error('Sales алдаа:',e);}
+    const branch=document.getElementById('branch-filter')?.value || 'all';
+    const branchQuery=branch && branch !== 'all' ? '&branch_id='+encodeURIComponent(branch) : '';
+    const [data,daily]=await Promise.all([
+      apiGet('/api/orders?limit=20'+branchQuery),
+      apiGet('/api/reports/daily?date='+today+branchQuery).catch(()=>({summary:{}}))
+    ]);
+    const summary=daily.summary||{};
+    const todayTotal=parseInt(summary.total_revenue||0);
+    const cash=parseInt(summary.cash_total||0);
+    const card=parseInt(summary.card_total||0);
+    const qpay=parseInt(summary.qpay_total||0);
+    const listTotal=data.reduce((s,o)=>s+parseInt(o.total||0),0);
+    const money=v=>'\u20AE'+parseInt(v||0).toLocaleString();
+    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+    set('sales-today', money(todayTotal));
+    set('sales-today-count', (summary.transaction_count||0)+' \u0433\u04af\u0439\u043b\u0433\u044d\u044d');
+    set('sales-list-total', money(listTotal));
+    set('sales-list-count', data.length+' \u043c\u04e9\u0440');
+    set('sales-cash', money(cash));
+    set('sales-noncash', money(card+qpay));
+    document.getElementById('sales-table').innerHTML=data.length ? data.map(s=>{
+      const items=(s.items||[]).map(i=>(i.name||i.product_name)+' x '+i.quantity).join(', ')||'-';
+      const pay={cash:'\u0411\u044d\u043b\u044d\u043d',card:'\u041a\u0430\u0440\u0442',qpay:'QPay'}[s.payment_method]||s.payment_method;
+      const status=s.status==='completed'?'\u0414\u0443\u0443\u0441\u0441\u0430\u043d':'\u0411\u0443\u0446\u0430\u0430\u0433\u0434\u0441\u0430\u043d';
+      const badge=s.status==='completed'?'badge-green':'badge-amber';
+      return '<tr>' +
+        '<td style="font-size:11px">'+new Date(s.created_at).toLocaleString('mn-MN')+'</td>' +
+        '<td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">'+s.order_number+'</span></td>' +
+        '<td>'+(s.branch_name||'-')+'</td>' +
+        '<td>'+(s.cashier_name||'-')+'</td>' +
+        '<td style="font-size:12px">'+items+'</td>' +
+        '<td><b>'+money(s.total)+'</b></td>' +
+        '<td>'+pay+'</td>' +
+        '<td><span class="badge '+badge+'">'+status+'</span></td>' +
+      '</tr>';
+    }).join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray)">\u0411\u043e\u0440\u043b\u0443\u0443\u043b\u0430\u043b\u0442\u044b\u043d \u043c\u044d\u0434\u044d\u044d\u043b\u044d\u043b \u0430\u043b\u0433\u0430</td></tr>';
+  }catch(e){console.error('Sales error:',e);}
 }
 
-// ── PRODUCT REPORT ──
 async function loadProductReport(){
   try{
-    const data=await apiGet('/api/products?limit=100');
-    document.getElementById('product-report-table').innerHTML=data.map(p=>`
-      <tr>
-        <td><b>${p.name}</b></td>
-        <td>—</td>
-        <td>—</td>
-        <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<=5?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
-        <td><span class="badge badge-gray">—</span></td>
-        <td>—</td>
-      </tr>`).join('');
-  }catch(e){console.error('Product report алдаа:',e);}
+    const branch=document.getElementById('branch-filter')?.value || 'all';
+    const branchQuery=branch && branch !== 'all' ? '&branch_id='+encodeURIComponent(branch) : '';
+    const data=await apiGet('/api/reports/products?days=30'+branchQuery);
+    document.getElementById('product-report-table').innerHTML=data.length ? data.map(p=>{
+      const sold=parseInt(p.sold_qty||0);
+      const revenue=parseInt(p.revenue||0);
+      const stock=parseInt(p.total_stock||0);
+      const speed=sold>=20?'\u0425\u0443\u0440\u0434\u0430\u043d':sold>=5?'\u0414\u0443\u043d\u0434':'\u0423\u0434\u0430\u0430\u043d';
+      const rating=sold>0 && stock>0?'OK':sold>0?'\u0414\u0443\u0443\u0441\u0441\u0430\u043d':'\u0428\u0430\u043b\u0433\u0430\u0445';
+      const badge=rating==='OK'?'badge-green':rating==='\u0414\u0443\u0443\u0441\u0441\u0430\u043d'?'badge-red':'badge-gray';
+      return '<tr>' +
+        '<td><b>'+p.name+'</b><br><span style="font-size:11px;color:var(--gray);font-family:monospace">'+(p.sku||'')+'</span></td>' +
+        '<td>'+sold+'</td>' +
+        '<td>\u20AE'+revenue.toLocaleString()+'</td>' +
+        '<td style="font-weight:700;color:'+(stock===0?'var(--red)':stock<=5?'var(--amber)':'var(--black)')+'">'+stock+'</td>' +
+        '<td><span class="badge badge-gray">'+speed+'</span></td>' +
+        '<td><span class="badge '+badge+'">'+rating+'</span></td>' +
+      '</tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray)">\u0411\u0430\u0440\u0430\u0430\u043d\u044b \u0442\u0430\u0439\u043b\u0430\u043d \u0445\u043e\u043e\u0441\u043e\u043d \u0431\u0430\u0439\u043d\u0430</td></tr>';
+  }catch(e){console.error('Product report error:',e);}
 }
 
-// ── USERS ──
+// ?? USERS ??
 async function loadUsers(){
   try{
     const [data, branches] = await Promise.all([apiGet('/api/users'), fetch('/api/branches').then(r=>r.json())]);
     window.BRANCHES_LIST = branches;
     const ucEl = document.getElementById('users-count');
-    if(ucEl) ucEl.textContent = data.length+' хэрэглэгч';
+    if(ucEl) ucEl.textContent = data.length+' Ñ…ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡';
 
-    // Branch select шинэчлэх
+    // Branch select ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÑ…
     const brSel = document.getElementById('usr-branch');
-    if(brSel) brSel.innerHTML = '<option value="">— Сонгох —</option>' +
+    if(brSel) brSel.innerHTML = '<option value="">â€” Ð¡Ð¾Ð½Ð³Ð¾Ñ… â€”</option>' +
       branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
 
-    const roleNames={super_admin:'Супер Админ',admin:'Менежер',cashier:'Худалдагч',warehouse:'Агуулах'};
+    const roleNames={super_admin:'Ð¡ÑƒÐ¿ÐµÑ€ ÐÐ´Ð¼Ð¸Ð½',admin:'ÐœÐµÐ½ÐµÐ¶ÐµÑ€',cashier:'Ð¥ÑƒÐ´Ð°Ð»Ð´Ð°Ð³Ñ‡',warehouse:'ÐÐ³ÑƒÑƒÐ»Ð°Ñ…'};
     const utEl=document.getElementById('users-table');
     if(!utEl) return;
     utEl.innerHTML=data.map(u=>`
       <tr>
         <td><code style="font-size:12px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${u.username}</code></td>
-        <td><b>${u.full_name||'—'}</b></td>
+        <td><b>${u.full_name||'â€”'}</b></td>
         <td><span class="badge ${u.role==='super_admin'?'badge-red':u.role==='admin'?'badge-blue':u.role==='cashier'?'badge-gray':'badge-amber'}">${roleNames[u.role]||u.role}</span></td>
-        <td>${u.branch_name||'Бүгд'}</td>
-        <td><span class="badge ${u.is_active?'badge-green':'badge-gray'}">${u.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+        <td>${u.branch_name||'Ð‘Ò¯Ð³Ð´'}</td>
+        <td><span class="badge ${u.is_active?'badge-green':'badge-gray'}">${u.is_active?'Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹':'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹'}</span></td>
         <td style="display:flex;gap:6px">
-          <button onclick="editUser(${u.id},'${u.username}','${u.full_name||''}','${u.role}',${u.branch_id||'null'},${u.is_active})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
+          <button onclick="editUser(${u.id},'${u.username}','${u.full_name||''}','${u.role}',${u.branch_id||'null'},${u.is_active})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð—Ð°ÑÐ°Ñ…</button>
         </td>
       </tr>`).join('');
-  }catch(e){console.error('Users алдаа:',e);}
+  }catch(e){console.error('Users Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
 function openAddUser(){
-  document.getElementById('user-modal-title').textContent='Хэрэглэгч нэмэх';
+  document.getElementById('user-modal-title').textContent='Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡ Ð½ÑÐ¼ÑÑ…';
   document.getElementById('edit-user-id').value='';
   document.getElementById('usr-username').value='';
   document.getElementById('usr-password').value='';
@@ -769,12 +800,12 @@ function openAddUser(){
 }
 
 function editUser(id,username,fullname,role,branchId,isActive){
-  document.getElementById('user-modal-title').textContent='Хэрэглэгч засах';
+  document.getElementById('user-modal-title').textContent='Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡ Ð·Ð°ÑÐ°Ñ…';
   document.getElementById('edit-user-id').value=id;
   document.getElementById('usr-username').value=username;
   document.getElementById('usr-username').disabled=true;
   document.getElementById('usr-password').value='';
-  document.getElementById('usr-password').placeholder='Хоосон үлдээвэл өөрчлөгдөхгүй';
+  document.getElementById('usr-password').placeholder='Ð¥Ð¾Ð¾ÑÐ¾Ð½ Ò¯Ð»Ð´ÑÑÐ²ÑÐ» Ó©Ó©Ñ€Ñ‡Ð»Ó©Ð³Ð´Ó©Ñ…Ð³Ò¯Ð¹';
   document.getElementById('usr-fullname').value=fullname;
   document.getElementById('usr-role').value=role;
   document.getElementById('usr-branch').value=branchId||'';
@@ -795,52 +826,52 @@ async function saveUser(){
   const branch_id=document.getElementById('usr-branch').value||null;
   const is_active=document.getElementById('usr-active').checked;
 
-  if(!id && (!username||!password)){showToast('Нэвтрэх нэр болон нууц үг оруулна уу','error');return;}
+  if(!id && (!username||!password)){showToast('ÐÑÐ²Ñ‚Ñ€ÑÑ… Ð½ÑÑ€ Ð±Ð¾Ð»Ð¾Ð½ Ð½ÑƒÑƒÑ† Ò¯Ð³ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
 
   try{
     if(id){
       const body={full_name,role,branch_id,is_active};
       if(password) body.password=password;
       await apiPost_put('/api/users/'+id, body);
-      showToast(full_name||username+' шинэчлэгдлээ','success');
+      showToast(full_name||username+' ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ','success');
     } else {
       await apiPost('/api/users',{username,password,full_name,role,branch_id,is_active});
-      showToast(username+' нэмэгдлээ','success');
+      showToast(username+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
     }
     closeAddUser();
     await loadUsers();
-  }catch(e){showToast('Алдаа: '+e.message,'error');}
+  }catch(e){showToast('ÐÐ»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
-// ── САЛБАР ЗАСАХ ──
+// â”€â”€ Ð¡ÐÐ›Ð‘ÐÐ  Ð—ÐÐ¡ÐÐ¥ â”€â”€
 async function openBranchManager(){
   try{
     const data=await fetch('/api/branches').then(r=>r.json());
     document.getElementById('branch-edit-list').innerHTML=`
       <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .75fr .8fr .8fr 1.2fr auto;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--gray-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:600">
-        <div>Нэр</div><div>Байршил</div><div>Төрөл</div><div>Утас</div><div>Хариуцагч</div><div>Комисс %</div><div>Тооцооны нөхцөл</div><div>Үйлдэл</div>
+        <div>ÐÑÑ€</div><div>Ð‘Ð°Ð¹Ñ€ÑˆÐ¸Ð»</div><div>Ð¢Ó©Ñ€Ó©Ð»</div><div>Ð£Ñ‚Ð°Ñ</div><div>Ð¥Ð°Ñ€Ð¸ÑƒÑ†Ð°Ð³Ñ‡</div><div>ÐšÐ¾Ð¼Ð¸ÑÑ %</div><div>Ð¢Ð¾Ð¾Ñ†Ð¾Ð¾Ð½Ñ‹ Ð½Ó©Ñ…Ñ†Ó©Ð»</div><div>Ò®Ð¹Ð»Ð´ÑÐ»</div>
       </div>
     ` + data.map(b=>{
       const type = normalizeBranchType(b);
       return `
       <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .75fr .8fr .8fr 1.2fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-light)">
-        <input value="${b.name||''}" id="br-name-${b.id}" class="f-input" placeholder="Салбарын нэр">
-        <input value="${b.location||''}" id="br-loc-${b.id}" class="f-input" placeholder="Байршил">
+        <input value="${b.name||''}" id="br-name-${b.id}" class="f-input" placeholder="Ð¡Ð°Ð»Ð±Ð°Ñ€Ñ‹Ð½ Ð½ÑÑ€">
+        <input value="${b.location||''}" id="br-loc-${b.id}" class="f-input" placeholder="Ð‘Ð°Ð¹Ñ€ÑˆÐ¸Ð»">
         <select id="br-type-${b.id}" class="f-input" style="cursor:pointer">
-          <option value="own_branch" ${type==='own_branch'?'selected':''}>Өөрийн салбар</option>
-          <option value="partner" ${type==='partner'?'selected':''}>Гэрээт борлуулагч</option>
+          <option value="own_branch" ${type==='own_branch'?'selected':''}>Ó¨Ó©Ñ€Ð¸Ð¹Ð½ ÑÐ°Ð»Ð±Ð°Ñ€</option>
+          <option value="partner" ${type==='partner'?'selected':''}>Ð“ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡</option>
         </select>
-        <input value="${b.phone||''}" id="br-phone-${b.id}" class="f-input" placeholder="Утас">
-        <input value="${b.manager_name||b.contact_name||''}" id="br-manager-${b.id}" class="f-input" placeholder="Хариуцагч">
+        <input value="${b.phone||''}" id="br-phone-${b.id}" class="f-input" placeholder="Ð£Ñ‚Ð°Ñ">
+        <input value="${b.manager_name||b.contact_name||''}" id="br-manager-${b.id}" class="f-input" placeholder="Ð¥Ð°Ñ€Ð¸ÑƒÑ†Ð°Ð³Ñ‡">
         <input value="${b.commission_percent??b.commission??''}" id="br-commission-${b.id}" class="f-input" type="number" min="0" max="100" placeholder="%">
-        <input value="${b.payment_terms||''}" id="br-terms-${b.id}" class="f-input" placeholder="7 хоног бүр">
+        <input value="${b.payment_terms||''}" id="br-terms-${b.id}" class="f-input" placeholder="7 Ñ…Ð¾Ð½Ð¾Ð³ Ð±Ò¯Ñ€">
         <div style="display:flex;gap:6px">
-          <button onclick="saveBranch(${b.id})" style="background:var(--black);color:var(--white);border:none;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Хадгалах</button>
-          <button onclick="toggleBranchActive(${b.id},${b.is_active===false?'true':'false'})" style="border:1px solid var(--gray-mid);background:var(--white);padding:9px 10px;font-size:11px;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">${b.is_active===false?'Идэвхжүүлэх':'Идэвхгүй'}</button>
+          <button onclick="saveBranch(${b.id})" style="background:var(--black);color:var(--white);border:none;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">Ð¥Ð°Ð´Ð³Ð°Ð»Ð°Ñ…</button>
+          <button onclick="toggleBranchActive(${b.id},${b.is_active===false?'true':'false'})" style="border:1px solid var(--gray-mid);background:var(--white);padding:9px 10px;font-size:11px;cursor:pointer;border-radius:6px;font-family:var(--font-body);white-space:nowrap">${b.is_active===false?'Ð˜Ð´ÑÐ²Ñ…Ð¶Ò¯Ò¯Ð»ÑÑ…':'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹'}</button>
         </div>
       </div>`}).join('');
     document.getElementById('modal-branch').style.display='flex';
-  }catch(e){showToast('Салбар татахад алдаа','error');}
+  }catch(e){showToast('Ð¡Ð°Ð»Ð±Ð°Ñ€ Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°','error');}
 }
 
 async function addBranchLocation(){
@@ -854,7 +885,7 @@ async function addBranchLocation(){
     payment_terms:document.getElementById('br-new-terms').value.trim(),
     is_active:true
   };
-  if(!body.name){showToast('Нэр оруулна уу','error');return;}
+  if(!body.name){showToast('ÐÑÑ€ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
   try{
     try{
       await apiPost('/api/branches',body);
@@ -863,10 +894,10 @@ async function addBranchLocation(){
     }
     ['br-new-name','br-new-loc','br-new-phone','br-new-manager','br-new-commission','br-new-terms'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('br-new-type').value='own_branch';
-    showToast('Салбар / гэрээт борлуулагч нэмэгдлээ','success');
+    showToast('Ð¡Ð°Ð»Ð±Ð°Ñ€ / Ð³ÑÑ€ÑÑÑ‚ Ð±Ð¾Ñ€Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡ Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
     await openBranchManager();
     await loadBranches();
-  }catch(e){showToast('Нэмэхэд алдаа: '+e.message,'error');}
+  }catch(e){showToast('ÐÑÐ¼ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
 async function saveBranch(id){
@@ -879,25 +910,25 @@ async function saveBranch(id){
     commission_percent:document.getElementById('br-commission-'+id).value||null,
     payment_terms:document.getElementById('br-terms-'+id).value.trim()
   };
-  if(!body.name){showToast('Нэр оруулна уу','error');return;}
+  if(!body.name){showToast('ÐÑÑ€ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
   try{
     try{
       await apiPost_put('/api/branches/'+id,body);
     }catch(firstErr){
       await apiPost_put('/api/branches/'+id,{name:body.name,location:body.location});
     }
-    showToast('Салбар шинэчлэгдлээ','success');
+    showToast('Ð¡Ð°Ð»Ð±Ð°Ñ€ ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ','success');
     await loadBranches();
-  }catch(e){showToast('Алдаа: '+e.message,'error');}
+  }catch(e){showToast('ÐÐ»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
 async function toggleBranchActive(id, active){
   try{
     await apiPost_put('/api/branches/'+id,{is_active:active});
-    showToast(active?'Идэвхжүүллээ':'Идэвхгүй болголоо','success');
+    showToast(active?'Ð˜Ð´ÑÐ²Ñ…Ð¶Ò¯Ò¯Ð»Ð»ÑÑ':'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹ Ð±Ð¾Ð»Ð³Ð¾Ð»Ð¾Ð¾','success');
     await openBranchManager();
     await loadBranches();
-  }catch(e){showToast('Backend дээр is_active талбар дэмжигдээгүй байж магадгүй','error');}
+  }catch(e){showToast('Backend Ð´ÑÑÑ€ is_active Ñ‚Ð°Ð»Ð±Ð°Ñ€ Ð´ÑÐ¼Ð¶Ð¸Ð³Ð´ÑÑÐ³Ò¯Ð¹ Ð±Ð°Ð¹Ð¶ Ð¼Ð°Ð³Ð°Ð´Ð³Ò¯Ð¹','error');}
 }
 
 // Transfers
@@ -938,15 +969,15 @@ async function loadTransferProducts(){
       const detail=[r.color,r.size].filter(Boolean).join(' / ');
       const label=r.name+(detail?' - '+detail:'')+' ('+r.quantity+')';
       return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'">'+label+'</option>';
-    }).join('') : '<option value="">Үлдэгдэлтэй бараа алга</option>';
+    }).join('') : '<option value="">Ò®Ð»Ð´ÑÐ³Ð´ÑÐ»Ñ‚ÑÐ¹ Ð±Ð°Ñ€Ð°Ð° Ð°Ð»Ð³Ð°</option>';
   }catch(e){
-    productSel.innerHTML='<option value="">Бараа татахад алдаа</option>';
+    productSel.innerHTML='<option value="">Ð‘Ð°Ñ€Ð°Ð° Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°</option>';
   }
 }
 
 function renderTransfers(){
   const table=document.getElementById('transfer-table');
-  if(table) table.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">Шилжүүлгийн түүх байхгүй</td></tr>';
+  if(table) table.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">Ð¨Ð¸Ð»Ð¶Ò¯Ò¯Ð»Ð³Ð¸Ð¹Ð½ Ñ‚Ò¯Ò¯Ñ… Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹</td></tr>';
 }
 
 async function createTransfer(){
@@ -954,12 +985,12 @@ async function createTransfer(){
   const to=document.getElementById('tf-to');
   const product=document.getElementById('tf-product');
   const qty=parseInt(document.getElementById('tf-qty').value)||0;
-  if(!from?.value || !to?.value){showToast('Салбар сонгоно уу','error');return;}
-  if(from.value===to.value){showToast('Хаанаас, хаашаа салбар ижил байна','error');return;}
-  if(!product?.value){showToast('Бараа сонгоно уу','error');return;}
-  if(qty<=0){showToast('Тоо оруулна уу','error');return;}
+  if(!from?.value || !to?.value){showToast('Ð¡Ð°Ð»Ð±Ð°Ñ€ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
+  if(from.value===to.value){showToast('Ð¥Ð°Ð°Ð½Ð°Ð°Ñ, Ñ…Ð°Ð°ÑˆÐ°Ð° ÑÐ°Ð»Ð±Ð°Ñ€ Ð¸Ð¶Ð¸Ð» Ð±Ð°Ð¹Ð½Ð°','error');return;}
+  if(!product?.value){showToast('Ð‘Ð°Ñ€Ð°Ð° ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
+  if(qty<=0){showToast('Ð¢Ð¾Ð¾ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
   const stock=parseInt(product.selectedOptions[0]?.dataset?.stock||0);
-  if(stock && qty>stock){showToast('Үлдэгдлээс их тоо шилжүүлэх боломжгүй','error');return;}
+  if(stock && qty>stock){showToast('Ò®Ð»Ð´ÑÐ³Ð´Ð»ÑÑÑ Ð¸Ñ… Ñ‚Ð¾Ð¾ ÑˆÐ¸Ð»Ð¶Ò¯Ò¯Ð»ÑÑ… Ð±Ð¾Ð»Ð¾Ð¼Ð¶Ð³Ò¯Ð¹','error');return;}
   try{
     await apiPost('/api/transfers', {
       from_branch_id:parseInt(from.value),
@@ -967,14 +998,14 @@ async function createTransfer(){
       note:'Admin transfer',
       items:[{variant_id:parseInt(product.value), quantity:qty}]
     });
-    showToast('Шилжүүлэг амжилттай хадгалагдлаа','success');
+    showToast('Ð¨Ð¸Ð»Ð¶Ò¯Ò¯Ð»ÑÐ³ Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ Ñ…Ð°Ð´Ð³Ð°Ð»Ð°Ð³Ð´Ð»Ð°Ð°','success');
     await loadTransferProducts();
     await loadInventory();
-  }catch(e){showToast('Шилжүүлэг алдаа: '+e.message,'error');}
+  }catch(e){showToast('Ð¨Ð¸Ð»Ð¶Ò¯Ò¯Ð»ÑÐ³ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
 
-// ── TOAST ──
+// â”€â”€ TOAST â”€â”€
 function showToast(msg,type=''){
   const t=document.getElementById('toast');
   t.className='toast'+(type?' '+type:'');
@@ -984,7 +1015,7 @@ function showToast(msg,type=''){
   window._tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-// ── БАРАА УДИРДЛАГА ──
+// â”€â”€ Ð‘ÐÐ ÐÐ Ð£Ð”Ð˜Ð Ð”Ð›ÐÐ“Ð â”€â”€
 let uploadedImages = [];
 let editingProductId = null;
 
@@ -998,27 +1029,27 @@ async function loadProductCategories(selectedId){
     const catSel = document.getElementById('mp-cat');
     if(catSel){
       const current = selectedId || catSel.value;
-      catSel.innerHTML = '<option value="">Бүлэг сонгох</option>' + data.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('');
+      catSel.innerHTML = '<option value="">Ð‘Ò¯Ð»ÑÐ³ ÑÐ¾Ð½Ð³Ð¾Ñ…</option>' + data.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('');
       if(current) catSel.value = String(current);
     }
     const filterSel = document.getElementById('mp-cat-filter');
     if(filterSel){
       const currentFilter = filterSel.value;
-      filterSel.innerHTML = '<option value="">Бүх ангилал</option>' + data.map(c=>'<option value="'+c.name+'">'+c.name+'</option>').join('');
+      filterSel.innerHTML = '<option value="">Ð‘Ò¯Ñ… Ð°Ð½Ð³Ð¸Ð»Ð°Ð»</option>' + data.map(c=>'<option value="'+c.name+'">'+c.name+'</option>').join('');
       if(currentFilter) filterSel.value = currentFilter;
     }
-  }catch(e){console.error('Ангилал татахад алдаа:', e);}
+  }catch(e){console.error('ÐÐ½Ð³Ð¸Ð»Ð°Ð» Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°:', e);}
 }
 
 async function addProductCategory(selectNew=false){
-  const name = prompt('Шинэ бүлэг / ангиллын нэр оруулна уу');
+  const name = prompt('Ð¨Ð¸Ð½Ñ Ð±Ò¯Ð»ÑÐ³ / Ð°Ð½Ð³Ð¸Ð»Ð»Ñ‹Ð½ Ð½ÑÑ€ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ');
   if(!name || !name.trim()) return;
   try{
     const cat = await apiPost('/api/categories', {name:name.trim()});
     await loadProductCategories(cat.id);
     if(selectNew) document.getElementById('mp-cat').value = String(cat.id);
-    showToast('Бүлэг нэмэгдлээ: '+cat.name,'success');
-  }catch(e){showToast('Бүлэг нэмэхэд алдаа: '+e.message,'error');}
+    showToast('Ð‘Ò¯Ð»ÑÐ³ Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ: '+cat.name,'success');
+  }catch(e){showToast('Ð‘Ò¯Ð»ÑÐ³ Ð½ÑÐ¼ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');}
 }
 
 function filterManageProducts(query){
@@ -1037,29 +1068,29 @@ function filterManageProducts(query){
   });
 
   const countEl = document.getElementById('mp-count');
-  if(countEl) countEl.textContent = filtered.length+' / '+allManageProducts.length+' бараа';
+  if(countEl) countEl.textContent = filtered.length+' / '+allManageProducts.length+' Ð±Ð°Ñ€Ð°Ð°';
 
   document.getElementById('mp-table').innerHTML = filtered.length ? filtered.map(p=>`
     <tr>
       <td>
         ${p.images && p.images.length > 0
           ? `<img src="${p.images[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-light)">`
-          : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`
+          : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">ðŸ“¦</div>`
         }
       </td>
       <td><b>${p.name}</b></td>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
-      <td>${p.category_name||'—'}</td>
-      <td>₮${parseInt(p.price||0).toLocaleString()}</td>
+      <td>${p.category_name||'â€”'}</td>
+      <td>â‚®${parseInt(p.price||0).toLocaleString()}</td>
       <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
-      <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+      <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹':'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹'}</span></td>
       <td style="display:flex;gap:6px">
-        <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Баркод</button>
-        <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
-        <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+        <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð‘Ð°Ñ€ÐºÐ¾Ð´</button>
+        <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð—Ð°ÑÐ°Ñ…</button>
+        <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð£ÑÑ‚Ð³Ð°Ñ…</button>
       </td>
     </tr>`).join('')
-  : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Бараа олдсонгүй</td></tr>';
+  : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Ð‘Ð°Ñ€Ð°Ð° Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹</td></tr>';
 }
 
 async function loadManageProducts(){
@@ -1067,8 +1098,8 @@ async function loadManageProducts(){
     const data = await apiGet('/api/products?limit=200');
     allManageProducts = data;
     const countEl = document.getElementById('mp-count');
-    if(countEl) countEl.textContent = data.length + ' бараа';
-    // Хайлтын утга байвал шүүнэ
+    if(countEl) countEl.textContent = data.length + ' Ð±Ð°Ñ€Ð°Ð°';
+    // Ð¥Ð°Ð¹Ð»Ñ‚Ñ‹Ð½ ÑƒÑ‚Ð³Ð° Ð±Ð°Ð¹Ð²Ð°Ð» ÑˆÒ¯Ò¯Ð½Ñ
     const searchVal = document.getElementById('mp-search')?.value||'';
     if(searchVal || document.getElementById('mp-cat-filter')?.value || document.getElementById('mp-status-filter')?.value){
       filterManageProducts(searchVal);
@@ -1079,28 +1110,28 @@ async function loadManageProducts(){
         <td>
           ${p.images && p.images.length > 0
             ? `<img src="${p.images[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-light)">`
-            : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`
+            : `<div style="width:48px;height:48px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px">ðŸ“¦</div>`
           }
         </td>
         <td><b>${p.name}</b></td>
         <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
-        <td>${p.category_name||'—'}</td>
-        <td>₮${parseInt(p.price||0).toLocaleString()}</td>
+        <td>${p.category_name||'â€”'}</td>
+        <td>â‚®${parseInt(p.price||0).toLocaleString()}</td>
         <td style="font-weight:700;color:${parseInt(p.total_stock||0)===0?'var(--red)':parseInt(p.total_stock||0)<10?'var(--amber)':'var(--black)'}">${parseInt(p.total_stock||0)}</td>
-        <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Идэвхтэй':'Идэвхгүй'}</span></td>
+        <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹':'Ð˜Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹'}</span></td>
         <td style="display:flex;gap:6px">
-          <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Баркод</button>
-          <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Засах</button>
-          <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Устгах</button>
+          <button onclick="openBarcodeForProduct(${p.id})" style="border:1px solid var(--gray-mid);background:#fff;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð‘Ð°Ñ€ÐºÐ¾Ð´</button>
+          <button onclick="editProduct(${p.id})" style="border:1px solid var(--gray-mid);background:none;padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð—Ð°ÑÐ°Ñ…</button>
+          <button onclick="deleteProduct(${p.id},'${p.name}')" style="border:1px solid #fcc;background:#fff0ee;color:var(--red);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;font-family:var(--font-body)">Ð£ÑÑ‚Ð³Ð°Ñ…</button>
         </td>
       </tr>`).join('');
-  }catch(e){console.error('Бараа удирдлага:', e);}
+  }catch(e){console.error('Ð‘Ð°Ñ€Ð°Ð° ÑƒÐ´Ð¸Ñ€Ð´Ð»Ð°Ð³Ð°:', e);}
 }
 
 function openAddProduct(){
   editingProductId = null;
   uploadedImages = [];
-  document.getElementById('modal-product-title').textContent = 'Шинэ бараа нэмэх';
+  document.getElementById('modal-product-title').textContent = 'Ð¨Ð¸Ð½Ñ Ð±Ð°Ñ€Ð°Ð° Ð½ÑÐ¼ÑÑ…';
   document.getElementById('edit-product-id').value = '';
   document.getElementById('mp-name').value = '';
   document.getElementById('mp-sku').value = '';
@@ -1108,7 +1139,7 @@ function openAddProduct(){
   document.getElementById('mp-wholesale').value = '';
   document.getElementById('mp-discount').value = '';
   document.getElementById('mp-desc').value = '';
-  document.getElementById('mp-colors').value = 'Хар, Цагаан';
+  document.getElementById('mp-colors').value = 'Ð¥Ð°Ñ€, Ð¦Ð°Ð³Ð°Ð°Ð½';
   document.getElementById('mp-sizes').value = 'S, M, L, XL';
   document.getElementById('mp-preview').innerHTML = '';
   document.getElementById('variant-section').style.display = 'block';
@@ -1121,7 +1152,7 @@ async function editProduct(id){
     const p = await apiGet('/api/products/' + id);
     editingProductId = id;
     uploadedImages = p.images || [];
-    document.getElementById('modal-product-title').textContent = 'Бараа засах';
+    document.getElementById('modal-product-title').textContent = 'Ð‘Ð°Ñ€Ð°Ð° Ð·Ð°ÑÐ°Ñ…';
     document.getElementById('edit-product-id').value = id;
     document.getElementById('mp-name').value = p.name || '';
     document.getElementById('mp-sku').value = p.sku || '';
@@ -1134,12 +1165,12 @@ async function editProduct(id){
     document.getElementById('mp-colors').value = [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))].join(', ');
     document.getElementById('mp-sizes').value = [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))].join(', ');
     document.getElementById('variant-section').style.display = 'block';
-    document.getElementById('mp-colors').placeholder = 'Шинэ өнгө нэмэх: Хар, Цагаан...';
-    document.getElementById('mp-sizes').placeholder = 'Шинэ размер нэмэх: S, M, L...';
-    document.getElementById('variant-section-label').textContent = 'Шинэ variant нэмэх (байгаа variant-д нөлөөлөхгүй)';
+    document.getElementById('mp-colors').placeholder = 'Ð¨Ð¸Ð½Ñ Ó©Ð½Ð³Ó© Ð½ÑÐ¼ÑÑ…: Ð¥Ð°Ñ€, Ð¦Ð°Ð³Ð°Ð°Ð½...';
+    document.getElementById('mp-sizes').placeholder = 'Ð¨Ð¸Ð½Ñ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð½ÑÐ¼ÑÑ…: S, M, L...';
+    document.getElementById('variant-section-label').textContent = 'Ð¨Ð¸Ð½Ñ variant Ð½ÑÐ¼ÑÑ… (Ð±Ð°Ð¹Ð³Ð°Ð° variant-Ð´ Ð½Ó©Ð»Ó©Ó©Ð»Ó©Ñ…Ð³Ò¯Ð¹)';
     renderImagePreview();
     document.getElementById('modal-add-product').style.display = 'flex';
-  }catch(e){showToast('Бараа мэдээлэл татахад алдаа','error');}
+  }catch(e){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð¼ÑÐ´ÑÑÐ»ÑÐ» Ñ‚Ð°Ñ‚Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°','error');}
 }
 
 function closeAddProduct(){
@@ -1151,7 +1182,7 @@ function closeAddProduct(){
 function handleImageUpload(input){
   const files = Array.from(input.files);
   if(uploadedImages.length + files.length > 5){
-    showToast('Хамгийн ихдээ 5 зураг оруулна уу','error');
+    showToast('Ð¥Ð°Ð¼Ð³Ð¸Ð¹Ð½ Ð¸Ñ…Ð´ÑÑ 5 Ð·ÑƒÑ€Ð°Ð³ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');
     return;
   }
   const maxSize = 800 * 1024; // 800KB
@@ -1159,7 +1190,7 @@ function handleImageUpload(input){
   
   files.forEach(file => {
     if(file.size > maxSize){
-      showToast(file.name + ' — 800KB-аас том байна. Жижигрүүлнэ үү.','error');
+      showToast(file.name + ' â€” 800KB-Ð°Ð°Ñ Ñ‚Ð¾Ð¼ Ð±Ð°Ð¹Ð½Ð°. Ð–Ð¸Ð¶Ð¸Ð³Ñ€Ò¯Ò¯Ð»Ð½Ñ Ò¯Ò¯.','error');
       hasError = true;
       return;
     }
@@ -1177,8 +1208,8 @@ function renderImagePreview(){
   document.getElementById('mp-preview').innerHTML = uploadedImages.map((img, i) => `
     <div style="position:relative">
       <img src="${img}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-light)">
-      <button onclick="uploadedImages.splice(${i},1);renderImagePreview()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">×</button>
-      ${i===0?'<div style="font-size:9px;text-align:center;color:var(--gray);margin-top:2px">Үндсэн</div>':''}
+      <button onclick="uploadedImages.splice(${i},1);renderImagePreview()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">Ã—</button>
+      ${i===0?'<div style="font-size:9px;text-align:center;color:var(--gray);margin-top:2px">Ò®Ð½Ð´ÑÑÐ½</div>':''}
     </div>`).join('');
 }
 
@@ -1187,14 +1218,14 @@ async function saveProduct(){
   const sku = document.getElementById('mp-sku').value.trim();
   const price = parseInt(document.getElementById('mp-price').value) || 0;
 
-  if(!name || !price){showToast('Нэр болон үнэ заавал оруулна уу','error');return;}
+  if(!name || !price){showToast('ÐÑÑ€ Ð±Ð¾Ð»Ð¾Ð½ Ò¯Ð½Ñ Ð·Ð°Ð°Ð²Ð°Ð» Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ','error');return;}
 
   const btn = document.getElementById('save-product-btn');
-  btn.disabled = true; btn.textContent = 'Хадгалж байна...';
+  btn.disabled = true; btn.textContent = 'Ð¥Ð°Ð´Ð³Ð°Ð»Ð¶ Ð±Ð°Ð¹Ð½Ð°...';
 
   try{
     if(editingProductId){
-      // Засах
+      // Ð—Ð°ÑÐ°Ñ…
       await apiPost_put('/api/products/'+editingProductId, {
         name,
         price,
@@ -1203,7 +1234,7 @@ async function saveProduct(){
         description: document.getElementById('mp-desc').value,
         is_active: true
       });
-      // Variant нэмэх
+      // Variant Ð½ÑÐ¼ÑÑ…
       const newColorsRaw = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
       const newSizesRaw = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
       const newColors = newColorsRaw.length ? newColorsRaw : [];
@@ -1211,21 +1242,21 @@ async function saveProduct(){
       if(newColors.length && newSizes.length){
         try{
           const vResult = await apiPost('/api/products/'+editingProductId+'/variants', {colors:newColors, sizes:newSizes});
-          console.log('Variant нэмэгдлээ:', vResult.added);
-        }catch(ve){console.error('Variant алдаа:', ve);}
+          console.log('Variant Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ:', vResult.added);
+        }catch(ve){console.error('Variant Ð°Ð»Ð´Ð°Ð°:', ve);}
       }
-      // Зураг хадгалах
+      // Ð—ÑƒÑ€Ð°Ð³ Ñ…Ð°Ð´Ð³Ð°Ð»Ð°Ñ…
       if(uploadedImages.length > 0){
         await apiPost('/api/products/'+editingProductId+'/images', {images: uploadedImages});
       }
-      showToast('Бараа амжилттай шинэчлэгдлээ','success');
+      showToast('Ð‘Ð°Ñ€Ð°Ð° Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ','success');
     } else {
-      // Шинэ бараа
+      // Ð¨Ð¸Ð½Ñ Ð±Ð°Ñ€Ð°Ð°
       const colorsRaw = document.getElementById('mp-colors').value.split(',').map(c=>c.trim()).filter(Boolean);
       const sizesRaw = document.getElementById('mp-sizes').value.split(',').map(s=>s.trim()).filter(Boolean);
-      // Хоосон бол default утга
-      const colors = colorsRaw.length ? colorsRaw : ['Нэг өнгө'];
-      const sizes = sizesRaw.length ? sizesRaw : ['Нэг хэмжээ'];
+      // Ð¥Ð¾Ð¾ÑÐ¾Ð½ Ð±Ð¾Ð» default ÑƒÑ‚Ð³Ð°
+      const colors = colorsRaw.length ? colorsRaw : ['ÐÑÐ³ Ó©Ð½Ð³Ó©'];
+      const sizes = sizesRaw.length ? sizesRaw : ['ÐÑÐ³ Ñ…ÑÐ¼Ð¶ÑÑ'];
       const result = await apiPost('/api/products', {
         name, sku,
         category_id: parseInt(document.getElementById('mp-cat').value),
@@ -1235,19 +1266,19 @@ async function saveProduct(){
         description: document.getElementById('mp-desc').value,
         colors, sizes
       });
-      // Зураг хадгалах
+      // Ð—ÑƒÑ€Ð°Ð³ Ñ…Ð°Ð´Ð³Ð°Ð»Ð°Ñ…
       if(uploadedImages.length > 0 && result.product){
         await apiPost('/api/products/'+result.product.id+'/images', {images: uploadedImages});
       }
       const barcodeCount = result.variants?.length || 0;
-      showToast(name+' нэмэгдлээ · '+barcodeCount+' barcode автоматаар үүслээ','success');
+      showToast(name+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ Â· '+barcodeCount+' barcode Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð°Ð°Ñ€ Ò¯Ò¯ÑÐ»ÑÑ','success');
     }
     closeAddProduct();
     await loadManageProducts();
   }catch(e){
-    showToast('Алдаа: '+e.message,'error');
+    showToast('ÐÐ»Ð´Ð°Ð°: '+e.message,'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Хадгалах';
+    btn.disabled = false; btn.textContent = 'Ð¥Ð°Ð´Ð³Ð°Ð»Ð°Ñ…';
   }
 }
 
@@ -1262,18 +1293,18 @@ async function apiPost_put(url, data){
 }
 
 async function deleteProduct(id, name){
-  if(!confirm('"'+name+'" барааг идэвхгүй болгох уу?')) return;
+  if(!confirm('"'+name+'" Ð±Ð°Ñ€Ð°Ð°Ð³ Ð¸Ð´ÑÐ²Ñ…Ð³Ò¯Ð¹ Ð±Ð¾Ð»Ð³Ð¾Ñ… ÑƒÑƒ?')) return;
   try{
     await fetch(API+'/api/products/'+id, {
       method: 'DELETE',
       headers: TOKEN?{Authorization:'Bearer '+TOKEN}:{}
     });
-    showToast(name+' устгагдлаа','success');
+    showToast(name+' ÑƒÑÑ‚Ð³Ð°Ð³Ð´Ð»Ð°Ð°','success');
     await loadManageProducts();
-  }catch(e){showToast('Устгахад алдаа','error');}
+  }catch(e){showToast('Ð£ÑÑ‚Ð³Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð°','error');}
 }
 
-// ── WAREHOUSE FUNCTIONS ──
+// â”€â”€ WAREHOUSE FUNCTIONS â”€â”€
 let whProducts=[], whBranches=[], whSuppliers=[];
 let whReceiveItems=[], whDistItems=[], whReturnItems=[];
 let whTodayIn=0;
@@ -1285,7 +1316,7 @@ async function loadWarehouseData(){
       fetch('/api/branches').then(r=>r.json()),
       apiGet('/api/suppliers')
     ]);
-    // Variant татах
+    // Variant Ñ‚Ð°Ñ‚Ð°Ñ…
     const details = await Promise.all(
       prods.map(p=>apiGet('/api/products/'+p.id).catch(()=>({...p,variants:[]})))
     );
@@ -1308,11 +1339,11 @@ async function loadWarehouseData(){
     const lowCount = prods.filter(p=>parseInt(p.total_stock||0)<5).length;
     document.getElementById('wh-kpi-low').textContent = lowCount;
 
-    // Нийлүүлэгч dropdown
+    // ÐÐ¸Ð¹Ð»Ò¯Ò¯Ð»ÑÐ³Ñ‡ dropdown
     const supSel = document.getElementById('wh-supplier');
     if(supSel) supSel.innerHTML = suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 
-    // Салбар dropdown
+    // Ð¡Ð°Ð»Ð±Ð°Ñ€ dropdown
     const receiveBranchSel = document.getElementById('wh-receive-branch');
     if(receiveBranchSel) receiveBranchSel.innerHTML = branches.filter(b=>normalizeBranchType(b)==='own_branch' && b.is_active!==false).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
     const branchSel = document.getElementById('wh-dist-branch');
@@ -1323,7 +1354,7 @@ async function loadWarehouseData(){
     // Date
     const dateEl = document.getElementById('wh-date');
     if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-  }catch(e){console.error('Warehouse data алдаа:',e);}
+  }catch(e){console.error('Warehouse data Ð°Ð»Ð´Ð°Ð°:',e);}
 }
 
 function whFindProduct(sku){
@@ -1335,14 +1366,14 @@ function whHandleBarcode(e){
   if(e.key!=='Enter') return;
   const sku = e.target.value.trim();
   const p = whFindProduct(sku);
-  if(!p){showToast('Бараа олдсонгүй: '+sku,'error');return;}
+  if(!p){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹: '+sku,'error');return;}
   const ex = whReceiveItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
     whReceiveItems.push({id:p.id,sku:p.sku,name:p.name,qty:1,price:p.wholesale_price||p.price,variants:p.variants||[]});
   }
   e.target.value='';
   whRenderReceive();
-  showToast(p.name+' нэмэгдлээ','success');
+  showToast(p.name+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
 }
 
 function whRenderReceive(){
@@ -1358,49 +1389,49 @@ function whRenderReceive(){
       <td colspan="2">
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;min-width:130px" 
           onchange="whReceiveItems[${i}].selectedVariantId=this.value">
-          <option value="">-- Бүгд --</option>
+          <option value="">-- Ð‘Ò¯Ð³Ð´ --</option>
           ${(()=>{const prod=whProducts.find(p=>p.sku===item.sku||p.id===item.id);return(prod?.variants||[]).map(v=>`<option value="${v.id}">${v.color||''}${v.size?' / '+v.size:''}</option>`).join('');})()}
         </select>
       </td>
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
-          <button onclick="whReceiveItems[${i}].qty=Math.max(1,whReceiveItems[${i}].qty-1);whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <button onclick="whReceiveItems[${i}].qty=Math.max(1,whReceiveItems[${i}].qty-1);whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">âˆ’</button>
           <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
           <button onclick="whReceiveItems[${i}].qty++;whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>
       <td><input type="number" value="${item.price}" style="width:90px;border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="whReceiveItems[${i}].price=parseInt(this.value)||0;whRenderReceive()"></td>
-      <td><b>₮${(item.price*item.qty).toLocaleString()}</b></td>
-      <td><button onclick="whReceiveItems.splice(${i},1);whRenderReceive()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+      <td><b>â‚®${(item.price*item.qty).toLocaleString()}</b></td>
+      <td><button onclick="whReceiveItems.splice(${i},1);whRenderReceive()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">Ã—</button></td>
     </tr>`).join('');
   const qty = whReceiveItems.reduce((s,i)=>s+i.qty,0);
   const price = whReceiveItems.reduce((s,i)=>s+i.price*i.qty,0);
-  document.getElementById('wh-r-qty').textContent = qty+' ширхэг';
-  document.getElementById('wh-r-price').textContent = '₮'+price.toLocaleString();
+  document.getElementById('wh-r-qty').textContent = qty+' ÑˆÐ¸Ñ€Ñ…ÑÐ³';
+  document.getElementById('wh-r-price').textContent = 'â‚®'+price.toLocaleString();
 }
 
 async function whConfirmReceive(){
-  if(!whReceiveItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  if(!whReceiveItems.length){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð½ÑÐ¼Ð½Ñ Ò¯Ò¯','error');return;}
   const supplier = document.getElementById('wh-supplier');
   const receiveBranch = document.getElementById('wh-receive-branch');
-  const invoice = document.getElementById('wh-invoice').value||'—';
+  const invoice = document.getElementById('wh-invoice').value||'â€”';
   const qty = whReceiveItems.reduce((s,i)=>s+i.qty,0);
   const price = whReceiveItems.reduce((s,i)=>s+i.price*i.qty,0);
   const now = new Date();
   const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
   try{
-    // Variant-уудыг олж API-д явуулах
+    // Variant-ÑƒÑƒÐ´Ñ‹Ð³ Ð¾Ð»Ð¶ API-Ð´ ÑÐ²ÑƒÑƒÐ»Ð°Ñ…
     const allItems = [];
     for(const item of whReceiveItems){
       const prod = whProducts.find(p=>p.sku===item.sku||p.id===item.id);
       const variants = prod?.variants||item.variants||[];
       
       if(item.selectedVariantId){
-        // Тодорхой variant сонгосон
+        // Ð¢Ð¾Ð´Ð¾Ñ€Ñ…Ð¾Ð¹ variant ÑÐ¾Ð½Ð³Ð¾ÑÐ¾Ð½
         allItems.push({variant_id:parseInt(item.selectedVariantId), quantity:item.qty, price:item.price});
       } else if(variants.length>=1){
-        // Variant сонгоогүй — бүх variant-д тэнцүү хуваана
+        // Variant ÑÐ¾Ð½Ð³Ð¾Ð¾Ð³Ò¯Ð¹ â€” Ð±Ò¯Ñ… variant-Ð´ Ñ‚ÑÐ½Ñ†Ò¯Ò¯ Ñ…ÑƒÐ²Ð°Ð°Ð½Ð°
         const perV = Math.floor(item.qty/variants.length);
         const rem = item.qty%variants.length;
         variants.forEach((v,idx)=>{
@@ -1408,13 +1439,13 @@ async function whConfirmReceive(){
           if(q>0) allItems.push({variant_id:v.id, quantity:q, price:item.price});
         });
       } else {
-        showToast(item.name+' барааны variant олдсонгүй','error');
+        showToast(item.name+' Ð±Ð°Ñ€Ð°Ð°Ð½Ñ‹ variant Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹','error');
         return;
       }
     }
 
     if(!allItems.length){
-      showToast('Бараа нэмнэ үү','error');
+      showToast('Ð‘Ð°Ñ€Ð°Ð° Ð½ÑÐ¼Ð½Ñ Ò¯Ò¯','error');
       return;
     }
 
@@ -1422,7 +1453,7 @@ async function whConfirmReceive(){
       items: allItems,
       supplier_id: supplier?.value||null,
       invoice,
-      note: 'Админ орлого'
+      note: 'ÐÐ´Ð¼Ð¸Ð½ Ð¾Ñ€Ð»Ð¾Ð³Ð¾'
     });
 
     whTodayIn += qty;
@@ -1430,14 +1461,14 @@ async function whConfirmReceive(){
 
     const tbody = document.getElementById('wh-receive-history');
     const row = document.createElement('tr');
-    row.innerHTML = `<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'—'}</td><td>${invoice}</td><td>${whReceiveItems.map(i=>i.name+'×'+i.qty).join(', ')}</td><td>${qty}</td><td>₮${price.toLocaleString()}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+    row.innerHTML = `<td>${time}</td><td>${supplier?.options[supplier.selectedIndex]?.text||'â€”'}</td><td>${invoice}</td><td>${whReceiveItems.map(i=>i.name+'Ã—'+i.qty).join(', ')}</td><td>${qty}</td><td>â‚®${price.toLocaleString()}</td><td><span class="badge badge-green">Ð”ÑƒÑƒÑÑÐ°Ð½</span></td>`;
     tbody.prepend(row);
 
     whClearReceive();
-    showToast('Орлого амжилттай бүртгэгдлээ — '+qty+' ширхэг','success');
+    showToast('ÐžÑ€Ð»Ð¾Ð³Ð¾ Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ Ð±Ò¯Ñ€Ñ‚Ð³ÑÐ³Ð´Ð»ÑÑ â€” '+qty+' ÑˆÐ¸Ñ€Ñ…ÑÐ³','success');
   }catch(e){
-    showToast('Орлого бүртгэхэд алдаа: '+e.message,'error');
-    console.error('whConfirmReceive алдаа:', e);
+    showToast('ÐžÑ€Ð»Ð¾Ð³Ð¾ Ð±Ò¯Ñ€Ñ‚Ð³ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
+    console.error('whConfirmReceive Ð°Ð»Ð´Ð°Ð°:', e);
   }
 }
 
@@ -1448,13 +1479,13 @@ function whHandleDistBarcode(e){
   if(e.key!=='Enter') return;
   const sku = e.target.value.trim();
   const p = whFindProduct(sku);
-  if(!p){showToast('Бараа олдсонгүй','error');return;}
+  if(!p){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹','error');return;}
   const ex = whDistItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
     whDistItems.push({id:p.id,sku:p.sku,name:p.name,qty:1,stock:parseInt(p.total_stock||0)});
   }
   e.target.value='';whRenderDist();
-  showToast(p.name+' нэмэгдлээ','success');
+  showToast(p.name+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
 }
 
 function whRenderDist(){
@@ -1466,33 +1497,33 @@ function whRenderDist(){
     <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
       <td><b>${item.name}</b></td>
-      <td>—</td><td>—</td>
+      <td>â€”</td><td>â€”</td>
       <td style="font-weight:700;color:${item.stock<=5?'var(--red)':'var(--green)'}">${item.stock}</td>
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
-          <button onclick="whDistItems[${i}].qty=Math.max(1,whDistItems[${i}].qty-1);whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <button onclick="whDistItems[${i}].qty=Math.max(1,whDistItems[${i}].qty-1);whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">âˆ’</button>
           <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
           <button onclick="whDistItems[${i}].qty++;whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>
-      <td><button onclick="whDistItems.splice(${i},1);whRenderDist()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+      <td><button onclick="whDistItems.splice(${i},1);whRenderDist()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">Ã—</button></td>
     </tr>`).join('');
 }
 
 async function whConfirmDist(){
-  if(!whDistItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  if(!whDistItems.length){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð½ÑÐ¼Ð½Ñ Ò¯Ò¯','error');return;}
   const branch = document.getElementById('wh-dist-branch');
   const branchName = branch.options[branch.selectedIndex].text;
-  const note = document.getElementById('wh-dist-note').value||'—';
+  const note = document.getElementById('wh-dist-note').value||'â€”';
   const qty = whDistItems.reduce((s,i)=>s+i.qty,0);
 
   const tbody = document.getElementById('wh-dist-history');
   const row = document.createElement('tr');
-  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${branchName}</td><td>${whDistItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>Админ</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${branchName}</td><td>${whDistItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>ÐÐ´Ð¼Ð¸Ð½</td><td><span class="badge badge-green">Ð”ÑƒÑƒÑÑÐ°Ð½</span></td>`;
   tbody.prepend(row);
 
   whClearDist();
-  showToast('Хуваарилалт амжилттай — '+qty+' ширхэг '+branchName+' руу явлаа','success');
+  showToast('Ð¥ÑƒÐ²Ð°Ð°Ñ€Ð¸Ð»Ð°Ð»Ñ‚ Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ â€” '+qty+' ÑˆÐ¸Ñ€Ñ…ÑÐ³ '+branchName+' Ñ€ÑƒÑƒ ÑÐ²Ð»Ð°Ð°','success');
 }
 function whClearDist(){whDistItems=[];whRenderDist();}
 
@@ -1501,14 +1532,14 @@ function whHandleReturnBarcode(e){
   if(e.key!=='Enter') return;
   const sku = e.target.value.trim();
   const p = whFindProduct(sku);
-  if(!p){showToast('Бараа олдсонгүй','error');return;}
+  if(!p){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹','error');return;}
   const ex = whReturnItems.find(i=>i.sku===p.sku);
   if(ex){ex.qty++;} else {
     const variant=(p.variants||[])[0];
     whReturnItems.push({sku:p.sku,name:p.name,variant_id:variant?.id,qty:1,condition:'good',resell:true});
   }
   e.target.value='';whRenderReturn();
-  showToast(p.name+' нэмэгдлээ','success');
+  showToast(p.name+' Ð½ÑÐ¼ÑÐ³Ð´Ð»ÑÑ','success');
 }
 
 function whRenderReturn(){
@@ -1522,30 +1553,30 @@ function whRenderReturn(){
       <td><b>${item.name}</b></td>
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
-          <button onclick="whReturnItems[${i}].qty=Math.max(1,whReturnItems[${i}].qty-1);whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
+          <button onclick="whReturnItems[${i}].qty=Math.max(1,whReturnItems[${i}].qty-1);whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">âˆ’</button>
           <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
           <button onclick="whReturnItems[${i}].qty++;whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>
       <td>
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="whReturnItems[${i}].condition=this.value">
-          <option value="good">Сайн</option>
-          <option value="used">Хэрэглэсэн</option>
-          <option value="damaged">Гэмтсэн</option>
+          <option value="good">Ð¡Ð°Ð¹Ð½</option>
+          <option value="used">Ð¥ÑÑ€ÑÐ³Ð»ÑÑÑÐ½</option>
+          <option value="damaged">Ð“ÑÐ¼Ñ‚ÑÑÐ½</option>
         </select>
       </td>
       <td>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
-          <input type="checkbox" ${item.resell?'checked':''} onchange="whReturnItems[${i}].resell=this.checked" style="accent-color:var(--black)"> Тийм
+          <input type="checkbox" ${item.resell?'checked':''} onchange="whReturnItems[${i}].resell=this.checked" style="accent-color:var(--black)"> Ð¢Ð¸Ð¹Ð¼
         </label>
       </td>
-      <td><button onclick="whReturnItems.splice(${i},1);whRenderReturn()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">×</button></td>
+      <td><button onclick="whReturnItems.splice(${i},1);whRenderReturn()" style="border:none;background:none;cursor:pointer;color:#e74c3c;font-size:18px">Ã—</button></td>
     </tr>`).join('');
 }
 
 async function whConfirmReturn(){
-  if(!whReturnItems.length){showToast('Бараа нэмнэ үү','error');return;}
-  const reason = document.getElementById('wh-return-reason').value||'—';
+  if(!whReturnItems.length){showToast('Ð‘Ð°Ñ€Ð°Ð° Ð½ÑÐ¼Ð½Ñ Ò¯Ò¯','error');return;}
+  const reason = document.getElementById('wh-return-reason').value||'â€”';
   const qty = whReturnItems.reduce((s,i)=>s+i.qty,0);
   const type = document.getElementById('wh-return-type');
   const returnType = type.value;
@@ -1557,7 +1588,7 @@ async function whConfirmReturn(){
     resell:i.resell!==false,
     action:i.resell!==false?'restock':'damaged'
   })).filter(i=>i.variant_id&&i.quantity>0);
-  if(!items.length){showToast('Буцаах барааны variant мэдээлэл алга байна','error');return;}
+  if(!items.length){showToast('Ð‘ÑƒÑ†Ð°Ð°Ñ… Ð±Ð°Ñ€Ð°Ð°Ð½Ñ‹ variant Ð¼ÑÐ´ÑÑÐ»ÑÐ» Ð°Ð»Ð³Ð° Ð±Ð°Ð¹Ð½Ð°','error');return;}
   try{
     await apiPost('/api/returns',{
       return_type:returnType,
@@ -1567,21 +1598,21 @@ async function whConfirmReturn(){
       items
     });
   }catch(e){
-    showToast('Буцаалт бүртгэхэд алдаа: '+e.message,'error');
+    showToast('Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚ Ð±Ò¯Ñ€Ñ‚Ð³ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
     return;
   }
 
   const tbody = document.getElementById('wh-return-history');
   const row = document.createElement('tr');
-  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${type.options[type.selectedIndex].text}</td><td>${whReturnItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${reason}</td><td><span class="badge badge-green">Дууссан</span></td>`;
+  row.innerHTML = `<td>${new Date().toLocaleDateString('mn-MN')}</td><td>${type.options[type.selectedIndex].text}</td><td>${whReturnItems.map(i=>i.name).join(', ')}</td><td>${qty}</td><td>${reason}</td><td><span class="badge badge-green">Ð”ÑƒÑƒÑÑÐ°Ð½</span></td>`;
   tbody.prepend(row);
 
   whClearReturn();
-  showToast('Буцаалт бүртгэгдлээ — '+qty+' ширхэг','success');
+  showToast('Ð‘ÑƒÑ†Ð°Ð°Ð»Ñ‚ Ð±Ò¯Ñ€Ñ‚Ð³ÑÐ³Ð´Ð»ÑÑ â€” '+qty+' ÑˆÐ¸Ñ€Ñ…ÑÐ³','success');
 }
 function whClearReturn(){whReturnItems=[];whRenderReturn();}
 
-// ── БАРКОД ──
+// â”€â”€ Ð‘ÐÐ ÐšÐžÐ” â”€â”€
 let bcProducts = [];
 let selectedVariants = [];
 
@@ -1599,7 +1630,7 @@ async function loadBarcodeProducts(){
     const data = await apiGet('/api/products?limit=200');
     bcProducts = data;
     const sel = document.getElementById('bc-product');
-    if(sel) sel.innerHTML = '<option value="">— Бараа сонгох —</option>' +
+    if(sel) sel.innerHTML = '<option value="">â€” Ð‘Ð°Ñ€Ð°Ð° ÑÐ¾Ð½Ð³Ð¾Ñ… â€”</option>' +
       data.map(p=>`<option value="${p.id}">${p.name} (${p.sku})</option>`).join('');
   }catch(e){}
 }
@@ -1613,14 +1644,14 @@ async function loadBarcodeVariants(){
     selectedVariants = variants.map(v=>({...v, selected:true, productName:data.name, productSku:data.sku, price:data.price}));
 
     document.getElementById('bc-variants').innerHTML = selectedVariants.length
-      ? `<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:500;width:100%;margin-bottom:4px">Variant сонгох:</div>`+
+      ? `<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:500;width:100%;margin-bottom:4px">Variant ÑÐ¾Ð½Ð³Ð¾Ñ…:</div>`+
         selectedVariants.map((v,i)=>`
           <label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--gray-light);border-radius:6px;cursor:pointer;font-size:12px;background:var(--white)">
             <input type="checkbox" checked onchange="selectedVariants[${i}].selected=this.checked" style="accent-color:var(--black)">
-            ${v.color||'—'} / ${v.size||'—'}
-            <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||'код үүсгэ'}</code>
+            ${v.color||'â€”'} / ${v.size||'â€”'}
+            <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||'ÐºÐ¾Ð´ Ò¯Ò¯ÑÐ³Ñ'}</code>
           </label>`).join('')
-      : '<div style="color:var(--gray);font-size:12px">Variant байхгүй байна</div>';
+      : '<div style="color:var(--gray);font-size:12px">Variant Ð±Ð°Ð¹Ñ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°</div>';
   }catch(e){}
 }
 
@@ -1629,9 +1660,9 @@ function generateBarcodes(){
   const size = document.getElementById('bc-size').value;
   const active = selectedVariants.filter(v=>v.selected);
 
-  if(!active.length){showToast('Variant сонгоно уу','error');return;}
+  if(!active.length){showToast('Variant ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
   if(active.some(v=>!v.barcode || !/^\d+$/.test(String(v.barcode)))){
-    showToast('Эхлээд "Шинэ код" дарж тоон barcode үүсгэнэ үү','error');
+    showToast('Ð­Ñ…Ð»ÑÑÐ´ "Ð¨Ð¸Ð½Ñ ÐºÐ¾Ð´" Ð´Ð°Ñ€Ð¶ Ñ‚Ð¾Ð¾Ð½ barcode Ò¯Ò¯ÑÐ³ÑÐ½Ñ Ò¯Ò¯','error');
     return;
   }
 
@@ -1646,19 +1677,19 @@ function generateBarcodes(){
       const barcode = String(v.barcode);
       html += `
         <div class="barcode-label" style="width:${d.w}px;height:${d.h}px;border:1px solid #ddd;border-radius:4px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;background:white;font-family:monospace">
-          <div style="font-size:${d.fs}px;font-weight:700;letter-spacing:1px;text-align:center;font-family:'DM Sans',sans-serif;line-height:1.2">${v.productName||'—'}</div>
+          <div style="font-size:${d.fs}px;font-weight:700;letter-spacing:1px;text-align:center;font-family:'DM Sans',sans-serif;line-height:1.2">${v.productName||'â€”'}</div>
           <div style="font-size:${d.fs-1}px;color:#666;text-align:center;font-family:'DM Sans',sans-serif">${v.color||''} ${v.size?'/ '+v.size:''}</div>
           <svg id="svg-${v.id}-${i}" width="${d.w-16}" height="${d.h*0.4}"></svg>
           <div style="font-size:${d.fs}px;letter-spacing:2px;font-family:monospace">${barcode}</div>
-          <div style="font-size:${d.fs+1}px;font-weight:700;font-family:'DM Sans',sans-serif">₮${parseInt(v.price||0).toLocaleString()}</div>
+          <div style="font-size:${d.fs+1}px;font-weight:700;font-family:'DM Sans',sans-serif">â‚®${parseInt(v.price||0).toLocaleString()}</div>
         </div>`;
     }
   });
 
   area.innerHTML = html;
-  document.getElementById('bc-preview-count').textContent = active.length * count + ' баркод';
+  document.getElementById('bc-preview-count').textContent = active.length * count + ' Ð±Ð°Ñ€ÐºÐ¾Ð´';
 
-  // SVG баркод зурах
+  // SVG Ð±Ð°Ñ€ÐºÐ¾Ð´ Ð·ÑƒÑ€Ð°Ñ…
   active.forEach(v => {
     for(let i=0;i<count;i++){
       const svg = document.getElementById('svg-'+v.id+'-'+i);
@@ -1666,15 +1697,15 @@ function generateBarcodes(){
     }
   });
 
-  showToast(active.length*count+' баркод үүслээ','success');
+  showToast(active.length*count+' Ð±Ð°Ñ€ÐºÐ¾Ð´ Ò¯Ò¯ÑÐ»ÑÑ','success');
 }
 
 async function regenerateSelectedBarcodes(){
   const productId = document.getElementById('bc-product').value;
   const active = selectedVariants.filter(v=>v.selected);
-  if(!productId){showToast('Бараа сонгоно уу','error');return;}
-  if(!active.length){showToast('Variant сонгоно уу','error');return;}
-  if(!confirm('Сонгосон variant-уудын barcode шинээр солигдоно. Үргэлжлүүлэх үү?')) return;
+  if(!productId){showToast('Ð‘Ð°Ñ€Ð°Ð° ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
+  if(!active.length){showToast('Variant ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ','error');return;}
+  if(!confirm('Ð¡Ð¾Ð½Ð³Ð¾ÑÐ¾Ð½ variant-ÑƒÑƒÐ´Ñ‹Ð½ barcode ÑˆÐ¸Ð½ÑÑÑ€ ÑÐ¾Ð»Ð¸Ð³Ð´Ð¾Ð½Ð¾. Ò®Ñ€Ð³ÑÐ»Ð¶Ð»Ò¯Ò¯Ð»ÑÑ… Ò¯Ò¯?')) return;
 
   try{
     const result = await apiPost('/api/barcodes/generate', {
@@ -1686,14 +1717,14 @@ async function regenerateSelectedBarcodes(){
       return found ? {...v, barcode:found.barcode} : v;
     });
     loadBarcodeVariants();
-    showToast(updated.length+' шинэ barcode хадгалагдлаа','success');
+    showToast(updated.length+' ÑˆÐ¸Ð½Ñ barcode Ñ…Ð°Ð´Ð³Ð°Ð»Ð°Ð³Ð´Ð»Ð°Ð°','success');
   }catch(e){
-    showToast('Barcode үүсгэхэд алдаа: '+e.message,'error');
+    showToast('Barcode Ò¯Ò¯ÑÐ³ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð°: '+e.message,'error');
   }
 }
 
 function drawBarcode(svg, code, width, height){
-  // Энгийн баркод зурах (Code 128 хялбаршуулсан)
+  // Ð­Ð½Ð³Ð¸Ð¹Ð½ Ð±Ð°Ñ€ÐºÐ¾Ð´ Ð·ÑƒÑ€Ð°Ñ… (Code 128 Ñ…ÑÐ»Ð±Ð°Ñ€ÑˆÑƒÑƒÐ»ÑÐ°Ð½)
   const encoded = code.replace(/[^0-9A-Z]/g,'');
   const barWidth = width / (encoded.length * 8 + 20);
   let x = barWidth * 5;
@@ -1717,13 +1748,14 @@ function drawBarcode(svg, code, width, height){
   svg.innerHTML = bars;
 }
 
-// ── INIT ──
-// Token байвал шууд нэвтрэх
+// â”€â”€ INIT â”€â”€
+// Token Ð±Ð°Ð¹Ð²Ð°Ð» ÑˆÑƒÑƒÐ´ Ð½ÑÐ²Ñ‚Ñ€ÑÑ…
 if(TOKEN){
   apiGet('/api/categories').then(()=>{
     document.getElementById('login-wrap').style.display='none';
     document.getElementById('admin-wrap').classList.add('show');
-    document.getElementById('sb-user').textContent='Админ';
+    document.getElementById('sb-user').textContent='ÐÐ´Ð¼Ð¸Ð½';
     initDate();loadAll();
   }).catch(()=>{TOKEN='';localStorage.removeItem('admin_token');});
 }
+

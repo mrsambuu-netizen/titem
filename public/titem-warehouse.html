@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ТИТЭМ — Агуулах</title>
+<title>ТИТЭМ - Агуулах</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/titem-warehouse.css">
 </head>
@@ -22,7 +22,7 @@
     </div>
     <div style="margin-bottom:20px">
       <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);font-weight:500;display:block;margin-bottom:6px">Нууц үг</label>
-      <input id="wh-password" type="password" style="width:100%;border:1px solid var(--gray-mid);border-radius:6px;padding:11px 14px;font-size:14px;font-family:var(--font-body);outline:none" placeholder="••••••" onkeydown="if(event.key==='Enter')doWarehouseLogin()">
+      <input id="wh-password" type="password" style="width:100%;border:1px solid var(--gray-mid);border-radius:6px;padding:11px 14px;font-size:14px;font-family:var(--font-body);outline:none" placeholder="******" onkeydown="if(event.key==='Enter')doWarehouseLogin()">
     </div>
     <button onclick="doWarehouseLogin()" style="width:100%;background:var(--black);color:white;border:none;padding:13px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Нэвтрэх</button>
   </div>
@@ -191,11 +191,11 @@
           <div class="f-group">
             <label class="f-label">Хаашаа явуулах салбар</label>
             <select class="f-select" id="dist-branch">
-              <option value="1">🏪 Салбар 1 — Сүхбаатар</option>
-              <option value="2">🏪 Салбар 2 — Баянзүрх</option>
-              <option value="3">🏪 Салбар 3 — Хан-Уул</option>
-              <option value="4">🏪 Салбар 4 — Баянгол</option>
-              <option value="5">🏪 Салбар 5 — Налайх</option>
+              <option value="1">🏪 Салбар 1 - Сүхбаатар</option>
+              <option value="2">🏪 Салбар 2 - Баянзүрх</option>
+              <option value="3">🏪 Салбар 3 - Хан-Уул</option>
+              <option value="4">🏪 Салбар 4 - Баянгол</option>
+              <option value="5">🏪 Салбар 5 - Налайх</option>
             </select>
           </div>
           <div class="f-group">
@@ -241,14 +241,14 @@
         <div class="kpi-card"><div class="kpi-label">🔴 Дууссан</div><div class="kpi-val" style="color:var(--red)">2</div><div class="kpi-sub">төрлийн бараа</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Агуулахын үлдэгдэл <span class="card-title-right">хайлт · reorder · export</span></div>
+        <div class="card-title">Агуулахын үлдэгдэл <span class="card-title-right">хайлт - reorder - export</span></div>
         <div class="tool-row">
           <input id="inv-search" class="f-input" placeholder="SKU, бараа, ангиллаар хайх..." oninput="renderInventory()">
           <select id="inv-sort" class="f-select" onchange="renderInventory()">
             <option value="">Эрэмбэлэх</option>
             <option value="stock-asc">Үлдэгдэл багаас их</option>
             <option value="stock-desc">Үлдэгдэл ихээс бага</option>
-            <option value="name-asc">Нэр A–Z</option>
+            <option value="name-asc">Нэр A-Z</option>
           </select>
           <button class="mini-action" onclick="clearInventorySearch()">Цэвэрлэх</button>
           <button class="mini-action" onclick="downloadInventoryCSV()">Excel/CSV export</button>
@@ -280,11 +280,11 @@
           <div class="f-group" id="return-branch-group">
             <label class="f-label">Салбар</label>
             <select class="f-select" id="return-branch">
-              <option>Салбар 1 — Сүхбаатар</option>
-              <option>Салбар 2 — Баянзүрх</option>
-              <option>Салбар 3 — Хан-Уул</option>
-              <option>Салбар 4 — Баянгол</option>
-              <option>Салбар 5 — Налайх</option>
+              <option>Салбар 1 - Сүхбаатар</option>
+              <option>Салбар 2 - Баянзүрх</option>
+              <option>Салбар 3 - Хан-Уул</option>
+              <option>Салбар 4 - Баянгол</option>
+              <option>Салбар 5 - Налайх</option>
             </select>
           </div>
           <div class="f-group">

@@ -936,16 +936,17 @@ async function loadTransferProducts(){
     const available=(rows||[]).filter(r=>parseInt(r.quantity||0)>0 && r.variant_id);
     productSel.innerHTML=available.length ? available.map(r=>{
       const detail=[r.color,r.size].filter(Boolean).join(' / ');
-      return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'">'+r.name+(detail?' - '+detail:'')+' ('+r.quantity+')</option>';
-    }).join('') : '<option value="">??????????? ????? ????</option>';
+      const label=r.name+(detail?' - '+detail:'')+' ('+r.quantity+')';
+      return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'">'+label+'</option>';
+    }).join('') : '<option value="">Үлдэгдэлтэй бараа алга</option>';
   }catch(e){
-    productSel.innerHTML='<option value="">????? ??????? ?????</option>';
+    productSel.innerHTML='<option value="">Бараа татахад алдаа</option>';
   }
 }
 
 function renderTransfers(){
   const table=document.getElementById('transfer-table');
-  if(table) table.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">??????????? ???? ???????</td></tr>';
+  if(table) table.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">Шилжүүлгийн түүх байхгүй</td></tr>';
 }
 
 async function createTransfer(){
@@ -953,12 +954,12 @@ async function createTransfer(){
   const to=document.getElementById('tf-to');
   const product=document.getElementById('tf-product');
   const qty=parseInt(document.getElementById('tf-qty').value)||0;
-  if(!from?.value || !to?.value){showToast('?????? ??????? ??','error');return;}
-  if(from.value===to.value){showToast('???????, ?????? ?????? ???? ?????','error');return;}
-  if(!product?.value){showToast('????? ??????? ??','error');return;}
-  if(qty<=0){showToast('??? ??????? ??','error');return;}
+  if(!from?.value || !to?.value){showToast('Салбар сонгоно уу','error');return;}
+  if(from.value===to.value){showToast('Хаанаас, хаашаа салбар ижил байна','error');return;}
+  if(!product?.value){showToast('Бараа сонгоно уу','error');return;}
+  if(qty<=0){showToast('Тоо оруулна уу','error');return;}
   const stock=parseInt(product.selectedOptions[0]?.dataset?.stock||0);
-  if(stock && qty>stock){showToast('?????????? ?? ??? ????????? ?????????','error');return;}
+  if(stock && qty>stock){showToast('Үлдэгдлээс их тоо шилжүүлэх боломжгүй','error');return;}
   try{
     await apiPost('/api/transfers', {
       from_branch_id:parseInt(from.value),
@@ -966,11 +967,12 @@ async function createTransfer(){
       note:'Admin transfer',
       items:[{variant_id:parseInt(product.value), quantity:qty}]
     });
-    showToast('????????? ????????? ????????????','success');
+    showToast('Шилжүүлэг амжилттай хадгалагдлаа','success');
     await loadTransferProducts();
     await loadInventory();
-  }catch(e){showToast('????????? ?????: '+e.message,'error');}
+  }catch(e){showToast('Шилжүүлэг алдаа: '+e.message,'error');}
 }
+
 
 // ── TOAST ──
 function showToast(msg,type=''){
@@ -1311,6 +1313,8 @@ async function loadWarehouseData(){
     if(supSel) supSel.innerHTML = suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 
     // Салбар dropdown
+    const receiveBranchSel = document.getElementById('wh-receive-branch');
+    if(receiveBranchSel) receiveBranchSel.innerHTML = branches.filter(b=>normalizeBranchType(b)==='own_branch' && b.is_active!==false).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
     const branchSel = document.getElementById('wh-dist-branch');
     if(branchSel) branchSel.innerHTML = branches.filter(b=>b.id>1).map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
     const returnBranchSel = document.getElementById('wh-return-branch');
@@ -1378,6 +1382,7 @@ function whRenderReceive(){
 async function whConfirmReceive(){
   if(!whReceiveItems.length){showToast('Бараа нэмнэ үү','error');return;}
   const supplier = document.getElementById('wh-supplier');
+  const receiveBranch = document.getElementById('wh-receive-branch');
   const invoice = document.getElementById('wh-invoice').value||'—';
   const qty = whReceiveItems.reduce((s,i)=>s+i.qty,0);
   const price = whReceiveItems.reduce((s,i)=>s+i.price*i.qty,0);

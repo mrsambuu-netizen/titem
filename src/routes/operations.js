@@ -91,6 +91,46 @@ app.get('/api/reports/branches', authMiddleware(['admin','super_admin']), async 
 });
 
 // ── КАСС ──
+
+app.get('/api/reports/products', authMiddleware(['admin','super_admin']), async (req, res) => {
+  try {
+    const days = Math.max(1, Math.min(parseInt(req.query.days || '30'), 365));
+    const branchId = req.query.branch_id ? parseInt(req.query.branch_id) : null;
+    const result = await pool.query(
+      `WITH stock AS (
+         SELECT pv.product_id, COALESCE(SUM(i.quantity),0) AS total_stock
+         FROM product_variants pv
+         LEFT JOIN inventory i ON i.variant_id = pv.id AND ($2::int IS NULL OR i.branch_id = $2)
+         GROUP BY pv.product_id
+       ), sales AS (
+         SELECT pv.product_id,
+                COALESCE(SUM(oi.quantity),0) AS sold_qty,
+                COALESCE(SUM(oi.total_price),0) AS revenue
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+         WHERE o.status = 'completed'
+           AND o.created_at >= NOW() - ($1::int * INTERVAL '1 day')
+           AND ($2::int IS NULL OR o.branch_id = $2)
+         GROUP BY pv.product_id
+       )
+       SELECT p.id, p.name, p.sku,
+              COALESCE(sales.sold_qty,0) AS sold_qty,
+              COALESCE(sales.revenue,0) AS revenue,
+              COALESCE(stock.total_stock,0) AS total_stock
+       FROM products p
+       LEFT JOIN stock ON stock.product_id = p.id
+       LEFT JOIN sales ON sales.product_id = p.id
+       WHERE p.is_active = true
+       ORDER BY COALESCE(sales.sold_qty,0) DESC, p.name`,
+      [days, branchId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/cash/open', authMiddleware(['cashier','admin']), async (req, res) => {
   try {
     const { opening_amount, note } = req.body;

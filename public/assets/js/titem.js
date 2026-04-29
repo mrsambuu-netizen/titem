@@ -1,5 +1,5 @@
 // ── API CONFIG ──
-const API = '';
+const API = window.API_BASE || 'https://hat.mn';
 
 // ── STATE ──
 const CAT_NAMES={hat:'Малгай',scarf:'Ороолт',glove:'Бээлий',face:'Faceshield',neck:'Алчуур'};

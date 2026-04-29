@@ -4,7 +4,8 @@
   "description": "Титэм малгайн дэлгүүрийн ERP систем",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "fix:encoding-data": "node scripts/fix-encoding-data.js"
   },
   "dependencies": {
     "express": "4.18.2",

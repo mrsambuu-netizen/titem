@@ -1,5 +1,5 @@
 ﻿// ── API ──
-const API='';
+const API = window.API_BASE || 'https://hat.mn';
 let TOKEN=localStorage.getItem('warehouse_token')||'';
 
 async function handleApiError(res){
@@ -128,7 +128,7 @@ async function loadProducts(){
 
 async function loadBranches(){
   try{
-    const data=await fetch('/api/branches').then(r=>r.json());
+    const data=await fetch(API+'/api/branches').then(r=>r.json());
     BRANCHES=data;
     // Хуваарилах select шинэчлэх
     const sel=document.getElementById('dist-branch');

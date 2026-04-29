@@ -1,5 +1,5 @@
 ﻿// API CONFIG
-const API = window.API_BASE || 'https://hat.mn';
+const API = window.API_BASE || window.location.origin;
 const t = (s) => s.replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
 
 // STATE

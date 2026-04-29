@@ -1,5 +1,5 @@
 // ── API CONFIG ──
-const API = window.API_BASE || 'https://hat.mn';
+const API = window.API_BASE || window.location.origin;
 let TOKEN=localStorage.getItem('pos_token')||'';
 let currentUser='',currentBranch=1,currentBranchName='';
 let PRODUCTS=[],BRANCHES_LIST=[];

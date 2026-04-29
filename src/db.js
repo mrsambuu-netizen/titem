@@ -155,6 +155,11 @@ async function initDB() {
         total_purchases INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS website_settings (
+        key VARCHAR(80) PRIMARY KEY,
+        value JSONB NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
 
       CREATE TABLE IF NOT EXISTS returns (
         id SERIAL PRIMARY KEY,
@@ -360,6 +365,11 @@ async function seedData() {
         ('Монгол Малгай ХХК', '99001122', 'info@mongol-malgai.mn', 2400000),
         ('АзиаТекстайл', '88001133', 'asia@textile.mn', 0),
         ('Өвлийн Тоноглол', '77001144', 'winter@gear.mn', 1200000)
+    `);
+    await pool.query(`
+      INSERT INTO website_settings (key, value) VALUES
+        ('homepage', '{"hero_title":"\u0422\u0438\u0442\u044d\u043c","hero_subtitle":"\u0427\u0430\u043d\u0430\u0440\u0442\u0430\u0439 \u043c\u0430\u043b\u0433\u0430\u0439, \u043e\u0440\u043e\u043e\u043b\u0442, \u0431\u044d\u044d\u043b\u0438\u0439","hero_button":"\u0414\u044d\u043b\u0433\u04af\u04af\u0440 \u04af\u0437\u044d\u0445","banner_image":"","footer_text":"\u041c\u043e\u043d\u0433\u043e\u043b\u044b\u043d \u043c\u0430\u043b\u0433\u0430\u0439, \u0430\u043a\u0441\u0435\u0441\u0441\u0443\u0430\u0440\u044b\u043d \u0434\u044d\u043b\u0433\u04af\u04af\u0440.","footer_phone":"+976 9900-0000","footer_email":"info@hat.mn","facebook":"","instagram":""}'::jsonb)
+      ON CONFLICT (key) DO NOTHING
     `);
 
     console.log('Seed data inserted');

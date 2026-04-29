@@ -229,4 +229,52 @@ app.post('/api/transfers', authMiddleware(['warehouse','admin','super_admin']), 
 // item.action:
 //   restock         → дахин зарах боломжтой, inventory нэмнэ
 //   damaged         → гэмтэлтэй, inventory нэмэхгүй, зөвхөн түүх бүртгэнэ
+
+// ?? WAREHOUSE WRITE-OFF ??
+app.post('/api/writeoffs', authMiddleware(['warehouse','admin','super_admin']), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { branch_id = 1, items = [], note = '' } = req.body;
+    const branchId = parseInt(branch_id || 1);
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ error: '?????? ????? ??????? ??' });
+    }
+
+    await client.query('BEGIN');
+    let totalQty = 0;
+    for (const item of items) {
+      const variantId = parseInt(item.variant_id);
+      const quantity = parseInt(item.quantity || 0);
+      const reason = item.reason || 'write-off';
+      if (!variantId || quantity <= 0) throw new Error('??????? variant ????? ??? ????? ?????');
+
+      const stock = await client.query(
+        'SELECT quantity FROM inventory WHERE variant_id=$1 AND branch_id=$2 FOR UPDATE',
+        [variantId, branchId]
+      );
+      const currentQty = parseInt(stock.rows[0]?.quantity || 0);
+      if (currentQty < quantity) {
+        throw new Error('???????? ???????????: variant ' + variantId + ' (' + currentQty + ' ?????)');
+      }
+
+      await client.query(
+        'UPDATE inventory SET quantity = quantity - $1 WHERE variant_id=$2 AND branch_id=$3',
+        [quantity, variantId, branchId]
+      );
+      await client.query(
+        `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, note, user_id)
+         VALUES ($1,$2,$3,'writeoff',$4,$5)`,
+        [variantId, branchId, quantity, reason + (note ? ' ? ' + note : ''), req.user.id]
+      );
+      totalQty += quantity;
+    }
+    await client.query('COMMIT');
+    res.json({ success: true, message: totalQty + ' ?????? ????? ??????????', total_quantity: totalQty });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(400).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 };

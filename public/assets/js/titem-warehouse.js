@@ -232,7 +232,7 @@ function renderReceiveItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="changeRQty(${i},-1)">−</button>
-          <span>${item.qty}</span>
+          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setReceiveQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="changeRQty(${i},1)">+</button>
         </div>
       </td>
@@ -362,7 +362,7 @@ function renderDistItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="changeDQty(${i},-1)">−</button>
-          <span>${item.qty}</span>
+          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setDistQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="changeDQty(${i},1)">+</button>
         </div>
       </td>
@@ -539,7 +539,7 @@ function renderReturnItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="returnItems[${i}].qty=Math.max(1,returnItems[${i}].qty-1);renderReturnItems()">−</button>
-          <span>${item.qty}</span>
+          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setReturnQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="returnItems[${i}].qty++;renderReturnItems()">+</button>
         </div>
       </td>
@@ -630,7 +630,7 @@ function renderWriteoffItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">-</button>
-          <span>${item.qty}</span>
+          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setWriteoffQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="writeoffItems[${i}].qty++;renderWriteoffItems()">+</button>
         </div>
       </td>

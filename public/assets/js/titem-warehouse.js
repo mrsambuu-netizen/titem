@@ -232,7 +232,7 @@ function renderReceiveItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="changeRQty(${i},-1)">−</button>
-          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setReceiveQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input class="qty-input" type="number" min="1" value="${item.qty}" oninput="setReceiveQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="changeRQty(${i},1)">+</button>
         </div>
       </td>
@@ -362,7 +362,7 @@ function renderDistItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="changeDQty(${i},-1)">−</button>
-          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setDistQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input class="qty-input" type="number" min="1" value="${item.qty}" oninput="setDistQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="changeDQty(${i},1)">+</button>
         </div>
       </td>
@@ -539,7 +539,7 @@ function renderReturnItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="returnItems[${i}].qty=Math.max(1,returnItems[${i}].qty-1);renderReturnItems()">−</button>
-          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setReturnQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input class="qty-input" type="number" min="1" value="${item.qty}" oninput="setReturnQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="returnItems[${i}].qty++;renderReturnItems()">+</button>
         </div>
       </td>
@@ -568,7 +568,7 @@ async function confirmReturn(){
   const sourceBranchId=returnType==='branch'?parseInt(document.getElementById('return-branch').value):1;
   const items=returnItems.map(i=>({
     variant_id:i.variant_id,
-    quantity:i.qty,
+    quantity:parseInt(i.qty||0),
     condition:i.condition||'good',
     resell:i.resell!==false,
     action:i.resell!==false?'restock':'damaged'
@@ -601,6 +601,36 @@ async function confirmReturn(){
 }
 function clearReturn(){returnItems=[];renderReturnItems();}
 
+function normalizeQtyValue(value, max){
+  let qty=parseInt(value,10);
+  if(Number.isNaN(qty)||qty<1) qty=1;
+  if(max&&qty>max) qty=max;
+  return qty;
+}
+function setReceiveQty(i,value){
+  if(!receiveItems[i])return;
+  receiveItems[i].qty=normalizeQtyValue(value);
+  updateReceiveTotals();
+}
+function setDistQty(i,value){
+  if(!distItems[i])return;
+  distItems[i].qty=normalizeQtyValue(value, parseInt(distItems[i].totalStock||0));
+}
+function setReturnQty(i,value){
+  if(!returnItems[i])return;
+  returnItems[i].qty=normalizeQtyValue(value);
+}
+function setWriteoffQty(i,value){
+  if(!writeoffItems[i])return;
+  writeoffItems[i].qty=normalizeQtyValue(value, parseInt(writeoffItems[i].stock||0));
+}
+function syncWriteoffQtyInputs(){
+  writeoffItems.forEach((item,i)=>{
+    const el=document.getElementById('writeoff-qty-'+i);
+    if(el) setWriteoffQty(i, el.value);
+  });
+}
+
 // ── WRITE-OFF ──
 function handleWriteoffBarcode(e){
   if(e.key!=='Enter') return;
@@ -630,7 +660,7 @@ function renderWriteoffItems(){
       <td>
         <div class="qty-ctrl">
           <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">-</button>
-          <input class="qty-input" type="number" min="1" value="${item.qty}" onchange="setWriteoffQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input id="writeoff-qty-${i}" class="qty-input" type="number" min="1" max="${item.stock||999999}" value="${item.qty}" oninput="setWriteoffQty(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
           <button onclick="writeoffItems[${i}].qty++;renderWriteoffItems()">+</button>
         </div>
       </td>
@@ -649,6 +679,7 @@ function renderWriteoffItems(){
 }
 
 function confirmWriteoff(){
+  syncWriteoffQtyInputs();
   if(!writeoffItems.length){showToast('Add product first','error');return;}
   const missing=writeoffItems.filter(i=>!i.reason);
   if(missing.length){showToast('Choose a reason for every item','error');return;}
@@ -658,10 +689,11 @@ function confirmWriteoff(){
 }
 
 async function doWriteoff(){
-  const qty=writeoffItems.reduce((s,i)=>s+i.qty,0);
+  syncWriteoffQtyInputs();
+  const qty=writeoffItems.reduce((s,i)=>s+parseInt(i.qty||0),0);
   const items=writeoffItems.map(i=>({
     variant_id:i.variant_id,
-    quantity:i.qty,
+    quantity:parseInt(i.qty||0),
     reason:i.reason
   })).filter(i=>i.variant_id&&i.quantity>0);
   if(!items.length){showToast('Write-off variant info missing','error');return;}

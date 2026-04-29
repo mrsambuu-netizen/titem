@@ -205,5 +205,83 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
-// ── FAVICON ──
+
+// -- WEBSITE MANAGEMENT --
+app.get('/api/website/settings', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT value FROM website_settings WHERE key='homepage'");
+    res.json(result.rows[0]?.value || {});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/website/settings', authMiddleware(['admin','super_admin']), async (req, res) => {
+  try {
+    const value = req.body || {};
+    const result = await pool.query(
+      "INSERT INTO website_settings (key, value, updated_at) VALUES ('homepage', $1, NOW()) ON CONFLICT (key) DO UPDATE SET value=$1, updated_at=NOW() RETURNING value",
+      [JSON.stringify(value)]
+    );
+    res.json(result.rows[0].value);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/website/products', async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(parseInt(req.query.limit || '100'), 300));
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.sku, p.price, p.discount_price, p.images, p.website_visible, p.website_featured,
+              p.website_sort_order, COALESCE(p.website_description, p.description) AS description,
+              c.name AS category_name, COALESCE(SUM(i.quantity),0) AS total_stock
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN product_variants pv ON pv.product_id = p.id
+       LEFT JOIN inventory i ON i.variant_id = pv.id
+       WHERE p.is_active = true AND COALESCE(p.website_visible, true) = true
+       GROUP BY p.id, c.name
+       ORDER BY COALESCE(p.website_featured,false) DESC, COALESCE(p.website_sort_order,0) ASC, p.name ASC
+       LIMIT $1`,
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/website/admin', authMiddleware(['admin','super_admin']), async (req, res) => {
+  try {
+    const settings = await pool.query("SELECT value FROM website_settings WHERE key='homepage'");
+    const products = await pool.query(
+      `SELECT p.id, p.name, p.sku, p.price, p.images, p.website_visible, p.website_featured,
+              p.website_sort_order, COALESCE(p.website_description, p.description) AS website_description,
+              c.name AS category_name, COALESCE(SUM(i.quantity),0) AS total_stock
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN product_variants pv ON pv.product_id = p.id
+       LEFT JOIN inventory i ON i.variant_id = pv.id
+       WHERE p.is_active = true
+       GROUP BY p.id, c.name
+       ORDER BY COALESCE(p.website_sort_order,0) ASC, p.name ASC`
+    );
+    res.json({ settings: settings.rows[0]?.value || {}, products: products.rows });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/website/products/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
+  try {
+    const { website_visible, website_featured, website_sort_order, website_description, images } = req.body;
+    const result = await pool.query(
+      `UPDATE products SET
+         website_visible=$1,
+         website_featured=$2,
+         website_sort_order=$3,
+         website_description=$4,
+         images=COALESCE($5::jsonb, images)
+       WHERE id=$6 RETURNING *`,
+      [website_visible !== false, website_featured === true, parseInt(website_sort_order || 0), website_description || null, images ? JSON.stringify(images) : null, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// -- FAVICON --
 };

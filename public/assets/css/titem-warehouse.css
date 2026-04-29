@@ -152,3 +152,16 @@ table.main-table tr:hover td{background:#fafafa}
 
 .qty-ctrl input.qty-input{width:48px;height:28px;border:none;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);text-align:center;font-size:13px;font-weight:600;font-family:var(--font-body);outline:none;background:#fff}
 .qty-ctrl input.qty-input::-webkit-outer-spin-button,.qty-ctrl input.qty-input::-webkit-inner-spin-button{margin:0}
+
+.qty-ctrl input.qty-input::-webkit-outer-spin-button,
+.qty-ctrl input.qty-input::-webkit-inner-spin-button,
+.qty-ctrl input[type="number"]::-webkit-outer-spin-button,
+.qty-ctrl input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.qty-ctrl input.qty-input,
+.qty-ctrl input[type="number"]{
+  appearance:textfield;
+  -moz-appearance:textfield;
+}

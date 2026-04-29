@@ -190,6 +190,14 @@ async function initDB() {
     `);
 
 
+    // Website product display settings
+    await pool.query(`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_visible BOOLEAN DEFAULT true;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_featured BOOLEAN DEFAULT false;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_sort_order INTEGER DEFAULT 0;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_description TEXT;
+    `);
+
     // ── САЛБАР / ГЭРЭЭТ БОРЛУУЛАГЧ НЭМЭЛТ ТАЛБАРУУД ──
     await pool.query(`
       ALTER TABLE branches ADD COLUMN IF NOT EXISTS branch_type VARCHAR(30) DEFAULT 'own_branch';

@@ -153,3 +153,16 @@ tr:hover td{background:#fafafa}
   #bc-preview-area { border: none !important; }
   .barcode-label { break-inside: avoid; }
 }
+
+.qty-ctrl input.qty-input::-webkit-outer-spin-button,
+.qty-ctrl input.qty-input::-webkit-inner-spin-button,
+.qty-ctrl input[type="number"]::-webkit-outer-spin-button,
+.qty-ctrl input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.qty-ctrl input.qty-input,
+.qty-ctrl input[type="number"]{
+  appearance:textfield;
+  -moz-appearance:textfield;
+}

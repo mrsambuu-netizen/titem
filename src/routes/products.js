@@ -21,7 +21,7 @@ app.get('/api/products', async (req, res) => {
     
     const query = `
       SELECT p.id, p.name, p.sku, p.price, p.wholesale_price, p.discount_price,
-        p.description, p.images, p.is_active, p.created_at,
+        p.description, p.images, p.is_active, p.created_at, p.website_visible, p.website_featured, p.website_sort_order, p.website_description,
         c.name as category_name,
         COALESCE(SUM(i.quantity), 0) as total_stock
       FROM products p

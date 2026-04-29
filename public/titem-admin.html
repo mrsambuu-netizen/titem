@@ -89,6 +89,9 @@
       <button class="nav-item" onclick="showPanel('manage-products',this)">
         <span class="nav-item-icon">➕</span>Бараа удирдлага
       </button>
+      <button class="nav-item" onclick="showPanel('website',this)">
+        <span class="nav-item-icon">??</span>Website
+      </button>
     </div>
     <div class="sidebar-bottom">
       <button class="btn-logout" onclick="doLogout()">Гарах</button>
@@ -426,6 +429,43 @@
             <table class="main-table">
               <thead><tr><th>Зураг</th><th>Нэр</th><th>SKU</th><th>Ангилал</th><th>Үнэ</th><th>Үлдэгдэл</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
               <tbody id="mp-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEBSITE -->
+      <div class="panel" id="panel-website">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap">
+          <h2 style="font-family:var(--font-head);font-size:28px;font-weight:300">Website <em style="font-style:italic">settings</em></h2>
+          <button onclick="saveWebsiteSettings()" style="background:var(--black);color:var(--white);border:none;padding:10px 20px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;font-family:var(--font-body)">Save settings</button>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Homepage</div>
+          <div class="form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+            <div class="f-group"><label class="f-label">Hero title</label><input id="website-hero-title" class="f-input"></div>
+            <div class="f-group"><label class="f-label">Hero button</label><input id="website-hero-button" class="f-input"></div>
+            <div class="f-group" style="grid-column:1/-1"><label class="f-label">Hero subtitle</label><input id="website-hero-subtitle" class="f-input"></div>
+            <div class="f-group" style="grid-column:1/-1"><label class="f-label">Banner image URL</label><input id="website-banner-image" class="f-input" placeholder="https://..."></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Footer</div>
+          <div class="form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+            <div class="f-group" style="grid-column:1/-1"><label class="f-label">Footer text</label><input id="website-footer-text" class="f-input"></div>
+            <div class="f-group"><label class="f-label">Phone</label><input id="website-footer-phone" class="f-input"></div>
+            <div class="f-group"><label class="f-label">Email</label><input id="website-footer-email" class="f-input"></div>
+            <div class="f-group"><label class="f-label">Facebook URL</label><input id="website-facebook" class="f-input"></div>
+            <div class="f-group"><label class="f-label">Instagram URL</label><input id="website-instagram" class="f-input"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Website products <span class="card-title-right" id="website-products-count"></span></div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:12px;line-height:1.6">ERP product stock, price, barcode, supplier stay in product/warehouse modules. Here you only control how products appear on the public website.</div>
+          <div class="table-wrap">
+            <table class="main-table">
+              <thead><tr><th>Product</th><th>Image URL</th><th>Visible</th><th>Featured</th><th>Sort</th><th>Description</th><th>Action</th></tr></thead>
+              <tbody id="website-products-table"></tbody>
             </table>
           </div>
         </div>
@@ -879,6 +919,6 @@
   <span id="toast-msg">OK</span>
 </div>
 <script>window.API_BASE = 'https://hat.mn';</script>
-<script src="/assets/js/titem-admin.js?v=20260429-qtybox"></script>
+<script src="/assets/js/titem-admin.js?v=20260429-website"></script>
 </body>
 </html>

@@ -179,8 +179,23 @@ function findProduct(sku){
   return PRODUCTS.find(p=>
     p.sku.toLowerCase()===q||
     p.name.toLowerCase()===q||
-    p.sku.toLowerCase().includes(q)
+    p.sku.toLowerCase().includes(q)||
+    (p.variants||[]).some(v=>String(v.barcode||'').toLowerCase()===q||String(v.sku||'').toLowerCase()===q)
   );
+}
+
+function findScannedVariant(code){
+  const q=String(code||'').toLowerCase().trim();
+  for(const p of PRODUCTS){
+    const variant=(p.variants||[]).find(v=>
+      String(v.barcode||'').toLowerCase()===q||
+      String(v.sku||'').toLowerCase()===q
+    );
+    if(variant) return {product:p,variant};
+  }
+  const product=findProduct(q);
+  const variant=product?.variants?.[0]||null;
+  return product ? {product,variant} : null;
 }
 
 // ── RECEIVE ──
@@ -589,15 +604,18 @@ function clearReturn(){returnItems=[];renderReturnItems();}
 // ── WRITE-OFF ──
 function handleWriteoffBarcode(e){
   if(e.key!=='Enter') return;
-  const sku=e.target.value.trim();
-  const p=findProduct(sku);
-  if(!p){showToast('Бараа олдсонгүй','error');return;}
-  const ex=writeoffItems.find(i=>i.sku===p.sku);
+  const code=e.target.value.trim();
+  const found=findScannedVariant(code);
+  if(!found?.product){showToast('????? ?????????','error');return;}
+  if(!found.variant?.id){showToast('??? ??????? variant/barcode ???????? ???? ?????','error');return;}
+  const p=found.product;
+  const v=found.variant;
+  const ex=writeoffItems.find(i=>i.variant_id===v.id);
   if(ex){ex.qty++;} else {
-    writeoffItems.push({sku:p.sku,name:p.name,color:p.colors[0]||'',size:p.sizes[0]||'',qty:1,reason:''});
+    writeoffItems.push({variant_id:v.id,sku:p.sku,barcode:v.barcode||code,name:p.name,color:v.color||'',size:v.size||'',qty:1,reason:'',stock:parseInt(v.stock||0)});
   }
   e.target.value='';renderWriteoffItems();
-  showToast(p.name+' нэмэгдлээ','warn');
+  showToast(p.name+' ?????????','warn');
 }
 
 function renderWriteoffItems(){
@@ -607,54 +625,68 @@ function renderWriteoffItems(){
   empty.style.display='none';
   tbody.innerHTML=writeoffItems.map((item,i)=>`
     <tr>
-      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.sku}</code></td>
-      <td><b>${item.name}</b></td><td>${item.color}</td><td>${item.size}</td>
+      <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.barcode||item.sku}</code></td>
+      <td><b>${item.name}</b></td><td>${item.color||'?'}</td><td>${item.size||'?'}</td>
       <td>
         <div class="qty-ctrl">
-          <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">−</button>
+          <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">?</button>
           <span>${item.qty}</span>
           <button onclick="writeoffItems[${i}].qty++;renderWriteoffItems()">+</button>
         </div>
       </td>
       <td>
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="writeoffItems[${i}].reason=this.value">
-          <option value="">Сонгох...</option>
-          <option value="Гэмтсэн">Гэмтсэн</option>
-          <option value="Алдагдсан">Алдагдсан</option>
-          <option value="Хуучирсан">Хуучирсан</option>
-          <option value="Чанаргүй">Чанаргүй</option>
-          <option value="Бусад">Бусад</option>
+          <option value="">??????...</option>
+          <option value="???????">???????</option>
+          <option value="?????????">?????????</option>
+          <option value="?????????">?????????</option>
+          <option value="????????">????????</option>
+          <option value="?????">?????</option>
         </select>
       </td>
-      <td><button class="remove-btn" onclick="writeoffItems.splice(${i},1);renderWriteoffItems()">×</button></td>
+      <td><button class="remove-btn" onclick="writeoffItems.splice(${i},1);renderWriteoffItems()">?</button></td>
     </tr>`).join('');
 }
 
 function confirmWriteoff(){
-  if(!writeoffItems.length){showToast('Бараа нэмнэ үү','error');return;}
+  if(!writeoffItems.length){showToast('????? ????? ??','error');return;}
   const missing=writeoffItems.filter(i=>!i.reason);
-  if(missing.length){showToast('Бүх барааны шалтгааныг сонгоно уу','error');return;}
+  if(missing.length){showToast('??? ??????? ?????????? ??????? ??','error');return;}
   document.getElementById('writeoff-confirm-list').innerHTML=
-    writeoffItems.map(i=>`<div>• ${i.name} (${i.color}, ${i.size}) × ${i.qty} ш — ${i.reason}</div>`).join('');
+    writeoffItems.map(i=>`<div>? ${i.name} (${i.color||'?'}, ${i.size||'?'}) ? ${i.qty} ? ? ${i.reason}</div>`).join('');
   openModal('modal-writeoff-confirm');
 }
 
-function doWriteoff(){
+async function doWriteoff(){
   const qty=writeoffItems.reduce((s,i)=>s+i.qty,0);
+  const items=writeoffItems.map(i=>({
+    variant_id:i.variant_id,
+    quantity:i.qty,
+    reason:i.reason
+  })).filter(i=>i.variant_id&&i.quantity>0);
+  if(!items.length){showToast('?????? ??????? variant ???????? ???? ?????','error');return;}
+  try{
+    await apiPost('/api/writeoffs',{branch_id:1,items,note:'Warehouse write-off'});
+  }catch(e){
+    showToast('?????? ?????? ?????: '+e.message,'error');
+    return;
+  }
   allHistory.unshift({
     date:new Date().toLocaleDateString('mn-MN'),type:'writeoff',
-    product:writeoffItems.map(i=>i.name+'×'+i.qty).join(', '),qty,
+    product:writeoffItems.map(i=>i.name+'?'+i.qty).join(', '),qty,
     detail:writeoffItems.map(i=>i.reason).join(', '),user:currentUser
   });
   const tbody=document.getElementById('writeoff-history');
   writeoffItems.forEach(item=>{
     const row=document.createElement('tr');
-    row.innerHTML=`<td>${new Date().toLocaleDateString('mn-MN')}</td><td><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${item.sku}</code></td><td>${item.name}</td><td style="color:var(--red);font-weight:700">${item.qty}</td><td>${item.reason}</td><td>${currentUser}</td>`;
+    row.innerHTML=`<td>${new Date().toLocaleDateString('mn-MN')}</td><td><code style="font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">${item.barcode||item.sku}</code></td><td>${item.name}</td><td style="color:var(--red);font-weight:700">${item.qty}</td><td>${item.reason}</td><td>${currentUser}</td>`;
     tbody.prepend(row);
   });
   closeModal('modal-writeoff-confirm');
   clearWriteoff();
-  showToast(qty+' ширхэг бараа устгагдлаа','warn');
+  await loadProducts();
+  await renderInventory();
+  showToast(qty+' ?????? ????? ??????????','warn');
 }
 function clearWriteoff(){writeoffItems=[];renderWriteoffItems();}
 

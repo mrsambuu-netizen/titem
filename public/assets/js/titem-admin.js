@@ -1361,6 +1361,20 @@ function whFindProduct(sku){
   return whProducts.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim());
 }
 
+
+function whSetQtyValue(list, index, value, renderFn){
+  const qty = Math.max(1, parseInt(value, 10) || 1);
+  if(!list[index]) return;
+  list[index].qty = qty;
+  renderFn();
+}
+function whSetReceiveQty(i,value){whSetQtyValue(whReceiveItems,i,value,whRenderReceive);}
+function whSetDistQty(i,value){whSetQtyValue(whDistItems,i,value,whRenderDist);}
+function whSetReturnQty(i,value){whSetQtyValue(whReturnItems,i,value,whRenderReturn);}
+function whQtyInput(listName, renderName, setterName, i, qty){
+  return '<input type="number" min="1" value="'+qty+'" onchange="'+setterName+'('+i+',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()" style="width:52px;height:28px;border:none;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);text-align:center;font-size:13px;font-weight:600;font-family:var(--font-body);outline:none;background:#fff">';
+}
+
 // RECEIVE
 function whHandleBarcode(e){
   if(e.key!=='Enter') return;
@@ -1396,7 +1410,7 @@ function whRenderReceive(){
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
           <button onclick="whReceiveItems[${i}].qty=Math.max(1,whReceiveItems[${i}].qty-1);whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
-          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          ${whQtyInput('whReceiveItems','whRenderReceive','whSetReceiveQty',i,item.qty)}
           <button onclick="whReceiveItems[${i}].qty++;whRenderReceive()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>
@@ -1502,7 +1516,7 @@ function whRenderDist(){
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
           <button onclick="whDistItems[${i}].qty=Math.max(1,whDistItems[${i}].qty-1);whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
-          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          ${whQtyInput('whDistItems','whRenderDist','whSetDistQty',i,item.qty)}
           <button onclick="whDistItems[${i}].qty++;whRenderDist()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>
@@ -1554,7 +1568,7 @@ function whRenderReturn(){
       <td>
         <div style="display:flex;align-items:center;border:1px solid var(--gray-light);border-radius:5px;overflow:hidden;width:fit-content">
           <button onclick="whReturnItems[${i}].qty=Math.max(1,whReturnItems[${i}].qty-1);whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">−</button>
-          <span style="width:36px;text-align:center;font-size:13px;font-weight:600;border-left:1px solid var(--gray-light);border-right:1px solid var(--gray-light);line-height:28px">${item.qty}</span>
+          ${whQtyInput('whReturnItems','whRenderReturn','whSetReturnQty',i,item.qty)}
           <button onclick="whReturnItems[${i}].qty++;whRenderReturn()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:15px">+</button>
         </div>
       </td>

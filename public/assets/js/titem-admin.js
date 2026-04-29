@@ -1,5 +1,5 @@
 ﻿// ── API ──
-const API='';
+const API = window.API_BASE || 'https://hat.mn';
 let TOKEN=localStorage.getItem('admin_token')||'';
 
 async function handleApiError(res){
@@ -239,7 +239,7 @@ async function loadBranches(){
   try{
     const [reportData, masterData] = await Promise.all([
       apiGet('/api/reports/branches?date='+today).catch(()=>[]),
-      fetch('/api/branches').then(r=>r.json()).catch(()=>[])
+      fetch(API+'/api/branches').then(r=>r.json()).catch(()=>[])
     ]);
 
     const masterMap = {};
@@ -759,7 +759,7 @@ async function loadProductReport(){
 // ?? USERS ??
 async function loadUsers(){
   try{
-    const [data, branches] = await Promise.all([apiGet('/api/users'), fetch('/api/branches').then(r=>r.json())]);
+    const [data, branches] = await Promise.all([apiGet('/api/users'), fetch(API+'/api/branches').then(r=>r.json())]);
     window.BRANCHES_LIST = branches;
     const ucEl = document.getElementById('users-count');
     if(ucEl) ucEl.textContent = data.length+' хэрэглэгч';
@@ -846,7 +846,7 @@ async function saveUser(){
 // ── САЛБАР ЗАСАХ ──
 async function openBranchManager(){
   try{
-    const data=await fetch('/api/branches').then(r=>r.json());
+    const data=await fetch(API+'/api/branches').then(r=>r.json());
     document.getElementById('branch-edit-list').innerHTML=`
       <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .75fr .8fr .8fr 1.2fr auto;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--gray-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:600">
         <div>Нэр</div><div>Байршил</div><div>Төрөл</div><div>Утас</div><div>Хариуцагч</div><div>Комисс %</div><div>Тооцооны нөхцөл</div><div>Үйлдэл</div>
@@ -939,7 +939,7 @@ async function loadTransferForm(){
 
   let branches=window.BRANCHES || [];
   if(!branches.length){
-    branches=await fetch('/api/branches').then(r=>r.json()).catch(()=>[]);
+    branches=await fetch(API+'/api/branches').then(r=>r.json()).catch(()=>[]);
     window.BRANCHES=branches;
   }
   const ownBranches=branches.filter(b=>normalizeBranchType(b)==='own_branch' && b.is_active!==false);
@@ -1313,7 +1313,7 @@ async function loadWarehouseData(){
   try{
     const [prods, branches, suppliers] = await Promise.all([
       apiGet('/api/products?limit=100'),
-      fetch('/api/branches').then(r=>r.json()),
+      fetch(API+'/api/branches').then(r=>r.json()),
       apiGet('/api/suppliers')
     ]);
     // Variant татах

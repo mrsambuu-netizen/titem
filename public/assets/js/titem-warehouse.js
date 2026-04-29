@@ -606,8 +606,8 @@ function handleWriteoffBarcode(e){
   if(e.key!=='Enter') return;
   const code=e.target.value.trim();
   const found=findScannedVariant(code);
-  if(!found?.product){showToast('????? ?????????','error');return;}
-  if(!found.variant?.id){showToast('??? ??????? variant/barcode ???????? ???? ?????','error');return;}
+  if(!found?.product){showToast('Product not found','error');return;}
+  if(!found.variant?.id){showToast('Variant/barcode info missing','error');return;}
   const p=found.product;
   const v=found.variant;
   const ex=writeoffItems.find(i=>i.variant_id===v.id);
@@ -615,7 +615,7 @@ function handleWriteoffBarcode(e){
     writeoffItems.push({variant_id:v.id,sku:p.sku,barcode:v.barcode||code,name:p.name,color:v.color||'',size:v.size||'',qty:1,reason:'',stock:parseInt(v.stock||0)});
   }
   e.target.value='';renderWriteoffItems();
-  showToast(p.name+' ?????????','warn');
+  showToast(p.name+' added','warn');
 }
 
 function renderWriteoffItems(){
@@ -626,34 +626,34 @@ function renderWriteoffItems(){
   tbody.innerHTML=writeoffItems.map((item,i)=>`
     <tr>
       <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${item.barcode||item.sku}</code></td>
-      <td><b>${item.name}</b></td><td>${item.color||'?'}</td><td>${item.size||'?'}</td>
+      <td><b>${item.name}</b></td><td>${item.color||'-'}</td><td>${item.size||'-'}</td>
       <td>
         <div class="qty-ctrl">
-          <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">?</button>
+          <button onclick="writeoffItems[${i}].qty=Math.max(1,writeoffItems[${i}].qty-1);renderWriteoffItems()">-</button>
           <span>${item.qty}</span>
           <button onclick="writeoffItems[${i}].qty++;renderWriteoffItems()">+</button>
         </div>
       </td>
       <td>
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font-body)" onchange="writeoffItems[${i}].reason=this.value">
-          <option value="">??????...</option>
-          <option value="???????">???????</option>
-          <option value="?????????">?????????</option>
-          <option value="?????????">?????????</option>
-          <option value="????????">????????</option>
-          <option value="?????">?????</option>
+          <option value="">Choose...</option>
+          <option value="Damaged">Damaged</option>
+          <option value="Lost">Lost</option>
+          <option value="Expired">Expired</option>
+          <option value="Quality issue">Quality issue</option>
+          <option value="Other">Other</option>
         </select>
       </td>
-      <td><button class="remove-btn" onclick="writeoffItems.splice(${i},1);renderWriteoffItems()">?</button></td>
+      <td><button class="remove-btn" onclick="writeoffItems.splice(${i},1);renderWriteoffItems()">x</button></td>
     </tr>`).join('');
 }
 
 function confirmWriteoff(){
-  if(!writeoffItems.length){showToast('????? ????? ??','error');return;}
+  if(!writeoffItems.length){showToast('Add product first','error');return;}
   const missing=writeoffItems.filter(i=>!i.reason);
-  if(missing.length){showToast('??? ??????? ?????????? ??????? ??','error');return;}
+  if(missing.length){showToast('Choose a reason for every item','error');return;}
   document.getElementById('writeoff-confirm-list').innerHTML=
-    writeoffItems.map(i=>`<div>? ${i.name} (${i.color||'?'}, ${i.size||'?'}) ? ${i.qty} ? ? ${i.reason}</div>`).join('');
+    writeoffItems.map(i=>`<div>- ${i.name} (${i.color||'-'}, ${i.size||'-'}) x ${i.qty} - ${i.reason}</div>`).join('');
   openModal('modal-writeoff-confirm');
 }
 
@@ -664,16 +664,16 @@ async function doWriteoff(){
     quantity:i.qty,
     reason:i.reason
   })).filter(i=>i.variant_id&&i.quantity>0);
-  if(!items.length){showToast('?????? ??????? variant ???????? ???? ?????','error');return;}
+  if(!items.length){showToast('Write-off variant info missing','error');return;}
   try{
-    await apiPost('/api/writeoffs',{branch_id:1,items,note:'Warehouse write-off'});
+    await apiPost('/api/writeoffs',{items,note:'Warehouse write-off'});
   }catch(e){
-    showToast('?????? ?????? ?????: '+e.message,'error');
+    showToast('Write-off failed: '+e.message,'error');
     return;
   }
   allHistory.unshift({
     date:new Date().toLocaleDateString('mn-MN'),type:'writeoff',
-    product:writeoffItems.map(i=>i.name+'?'+i.qty).join(', '),qty,
+    product:writeoffItems.map(i=>i.name+'x'+i.qty).join(', '),qty,
     detail:writeoffItems.map(i=>i.reason).join(', '),user:currentUser
   });
   const tbody=document.getElementById('writeoff-history');
@@ -686,7 +686,7 @@ async function doWriteoff(){
   clearWriteoff();
   await loadProducts();
   await renderInventory();
-  showToast(qty+' ?????? ????? ??????????','warn');
+  showToast(qty+' item(s) written off','warn');
 }
 function clearWriteoff(){writeoffItems=[];renderWriteoffItems();}
 

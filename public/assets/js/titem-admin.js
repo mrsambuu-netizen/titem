@@ -1,5 +1,5 @@
 ﻿// ── API ──
-const API = window.API_BASE || 'https://hat.mn';
+const API = window.API_BASE || window.location.origin;
 let TOKEN=localStorage.getItem('admin_token')||'';
 
 async function handleApiError(res){

@@ -1,5 +1,5 @@
 // ── API CONFIG ──
-const API='';
+const API = window.API_BASE || 'https://hat.mn';
 let TOKEN=localStorage.getItem('pos_token')||'';
 let currentUser='',currentBranch=1,currentBranchName='';
 let PRODUCTS=[],BRANCHES_LIST=[];
@@ -54,7 +54,7 @@ async function doLogin(){
 
 async function loadBranches(){
   try{
-    const res=await fetch('/api/branches',{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
+    const res=await fetch(API+'/api/branches',{headers:TOKEN?{Authorization:'Bearer '+TOKEN}:{}});
     if(!res.ok)throw new Error(await res.text());
     BRANCHES_LIST=await res.json();
     const sel=document.getElementById('branch-select');

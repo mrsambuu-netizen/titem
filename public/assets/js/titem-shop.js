@@ -1,5 +1,5 @@
 ﻿// API
-const API = window.API_BASE || 'https://hat.mn';
+const API = window.API_BASE || window.location.origin;
 
 async function apiGet(url) {
   const res = await fetch(API + url);

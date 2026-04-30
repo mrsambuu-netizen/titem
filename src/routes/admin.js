@@ -1,5 +1,5 @@
 module.exports = function registeradmin(app, deps) {
-  const { pool, authMiddleware, optionalAuth, bcrypt, jwt, JWT_SECRET, path, rootDir } = deps;
+  const { pool, authMiddleware, optionalAuth, bcrypt, jwt, JWT_SECRET, path, rootDir, ensureWebsiteProductColumns } = deps;
 
 app.get('/api/suppliers', authMiddleware(['warehouse','admin','super_admin']), async (req, res) => {
   try {
@@ -227,6 +227,7 @@ app.put('/api/website/settings', authMiddleware(['admin','super_admin']), async 
 
 app.get('/api/website/products', async (req, res) => {
   try {
+    if (ensureWebsiteProductColumns) await ensureWebsiteProductColumns();
     const limit = Math.max(1, Math.min(parseInt(req.query.limit || '100'), 300));
     const result = await pool.query(
       `SELECT p.id, p.name, p.sku, p.price, p.discount_price, p.images, p.website_visible, p.website_featured,
@@ -248,6 +249,7 @@ app.get('/api/website/products', async (req, res) => {
 
 app.get('/api/website/admin', authMiddleware(['admin','super_admin']), async (req, res) => {
   try {
+    if (ensureWebsiteProductColumns) await ensureWebsiteProductColumns();
     const settings = await pool.query("SELECT value FROM website_settings WHERE key='homepage'");
     const products = await pool.query(
       `SELECT p.id, p.name, p.sku, p.price, p.images, p.website_visible, p.website_featured,
@@ -267,6 +269,7 @@ app.get('/api/website/admin', authMiddleware(['admin','super_admin']), async (re
 
 app.put('/api/website/products/:id', authMiddleware(['admin','super_admin']), async (req, res) => {
   try {
+    if (ensureWebsiteProductColumns) await ensureWebsiteProductColumns();
     const { website_visible, website_featured, website_sort_order, website_description, images } = req.body;
     const result = await pool.query(
       `UPDATE products SET

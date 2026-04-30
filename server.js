@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const { pool, initDB } = require('./src/db');
+const { pool, initDB, ensureWebsiteProductColumns } = require('./src/db');
 const createAuth = require('./src/middleware/auth');
 
 const app = express();
@@ -19,7 +19,7 @@ app.use(express.urlencoded({ limit: '20mb', extended: true }));
 app.use(express.static(path.join(rootDir, 'public')));
 
 const { authMiddleware, optionalAuth } = createAuth(JWT_SECRET);
-const deps = { pool, authMiddleware, optionalAuth, bcrypt, jwt, JWT_SECRET, path, rootDir };
+const deps = { pool, authMiddleware, optionalAuth, bcrypt, jwt, JWT_SECRET, path, rootDir, ensureWebsiteProductColumns };
 
 require('./src/routes/auth')(app, deps);
 require('./src/routes/products')(app, deps);
@@ -30,19 +30,22 @@ require('./src/routes/partners')(app, deps);
 require('./src/routes/admin')(app, deps);
 require('./src/routes/pages')(app, deps);
 
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('Database connection error:', err.message);
-  } else {
+async function startServer() {
+  try {
+    const client = await pool.connect();
     console.log('PostgreSQL connected');
-    release();
-    initDB();
+    client.release();
+    await initDB();
+    app.listen(PORT, () => {
+      console.log('TITEM ERP server running on port ' + PORT);
+    });
+  } catch (err) {
+    console.error('Database connection error:', err.message);
+    process.exit(1);
   }
-});
+}
 
-app.listen(PORT, () => {
-  console.log('TITEM ERP server running on port ' + PORT);
-});
+startServer();
 
 module.exports = app;
 

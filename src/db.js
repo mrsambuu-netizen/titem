@@ -14,6 +14,15 @@ const pool = new Pool({
   ssl: needsSsl ? { rejectUnauthorized: false } : false
 });
 
+async function ensureWebsiteProductColumns() {
+  await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS website_visible BOOLEAN DEFAULT true;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS website_featured BOOLEAN DEFAULT false;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS website_sort_order INTEGER DEFAULT 0;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS website_description TEXT;
+  `);
+}
+
 // ── МЭДЭЭЛЛИЙН САНГИЙН ХҮСНЭГТҮҮД ──
 async function initDB() {
   try {
@@ -191,12 +200,7 @@ async function initDB() {
 
 
     // Website product display settings
-    await pool.query(`
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_visible BOOLEAN DEFAULT true;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_featured BOOLEAN DEFAULT false;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_sort_order INTEGER DEFAULT 0;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS website_description TEXT;
-    `);
+    await ensureWebsiteProductColumns();
 
     // ── САЛБАР / ГЭРЭЭТ БОРЛУУЛАГЧ НЭМЭЛТ ТАЛБАРУУД ──
     await pool.query(`
@@ -386,6 +390,6 @@ async function seedData() {
   }
 }
 
-module.exports = { pool, initDB };
+module.exports = { pool, initDB, ensureWebsiteProductColumns };
 
 

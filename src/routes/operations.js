@@ -5,25 +5,62 @@ app.get('/api/inventory', authMiddleware(), async (req, res) => {
   try {
     const { branch_id } = req.query;
     const branchFilter = req.user.role === 'cashier' ? req.user.branch_id : branch_id;
-    const result = await pool.query(
-      `SELECT pv.id as variant_id, b.id as branch_id, p.name, p.sku, pv.color, pv.size, pv.barcode,
-        b.name as branch_name, i.quantity, i.min_quantity,
-        c.name as category_name,
-        CASE WHEN i.quantity = 0 THEN 'out'
-             WHEN i.quantity < i.min_quantity THEN 'low'
-             ELSE 'ok' END as status
-       FROM inventory i
-       JOIN product_variants pv ON i.variant_id = pv.id
-       JOIN products p ON pv.product_id = p.id
-       JOIN branches b ON i.branch_id = b.id
-       LEFT JOIN categories c ON p.category_id = c.id
-       WHERE p.is_active = true
-       ${branchFilter ? 'AND i.branch_id = $1' : ''}
-       ORDER BY p.name, pv.color, pv.size`,
-      branchFilter ? [branchFilter] : []
-    );
+    let result;
+
+    if (branchFilter) {
+      result = await pool.query(
+        `SELECT pv.id as variant_id,
+                $1::int as branch_id,
+                p.name,
+                p.sku,
+                pv.color,
+                pv.size,
+                pv.barcode,
+                COALESCE(b.name, 'Warehouse') as branch_name,
+                COALESCE(i.quantity, 0) as quantity,
+                COALESCE(i.min_quantity, 5) as min_quantity,
+                c.name as category_name,
+                CASE WHEN COALESCE(i.quantity,0) = 0 THEN 'out'
+                     WHEN COALESCE(i.quantity,0) < COALESCE(i.min_quantity,5) THEN 'low'
+                     ELSE 'ok' END as status
+         FROM product_variants pv
+         JOIN products p ON pv.product_id = p.id
+         LEFT JOIN categories c ON p.category_id = c.id
+         LEFT JOIN branches b ON b.id = $1
+         LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = $1
+         WHERE p.is_active = true
+         ORDER BY p.name, pv.color, pv.size`,
+        [parseInt(branchFilter)]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT pv.id as variant_id,
+                COALESCE(i.branch_id, 1) as branch_id,
+                p.name,
+                p.sku,
+                pv.color,
+                pv.size,
+                pv.barcode,
+                COALESCE(b.name, 'Warehouse') as branch_name,
+                COALESCE(i.quantity, 0) as quantity,
+                COALESCE(i.min_quantity, 5) as min_quantity,
+                c.name as category_name,
+                CASE WHEN COALESCE(i.quantity,0) = 0 THEN 'out'
+                     WHEN COALESCE(i.quantity,0) < COALESCE(i.min_quantity,5) THEN 'low'
+                     ELSE 'ok' END as status
+         FROM product_variants pv
+         JOIN products p ON pv.product_id = p.id
+         LEFT JOIN categories c ON p.category_id = c.id
+         LEFT JOIN inventory i ON i.variant_id = pv.id
+         LEFT JOIN branches b ON i.branch_id = b.id
+         WHERE p.is_active = true
+         ORDER BY p.name, pv.color, pv.size, COALESCE(i.branch_id,1)`
+      );
+    }
+
     res.json(result.rows);
   } catch (err) {
+    console.error('Inventory error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

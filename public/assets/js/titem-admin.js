@@ -1823,29 +1823,46 @@ async function regenerateSelectedBarcodes(){
   }
 }
 
+function ean13CheckDigit(first12){
+  const sum=String(first12).split('').reduce((total,digit,index)=>total+parseInt(digit,10)*(index%2===0?1:3),0);
+  return String((10-(sum%10))%10);
+}
+
+function normalizeEan13(code){
+  const digits=String(code||'').replace(/D/g,'');
+  if(digits.length===13) return digits;
+  const base=digits.padStart(12,'0').slice(-12);
+  return base+ean13CheckDigit(base);
+}
+
 function drawBarcode(svg, code, width, height){
-  // Энгийн баркод зурах (Code 128 хялбаршуулсан)
-  const encoded = code.replace(/[^0-9A-Z]/g,'');
-  const barWidth = width / (encoded.length * 8 + 20);
-  let x = barWidth * 5;
-  let bars = '';
+  const ean=normalizeEan13(code);
+  const leftOdd={0:'0001101',1:'0011001',2:'0010011',3:'0111101',4:'0100011',5:'0110001',6:'0101111',7:'0111011',8:'0110111',9:'0001011'};
+  const leftEven={0:'0100111',1:'0110011',2:'0011011',3:'0100001',4:'0011101',5:'0111001',6:'0000101',7:'0010001',8:'0001001',9:'0010111'};
+  const right={0:'1110010',1:'1100110',2:'1101100',3:'1000010',4:'1011100',5:'1001110',6:'1010000',7:'1000100',8:'1001000',9:'1110100'};
+  const parity={0:'OOOOOO',1:'OOEOEE',2:'OOEEOE',3:'OOEEEO',4:'OEOOEE',5:'OEEOOE',6:'OEEEOO',7:'OEOEOE',8:'OEOEEO',9:'OEEOEO'};
+  const digits=ean.split('').map(Number);
+  let bits='101';
+  const pattern=parity[digits[0]];
+  for(let i=1;i<=6;i++) bits+=(pattern[i-1]==='O'?leftOdd:leftEven)[digits[i]];
+  bits+='01010';
+  for(let i=7;i<=12;i++) bits+=right[digits[i]];
+  bits+='101';
 
-  // Start bar
-  bars += `<rect x="${x}" y="0" width="${barWidth*2}" height="${height*0.85}" fill="black"/>`;
-  x += barWidth * 3;
-
-  for(let c of encoded){
-    const n = parseInt(c, 36);
-    const pattern = [1,0,1,0,1,0,1,0].map((_,i)=>(n>>i)&1);
-    for(let bit of pattern){
-      if(bit) bars += `<rect x="${x}" y="0" width="${barWidth}" height="${height*0.85}" fill="black"/>`;
-      x += barWidth * 1.2;
+  const quiet=8;
+  const moduleWidth=width/(bits.length+quiet*2);
+  const barHeight=height*0.86;
+  let x=quiet*moduleWidth;
+  let bars='';
+  for(let i=0;i<bits.length;i++){
+    if(bits[i]==='1'){
+      const guard=i<3||(i>=45&&i<50)||i>=92;
+      bars+=`<rect x="${x.toFixed(2)}" y="0" width="${Math.max(1,moduleWidth).toFixed(2)}" height="${(guard?height:barHeight).toFixed(2)}" fill="black"/>`;
     }
+    x+=moduleWidth;
   }
-
-  // End bar
-  bars += `<rect x="${x}" y="0" width="${barWidth*2}" height="${height*0.85}" fill="black"/>`;
-  svg.innerHTML = bars;
+  svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
+  svg.innerHTML=bars;
 }
 
 // WEBSITE

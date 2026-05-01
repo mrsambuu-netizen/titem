@@ -285,26 +285,42 @@ app.post('/api/writeoffs', authMiddleware(['warehouse','admin','super_admin']), 
       const reason = item.reason || 'write-off';
       if (!variantId || quantity <= 0) throw new Error('Invalid variant or quantity');
 
-      const stock = await client.query(
-        'SELECT quantity FROM inventory WHERE variant_id=$1 AND branch_id=$2 FOR UPDATE',
+      const stockRows = await client.query(
+        `SELECT pv.id AS variant_id, i.quantity,
+                CASE WHEN pv.id = $1 THEN 0 ELSE 1 END AS sort_order
+         FROM inventory i
+         JOIN product_variants pv ON pv.id = i.variant_id
+         WHERE i.branch_id = $2
+           AND pv.product_id = (SELECT product_id FROM product_variants WHERE id = $1)
+           AND i.quantity > 0
+         ORDER BY sort_order, pv.id
+         FOR UPDATE OF i`,
         [variantId, branchId]
       );
-      const currentQty = parseInt(stock.rows[0]?.quantity || 0);
-      if (currentQty < quantity) {
-        throw new Error('Not enough warehouse stock for variant ' + variantId + '. Current stock: ' + currentQty);
+      const availableQty = stockRows.rows.reduce((sum, row) => sum + parseInt(row.quantity || 0), 0);
+      if (availableQty < quantity) {
+        throw new Error('Not enough warehouse stock. Current stock: ' + availableQty);
       }
 
-      const updated = await client.query(
-        'UPDATE inventory SET quantity = quantity - $1 WHERE variant_id=$2 AND branch_id=$3 RETURNING quantity',
-        [quantity, variantId, branchId]
-      );
-      if (!updated.rows.length) throw new Error('Inventory row not found for variant ' + variantId);
+      let remainingQty = quantity;
+      for (const row of stockRows.rows) {
+        if (remainingQty <= 0) break;
+        const currentQty = parseInt(row.quantity || 0);
+        if (currentQty <= 0) continue;
+        const deductQty = Math.min(currentQty, remainingQty);
 
-      await client.query(
-        `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, note, user_id)
-         VALUES ($1,$2,$3,'writeoff',$4,$5)`,
-        [variantId, branchId, quantity, reason + (note ? ' - ' + note : ''), req.user.id]
-      );
+        await client.query(
+          'UPDATE inventory SET quantity = quantity - $1 WHERE variant_id=$2 AND branch_id=$3',
+          [deductQty, row.variant_id, branchId]
+        );
+
+        await client.query(
+          `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, note, user_id)
+           VALUES ($1,$2,$3,'writeoff',$4,$5)`,
+          [row.variant_id, branchId, deductQty, reason + (note ? ' - ' + note : ''), req.user.id]
+        );
+        remainingQty -= deductQty;
+      }
       totalQty += quantity;
     }
     await client.query('COMMIT');

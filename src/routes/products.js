@@ -52,7 +52,9 @@ app.get('/api/products/:id', async (req, res) => {
     );
     if (!product.rows.length) return res.status(404).json({ error: 'Бараа олдсонгүй' });
     const variants = await pool.query(
-      `SELECT pv.*, COALESCE(SUM(i.quantity),0) as stock
+      `SELECT pv.*,
+              COALESCE(SUM(i.quantity),0) as stock,
+              COALESCE(SUM(CASE WHEN i.branch_id = 1 THEN i.quantity ELSE 0 END),0) as warehouse_stock
        FROM product_variants pv
        LEFT JOIN inventory i ON i.variant_id = pv.id
        WHERE pv.product_id = $1 GROUP BY pv.id`,

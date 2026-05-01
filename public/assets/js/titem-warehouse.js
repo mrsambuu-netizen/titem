@@ -642,7 +642,7 @@ function handleWriteoffBarcode(e){
   const v=found.variant;
   const ex=writeoffItems.find(i=>i.variant_id===v.id);
   if(ex){ex.qty++;} else {
-    writeoffItems.push({variant_id:v.id,sku:p.sku,barcode:v.barcode||code,name:p.name,color:v.color||'',size:v.size||'',qty:1,reason:'',stock:parseInt(v.stock||0)});
+    writeoffItems.push({variant_id:v.id,sku:p.sku,barcode:v.barcode||code,name:p.name,color:v.color||'',size:v.size||'',qty:1,reason:'',stock:parseInt((v.warehouse_stock ?? v.stock) || 0)});
   }
   e.target.value='';renderWriteoffItems();
   showToast(p.name+' added','warn');

@@ -33,6 +33,7 @@ async function apiPut(url,data){
 let today=new Date().toISOString().split('T')[0];
 let invFilter='all';
 let TRANSFER_PRODUCTS=[];
+let PRODUCT_REPORT_ROWS=[];
 
 // ── AUTH ──
 async function doLogin(){
@@ -743,24 +744,82 @@ async function loadProductReport(){
   try{
     const branch=document.getElementById('branch-filter')?.value || 'all';
     const branchQuery=branch && branch !== 'all' ? '&branch_id='+encodeURIComponent(branch) : '';
-    const data=await apiGet('/api/reports/products?days=30'+branchQuery);
-    document.getElementById('product-report-table').innerHTML=data.length ? data.map(p=>{
-      const sold=parseInt(p.sold_qty||0);
-      const revenue=parseInt(p.revenue||0);
-      const stock=parseInt(p.total_stock||0);
-      const speed=sold>=20?'\u0425\u0443\u0440\u0434\u0430\u043d':sold>=5?'\u0414\u0443\u043d\u0434':'\u0423\u0434\u0430\u0430\u043d';
-      const rating=sold>0 && stock>0?'OK':sold>0?'\u0414\u0443\u0443\u0441\u0441\u0430\u043d':'\u0428\u0430\u043b\u0433\u0430\u0445';
-      const badge=rating==='OK'?'badge-green':rating==='\u0414\u0443\u0443\u0441\u0441\u0430\u043d'?'badge-red':'badge-gray';
-      return '<tr>' +
-        '<td><b>'+p.name+'</b><br><span style="font-size:11px;color:var(--gray);font-family:monospace">'+(p.sku||'')+'</span></td>' +
-        '<td>'+sold+'</td>' +
-        '<td>\u20AE'+revenue.toLocaleString()+'</td>' +
-        '<td style="font-weight:700;color:'+(stock===0?'var(--red)':stock<=5?'var(--amber)':'var(--black)')+'">'+stock+'</td>' +
-        '<td><span class="badge badge-gray">'+speed+'</span></td>' +
-        '<td><span class="badge '+badge+'">'+rating+'</span></td>' +
-      '</tr>';
-    }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray)">\u0411\u0430\u0440\u0430\u0430\u043d\u044b \u0442\u0430\u0439\u043b\u0430\u043d \u0445\u043e\u043e\u0441\u043e\u043d \u0431\u0430\u0439\u043d\u0430</td></tr>';
+    PRODUCT_REPORT_ROWS=await apiGet('/api/reports/products?days=30'+branchQuery);
+    populateProductReportFilters();
+    renderProductReport();
   }catch(e){console.error('Product report error:',e);}
+}
+
+function productReportStatus(row){
+  const stock=parseInt(row.total_stock||0);
+  const min=parseInt(row.min_quantity||5);
+  if(stock===0) return 'out';
+  if(stock<min) return 'low';
+  return 'ok';
+}
+
+function populateProductReportFilters(){
+  const sel=document.getElementById('product-report-category');
+  if(!sel) return;
+  const current=sel.value;
+  const cats=[...new Set(PRODUCT_REPORT_ROWS.map(r=>r.category_name).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">All categories</option>'+cats.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  if(cats.includes(current)) sel.value=current;
+}
+
+function getFilteredProductReport(){
+  const q=(document.getElementById('product-report-search')?.value||'').toLowerCase().trim();
+  const cat=document.getElementById('product-report-category')?.value||'';
+  const status=document.getElementById('product-report-status')?.value||'';
+  return (PRODUCT_REPORT_ROWS||[]).filter(r=>{
+    const text=[r.sku,r.barcode,r.name,r.category_name].filter(Boolean).join(' ').toLowerCase();
+    if(q && !text.includes(q)) return false;
+    if(cat && r.category_name!==cat) return false;
+    if(status && productReportStatus(r)!==status) return false;
+    return true;
+  });
+}
+
+function renderProductReport(){
+  const table=document.getElementById('product-report-table');
+  if(!table) return;
+  const rows=getFilteredProductReport();
+  const labels={ok:'OK',low:'Low',out:'Out'};
+  const badges={ok:'badge-green',low:'badge-amber',out:'badge-red'};
+  table.innerHTML=rows.length ? rows.map(p=>{
+    const status=productReportStatus(p);
+    const warehouse=parseInt(p.warehouse_stock||0);
+    const branchStock=parseInt(p.branch_stock||0);
+    const total=parseInt(p.total_stock||0);
+    const sold=parseInt(p.sold_qty||0);
+    const revenue=parseInt(p.revenue||0);
+    return '<tr>'+
+      '<td><code style="font-size:11px;background:var(--gray-light);padding:2px 7px;border-radius:4px">'+(p.sku||'')+'</code><br><span style="font-size:11px;color:var(--gray)">'+(p.barcode||'?')+'</span></td>'+
+      '<td><b>'+p.name+'</b><br><span style="font-size:11px;color:var(--gray)">'+(p.variant_count||0)+' variant</span></td>'+
+      '<td>'+(p.category_name||'?')+'</td>'+
+      '<td style="font-weight:700">'+warehouse+'</td>'+
+      '<td>'+branchStock+'</td>'+
+      '<td style="font-weight:700;color:'+(total===0?'var(--red)':total<parseInt(p.min_quantity||5)?'var(--amber)':'var(--black)')+'">'+total+'</td>'+
+      '<td>'+sold+'</td>'+
+      '<td>?'+revenue.toLocaleString()+'</td>'+
+      '<td><span class="badge '+badges[status]+'">'+labels[status]+'</span></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray)">No product report data</td></tr>';
+}
+
+function downloadProductReportCSV(){
+  const rows=getFilteredProductReport();
+  const header=['SKU','Barcode','Name','Category','Warehouse','Branches','Total stock','Sold 30d','Revenue','Status'];
+  const labels={ok:'OK',low:'Low',out:'Out'};
+  const csv=[header].concat(rows.map(r=>[
+    r.sku||'',r.barcode||'',r.name||'',r.category_name||'',r.warehouse_stock||0,r.branch_stock||0,r.total_stock||0,r.sold_qty||0,r.revenue||0,labels[productReportStatus(r)]
+  ])).map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='titem-product-report.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ?? USERS ??

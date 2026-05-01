@@ -135,10 +135,20 @@ app.get('/api/reports/products', authMiddleware(['admin','super_admin']), async 
     const branchId = req.query.branch_id ? parseInt(req.query.branch_id) : null;
     const result = await pool.query(
       `WITH stock AS (
-         SELECT pv.product_id, COALESCE(SUM(i.quantity),0) AS total_stock
+         SELECT pv.product_id,
+                COALESCE(SUM(i.quantity),0) AS total_stock,
+                COALESCE(SUM(CASE WHEN i.branch_id = 1 THEN i.quantity ELSE 0 END),0) AS warehouse_stock,
+                COALESCE(SUM(CASE WHEN i.branch_id <> 1 THEN i.quantity ELSE 0 END),0) AS branch_stock,
+                COALESCE(MIN(i.min_quantity),5) AS min_quantity
          FROM product_variants pv
          LEFT JOIN inventory i ON i.variant_id = pv.id AND ($2::int IS NULL OR i.branch_id = $2)
          GROUP BY pv.product_id
+       ), variant_codes AS (
+         SELECT product_id,
+                MIN(NULLIF(barcode,'')) AS barcode,
+                COUNT(*) AS variant_count
+         FROM product_variants
+         GROUP BY product_id
        ), sales AS (
          SELECT pv.product_id,
                 COALESCE(SUM(oi.quantity),0) AS sold_qty,
@@ -151,19 +161,30 @@ app.get('/api/reports/products', authMiddleware(['admin','super_admin']), async 
            AND ($2::int IS NULL OR o.branch_id = $2)
          GROUP BY pv.product_id
        )
-       SELECT p.id, p.name, p.sku,
+       SELECT p.id,
+              p.name,
+              p.sku,
+              variant_codes.barcode,
+              c.name AS category_name,
+              COALESCE(stock.warehouse_stock,0) AS warehouse_stock,
+              COALESCE(stock.branch_stock,0) AS branch_stock,
+              COALESCE(stock.total_stock,0) AS total_stock,
+              COALESCE(stock.min_quantity,5) AS min_quantity,
               COALESCE(sales.sold_qty,0) AS sold_qty,
               COALESCE(sales.revenue,0) AS revenue,
-              COALESCE(stock.total_stock,0) AS total_stock
+              COALESCE(variant_codes.variant_count,0) AS variant_count
        FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
        LEFT JOIN stock ON stock.product_id = p.id
        LEFT JOIN sales ON sales.product_id = p.id
+       LEFT JOIN variant_codes ON variant_codes.product_id = p.id
        WHERE p.is_active = true
        ORDER BY COALESCE(sales.sold_qty,0) DESC, p.name`,
       [days, branchId]
     );
     res.json(result.rows);
   } catch (err) {
+    console.error('Product report error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

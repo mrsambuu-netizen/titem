@@ -645,13 +645,24 @@
         </div>
       </div>
 
-      <!-- БАРАА ТАЙЛАН -->
+      <!-- PRODUCT REPORT -->
       <div class="panel" id="panel-products">
         <div class="card">
-          <div class="card-title">Бараа гүйцэтгэлийн тайлан <span class="card-title-right">Сүүлийн 30 хоног</span></div>
+          <div class="card-title">Product report <span class="card-title-right">Last 30 days</span></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+            <input id="product-report-search" class="tf-input" placeholder="SKU / barcode / name" oninput="renderProductReport()" style="max-width:240px">
+            <select id="product-report-category" class="tf-select" onchange="renderProductReport()" style="max-width:190px"><option value="">All categories</option></select>
+            <select id="product-report-status" class="tf-select" onchange="renderProductReport()" style="max-width:180px">
+              <option value="">All status</option>
+              <option value="ok">OK</option>
+              <option value="low">Low</option>
+              <option value="out">Out</option>
+            </select>
+            <button class="btn-transfer" onclick="downloadProductReportCSV()" style="padding:9px 16px">Download CSV</button>
+          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Бараа</th><th>Зарсан тоо</th><th>Орлого</th><th>Үлдэгдэл</th><th>Борлуулалтын хурд</th><th>Үнэлгээ</th></tr></thead>
+              <thead><tr><th>SKU / Barcode</th><th>Product</th><th>Category</th><th>Warehouse</th><th>Branches</th><th>Total</th><th>Sold 30d</th><th>Revenue</th><th>Status</th></tr></thead>
               <tbody id="product-report-table"></tbody>
             </table>
           </div>
@@ -919,6 +930,6 @@
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
-<script src="/assets/js/titem-admin.js?v=20260501-transfersearch"></script>
+<script src="/assets/js/titem-admin.js?v=20260501-productreport2"></script>
 </body>
 </html>

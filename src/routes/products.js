@@ -241,8 +241,17 @@ app.post('/api/products/:id/variants', authMiddleware(['admin','super_admin']), 
   }
 });
 
+function ean13CheckDigit(first12) {
+  const sum = first12.split('').reduce((total, digit, index) => {
+    const n = parseInt(digit, 10);
+    return total + n * (index % 2 === 0 ? 1 : 3);
+  }, 0);
+  return String((10 - (sum % 10)) % 10);
+}
+
 function makeBarcode() {
-  return `6900${String(Date.now()).slice(-7)}${Math.floor(Math.random() * 10)}`;
+  const base = ('690' + String(Date.now()).slice(-8) + String(Math.floor(Math.random() * 10))).slice(0, 12);
+  return base + ean13CheckDigit(base);
 }
 
 async function makeUniqueBarcode(client) {

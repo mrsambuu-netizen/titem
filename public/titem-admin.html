@@ -243,7 +243,8 @@
             </div>
             <div>
               <label class="tf-label">Бараа</label>
-              <select class="tf-select" id="tf-product"></select>
+                            <input class="tf-input" id="tf-product-search" placeholder="Code / barcode / name" oninput="filterTransferProducts(this.value)" style="margin-bottom:8px">
+<select class="tf-select" id="tf-product"></select>
             </div>
             <div>
               <label class="tf-label">Тоо</label>
@@ -918,6 +919,6 @@
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
-<script src="/assets/js/titem-admin.js?v=20260429-apiorigin"></script>
+<script src="/assets/js/titem-admin.js?v=20260501-transfersearch"></script>
 </body>
 </html>

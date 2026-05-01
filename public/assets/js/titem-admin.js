@@ -32,6 +32,7 @@ async function apiPut(url,data){
 
 let today=new Date().toISOString().split('T')[0];
 let invFilter='all';
+let TRANSFER_PRODUCTS=[];
 
 // ── AUTH ──
 async function doLogin(){
@@ -970,15 +971,35 @@ async function loadTransferProducts(){
   if(!fromSel || !productSel || !fromSel.value) return;
   try{
     const rows=await apiGet('/api/inventory?branch_id='+encodeURIComponent(fromSel.value));
-    const available=(rows||[]).filter(r=>parseInt(r.quantity||0)>0 && r.variant_id);
-    productSel.innerHTML=available.length ? available.map(r=>{
-      const detail=[r.color,r.size].filter(Boolean).join(' / ');
-      const label=r.name+(detail?' - '+detail:'')+' ('+r.quantity+')';
-      return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'">'+label+'</option>';
-    }).join('') : '<option value="">Үлдэгдэлтэй бараа алга</option>';
+    TRANSFER_PRODUCTS=(rows||[]).filter(r=>parseInt(r.quantity||0)>0 && r.variant_id);
+    const search=document.getElementById('tf-product-search');
+    if(search) search.value='';
+    renderTransferProductOptions(TRANSFER_PRODUCTS);
   }catch(e){
-    productSel.innerHTML='<option value="">Бараа татахад алдаа</option>';
+    TRANSFER_PRODUCTS=[];
+    productSel.innerHTML='<option value="">Product load error</option>';
   }
+}
+
+function renderTransferProductOptions(rows){
+  const productSel=document.getElementById('tf-product');
+  if(!productSel) return;
+  productSel.innerHTML=rows.length ? rows.map(r=>{
+    const detail=[r.color,r.size].filter(Boolean).join(' / ');
+    const code=r.barcode||r.sku||'';
+    const label=(code?code+' - ':'')+r.name+(detail?' - '+detail:'')+' ('+r.quantity+')';
+    return '<option value="'+r.variant_id+'" data-stock="'+r.quantity+'" data-sku="'+(r.sku||'')+'" data-barcode="'+(r.barcode||'')+'">'+label+'</option>';
+  }).join('') : '<option value="">No stock products</option>';
+}
+
+function filterTransferProducts(query){
+  const q=String(query||'').toLowerCase().trim();
+  if(!q){renderTransferProductOptions(TRANSFER_PRODUCTS);return;}
+  const filtered=TRANSFER_PRODUCTS.filter(r=>{
+    const text=[r.sku,r.barcode,r.name,r.color,r.size].filter(Boolean).join(' ').toLowerCase();
+    return text.includes(q);
+  });
+  renderTransferProductOptions(filtered);
 }
 
 function renderTransfers(){

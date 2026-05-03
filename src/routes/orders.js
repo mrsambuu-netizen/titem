@@ -26,17 +26,35 @@ app.post('/api/orders', optionalAuth, async (req, res) => {
       const variantId = item.variant_id ? parseInt(item.variant_id) : null;
       const quantity = parseInt(item.quantity) || 0;
       const price = parseInt(item.price) || 0;
-      if (quantity <= 0) throw new Error('Захиалгын тоо буруу байна');
+      if (quantity <= 0) throw new Error('Invalid order quantity');
+
+      if (variantId) {
+        const stock = await client.query(
+          'SELECT quantity FROM inventory WHERE variant_id = $1 AND branch_id = $2 FOR UPDATE',
+          [variantId, orderBranchId]
+        );
+        const currentQty = parseInt(stock.rows[0]?.quantity || 0);
+        if (!stock.rows.length || currentQty < quantity) {
+          throw new Error('Not enough stock for sale. Current stock: ' + currentQty);
+        }
+      }
+
       await client.query(
         `INSERT INTO order_items (order_id, variant_id, product_name, color, size, quantity, unit_price, total_price)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [order.rows[0].id, variantId, item.name, item.color, item.size, quantity, price, price * quantity]
       );
       if (variantId) {
-        await client.query(
-          `UPDATE inventory SET quantity = quantity - $1 WHERE variant_id = $2 AND branch_id = $3`,
+        const updated = await client.query(
+          `UPDATE inventory
+           SET quantity = quantity - $1
+           WHERE variant_id = $2 AND branch_id = $3 AND quantity >= $1
+           RETURNING quantity`,
           [quantity, variantId, orderBranchId]
         );
+        if (!updated.rows.length) {
+          throw new Error('Not enough stock for sale');
+        }
         await client.query(
           `INSERT INTO stock_movements (variant_id, from_branch_id, quantity, movement_type, reference_id, user_id)
            VALUES ($1,$2,$3,'sale',$4,$5)`,
@@ -49,7 +67,8 @@ app.post('/api/orders', optionalAuth, async (req, res) => {
     res.json({ success: true, order: order.rows[0] });
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ error: err.message });
+    const status = err.message.includes('Not enough stock') || err.message.includes('Invalid order quantity') ? 400 : 500;
+    res.status(status).json({ error: err.message });
   } finally {
     client.release();
   }

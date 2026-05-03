@@ -3,22 +3,30 @@ module.exports = function registerproducts(app, deps) {
 
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, search, limit = 100 } = req.query;
-    
-    let conditions = ["p.is_active = true"];
-    let params = [];
-    let idx = 1;
-    
+    const { category, search, branch_id, limit = 100 } = req.query;
+    const conditions = ["p.is_active = true"];
+    const params = [];
+    const addParam = (value) => {
+      params.push(value);
+      return '$' + params.length;
+    };
+
     if (category && category !== 'all') {
-      conditions.push(`c.slug = $${idx++}`);
-      params.push(category);
+      conditions.push(`c.slug = ${addParam(category)}`);
     }
     if (search) {
-      conditions.push(`(p.name ILIKE $${idx++} OR p.sku ILIKE $${idx++})`);
-      params.push(`%${search}%`, `%${search}%`);
-      idx--;
+      const q1 = addParam(`%${search}%`);
+      const q2 = addParam(`%${search}%`);
+      conditions.push(`(p.name ILIKE ${q1} OR p.sku ILIKE ${q2})`);
     }
-    
+
+    const branchId = parseInt(branch_id);
+    const inventoryJoin = branchId > 0
+      ? `LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = ${addParam(branchId)}`
+      : 'LEFT JOIN inventory i ON i.variant_id = pv.id';
+    const safeLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 500);
+    const limitParam = addParam(safeLimit);
+
     const query = `
       SELECT p.id, p.name, p.sku, p.price, p.wholesale_price, p.discount_price,
         p.description, p.images, p.is_active, p.created_at,
@@ -27,14 +35,13 @@ app.get('/api/products', async (req, res) => {
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_variants pv ON pv.product_id = p.id
-      LEFT JOIN inventory i ON i.variant_id = pv.id
+      ${inventoryJoin}
       WHERE ${conditions.join(' AND ')}
       GROUP BY p.id, c.name
       ORDER BY p.name ASC
-      LIMIT $${idx}
+      LIMIT ${limitParam}
     `;
-    params.push(parseInt(limit));
-    
+
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
@@ -50,15 +57,22 @@ app.get('/api/products/:id', async (req, res) => {
       'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = $1',
       [req.params.id]
     );
-    if (!product.rows.length) return res.status(404).json({ error: 'Бараа олдсонгүй' });
+    if (!product.rows.length) return res.status(404).json({ error: 'Product not found' });
+
+    const branchId = parseInt(req.query.branch_id);
+    const variantParams = branchId > 0 ? [req.params.id, branchId] : [req.params.id];
+    const inventoryJoin = branchId > 0
+      ? 'LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = $2'
+      : 'LEFT JOIN inventory i ON i.variant_id = pv.id';
+
     const variants = await pool.query(
       `SELECT pv.*,
               COALESCE(SUM(i.quantity),0) as stock,
               COALESCE(SUM(CASE WHEN i.branch_id = 1 THEN i.quantity ELSE 0 END),0) as warehouse_stock
        FROM product_variants pv
-       LEFT JOIN inventory i ON i.variant_id = pv.id
+       ${inventoryJoin}
        WHERE pv.product_id = $1 GROUP BY pv.id`,
-      [req.params.id]
+      variantParams
     );
     res.json({ ...product.rows[0], variants: variants.rows });
   } catch (err) {
@@ -301,16 +315,24 @@ app.post('/api/barcodes/generate', authMiddleware(['admin','super_admin']), asyn
 // ── БАРКОДООР БАРАА ХАЙХ ──
 app.get('/api/barcode/:barcode', async (req, res) => {
   try {
+    const branchId = parseInt(req.query.branch_id);
+    const params = branchId > 0 ? [req.params.barcode, branchId] : [req.params.barcode];
+    const inventoryJoin = branchId > 0
+      ? 'LEFT JOIN inventory i ON i.variant_id = pv.id AND i.branch_id = $2'
+      : 'LEFT JOIN inventory i ON i.variant_id = pv.id';
+
     const result = await pool.query(
       `SELECT pv.*, p.name, p.price, p.wholesale_price, p.sku as product_sku,
-        c.name as category_name
+        c.name as category_name, COALESCE(SUM(i.quantity),0) as stock
        FROM product_variants pv
        JOIN products p ON pv.product_id = p.id
        JOIN categories c ON p.category_id = c.id
-       WHERE pv.barcode = $1`,
-      [req.params.barcode]
+       ${inventoryJoin}
+       WHERE pv.barcode = $1
+       GROUP BY pv.id, p.id, c.name`,
+      params
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Баркод олдсонгүй' });
+    if (!result.rows.length) return res.status(404).json({ error: 'Barcode not found' });
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });

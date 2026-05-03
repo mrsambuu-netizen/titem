@@ -240,37 +240,68 @@ app.post('/api/cash/close', authMiddleware(['cashier','admin']), async (req, res
 app.post('/api/transfers', authMiddleware(['warehouse','admin','super_admin']), async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     const { items, from_branch_id, to_branch_id, note } = req.body;
+    const fromBranchId = parseInt(from_branch_id);
+    const toBranchId = parseInt(to_branch_id);
+
+    if (!fromBranchId || !toBranchId) {
+      return res.status(400).json({ error: 'Select source and destination branch' });
+    }
+    if (fromBranchId === toBranchId) {
+      return res.status(400).json({ error: 'Source and destination cannot be the same' });
+    }
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ error: 'No transfer items selected' });
+    }
+
+    await client.query('BEGIN');
+    let totalQty = 0;
     for (const item of items) {
-      const stock = await client.query(
-        'SELECT quantity FROM inventory WHERE variant_id=$1 AND branch_id=$2',
-        [item.variant_id, from_branch_id]
-      );
-      if (!stock.rows.length || stock.rows[0].quantity < item.quantity) {
-        throw new Error(`Үлдэгдэл хүрэлцэхгүй: variant ${item.variant_id}`);
+      const variantId = parseInt(item.variant_id);
+      const quantity = parseInt(item.quantity || 0);
+      if (!variantId || quantity <= 0) {
+        throw new Error('Invalid transfer item');
       }
-      await client.query(
-        'UPDATE inventory SET quantity = quantity - $1 WHERE variant_id=$2 AND branch_id=$3',
-        [item.quantity, item.variant_id, from_branch_id]
+
+      const stock = await client.query(
+        'SELECT quantity FROM inventory WHERE variant_id=$1 AND branch_id=$2 FOR UPDATE',
+        [variantId, fromBranchId]
       );
+      const currentQty = parseInt(stock.rows[0]?.quantity || 0);
+      if (!stock.rows.length || currentQty < quantity) {
+        throw new Error('Not enough stock for transfer. Current stock: ' + currentQty);
+      }
+
+      const updated = await client.query(
+        `UPDATE inventory
+         SET quantity = quantity - $1
+         WHERE variant_id=$2 AND branch_id=$3 AND quantity >= $1
+         RETURNING quantity`,
+        [quantity, variantId, fromBranchId]
+      );
+      if (!updated.rows.length) {
+        throw new Error('Not enough stock for transfer');
+      }
+
       await client.query(
         `INSERT INTO inventory (variant_id, branch_id, quantity)
          VALUES ($1,$2,$3)
          ON CONFLICT (variant_id, branch_id) DO UPDATE SET quantity = inventory.quantity + $3`,
-        [item.variant_id, to_branch_id, item.quantity]
+        [variantId, toBranchId, quantity]
       );
       await client.query(
         `INSERT INTO stock_movements (variant_id, from_branch_id, to_branch_id, quantity, movement_type, note, user_id)
          VALUES ($1,$2,$3,$4,'transfer',$5,$6)`,
-        [item.variant_id, from_branch_id, to_branch_id, item.quantity, note, req.user.id]
+        [variantId, fromBranchId, toBranchId, quantity, note || '', req.user.id]
       );
+      totalQty += quantity;
     }
     await client.query('COMMIT');
-    res.json({ success: true, message: `${items.length} бараа шилжүүлэгдлээ` });
+    res.json({ success: true, message: 'Transfer completed', total_quantity: totalQty });
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ error: err.message });
+    const status = err.message.includes('Not enough stock') || err.message.includes('Invalid transfer') ? 400 : 500;
+    res.status(status).json({ error: err.message });
   } finally {
     client.release();
   }

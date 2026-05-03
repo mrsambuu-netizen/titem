@@ -369,11 +369,11 @@ function clearInvSearchSort(){
 }
 
 function isWarehouseInventoryRow(row){
-  return parseInt(row.branch_id||0)===1 || row.branch_name==='???????' || row.branch_name==='Warehouse';
+  return parseInt(row.branch_id||0)===1 || row.branch_name==='Warehouse';
 }
 
 function invDetailSafe(value){
-  return String(value == null || value === '' ? '?' : value).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];});
+  return String(value == null || value === '' ? '-' : value).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];});
 }
 
 function invQtyHtml(q){
@@ -388,7 +388,7 @@ function ensureInventoryDetailModal(){
   modal=document.createElement('div');
   modal.id='inventory-detail-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px';
-  modal.innerHTML='<div style="background:#fff;width:min(980px,96vw);max-height:88vh;overflow:auto;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.22)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--gray-light)"><div><div id="inventory-detail-title" style="font-family:var(--font-head);font-size:22px;font-weight:400"></div><div id="inventory-detail-sub" style="font-size:12px;color:var(--gray);margin-top:4px"></div></div><button onclick="closeInventoryDetail()" style="border:1px solid var(--gray-light);background:#fff;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:20px;line-height:1">?</button></div><div id="inventory-detail-body" style="padding:18px 20px"></div></div>';
+  modal.innerHTML='<div style="background:#fff;width:min(980px,96vw);max-height:88vh;overflow:auto;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.22)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--gray-light)"><div><div id="inventory-detail-title" style="font-family:var(--font-head);font-size:22px;font-weight:400"></div><div id="inventory-detail-sub" style="font-size:12px;color:var(--gray);margin-top:4px"></div></div><button onclick="closeInventoryDetail()" style="border:1px solid var(--gray-light);background:#fff;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:20px;line-height:1">x</button></div><div id="inventory-detail-body" style="padding:18px 20px"></div></div>';
   modal.addEventListener('click',function(e){if(e.target===modal) closeInventoryDetail();});
   document.body.appendChild(modal);
   return modal;
@@ -405,27 +405,27 @@ function showInventoryDetail(encodedKey){
   if(!group) return;
   const modal=ensureInventoryDetailModal();
   const rows=group.details||[];
-  const branchNames=[...new Set(rows.map(r=>r.branch_name||'?'))].sort((a,b)=>{
-    if(a==='???????'||a==='Warehouse') return -1;
-    if(b==='???????'||b==='Warehouse') return 1;
+  const branchNames=[...new Set(rows.map(r=>r.branch_name||'-'))].sort((a,b)=>{
+    if(a==='Warehouse') return -1;
+    if(b==='Warehouse') return 1;
     return a.localeCompare(b,'mn');
   });
   const variantMap={};
   rows.forEach(r=>{
-    const variantKey=[r.color||'?',r.size||'?',r.barcode||''].join('|');
-    if(!variantMap[variantKey]) variantMap[variantKey]={color:r.color||'?',size:r.size||'?',barcode:r.barcode||'',sku:r.sku||group.sku||'',total:0,branches:{}};
+    const variantKey=[r.color||'-',r.size||'-',r.barcode||''].join('|');
+    if(!variantMap[variantKey]) variantMap[variantKey]={color:r.color||'-',size:r.size||'-',barcode:r.barcode||'',sku:r.sku||group.sku||'',total:0,branches:{}};
     const qty=parseInt(r.quantity||0);
     variantMap[variantKey].total+=qty;
-    const b=r.branch_name||'?';
+    const b=r.branch_name||'-';
     variantMap[variantKey].branches[b]=(variantMap[variantKey].branches[b]||0)+qty;
   });
   const variants=Object.values(variantMap).sort((a,b)=>(a.color||'').localeCompare(b.color||'','mn') || (a.size||'').localeCompare(b.size||'','mn'));
   const negative=rows.filter(r=>parseInt(r.quantity||0)<0).length;
-  document.getElementById('inventory-detail-title').textContent=(group.name||'?????')+' - '+(group.sku||'');
-  document.getElementById('inventory-detail-sub').textContent='???? / ?????? / ???????? ????????. ????: '+group.total+' ??????'+(negative?' ? ????? ???????? ?????: '+negative:'');
-  const header='<tr><th>????</th><th>??????</th><th>Barcode</th>'+branchNames.map(b=>'<th>'+invDetailSafe(b)+'</th>').join('')+'<th>????</th></tr>';
+  document.getElementById('inventory-detail-title').textContent=(group.name||'Бараа')+' - '+(group.sku||'');
+  document.getElementById('inventory-detail-sub').textContent='Color / size / branch stock. Total: '+group.total+' pcs'+(negative?' - Negative rows: '+negative:'');
+  const header='<tr><th>Өнгө</th><th>Размер</th><th>Barcode</th>'+branchNames.map(b=>'<th>'+invDetailSafe(b)+'</th>').join('')+'<th>Нийт</th></tr>';
   const body=variants.map(v=>'<tr><td><b>'+invDetailSafe(v.color)+'</b></td><td>'+invDetailSafe(v.size)+'</td><td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">'+invDetailSafe(v.barcode||v.sku)+'</span></td>'+branchNames.map(b=>'<td>'+invQtyHtml(v.branches[b]||0)+'</td>').join('')+'<td>'+invQtyHtml(v.total)+'</td></tr>').join('');
-  document.getElementById('inventory-detail-body').innerHTML='<div style="overflow:auto"><table style="min-width:720px;width:100%;border-collapse:collapse;font-size:13px"><thead>'+header+'</thead><tbody>'+body+'</tbody></table></div>'+(negative?'<div style="margin-top:12px;color:var(--red);font-size:12px;font-weight:600">??????: ????? ???????? ?? ????? ????? ??????????/??????????? ?????? ???? ?????. ?????????? ????? ????????.</div>':'');
+  document.getElementById('inventory-detail-body').innerHTML='<div style="overflow:auto"><table style="min-width:720px;width:100%;border-collapse:collapse;font-size:13px"><thead>'+header+'</thead><tbody>'+body+'</tbody></table></div>'+(negative?'<div style="margin-top:12px;color:var(--red);font-size:12px;font-weight:600">Warning: negative stock exists. Fix with stock adjustment.</div>':'');
   modal.style.display='flex';
 }
 
@@ -466,21 +466,21 @@ function renderInventory(){
     return 0;
   });
 
-  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || '??? ??????';
-  document.getElementById('inv-count').textContent=list.length+' ????? ? '+branchText;
+  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || 'Бүх салбар';
+  document.getElementById('inv-count').textContent=list.length+' бараа - '+branchText;
   document.getElementById('inv-table').innerHTML=list.length ? list.map(i=>{
     const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
-    const sl=i.status==='ok'?'??????????':i.status==='low'?'???????? ?????':'???????';
+    const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
     const qtyColor=i.total<0?'var(--red)':i.total===0?'var(--red)':i.total<i.min?'var(--amber)':'var(--black)';
     return '<tr>'+
-      '<td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">'+(i.sku||'?')+'</span></td>'+
+      '<td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">'+(i.sku||'-')+'</span></td>'+
       '<td><b>'+invDetailSafe(i.name)+'</b></td><td>'+invDetailSafe(i.cat)+'</td>'+
       '<td style="font-weight:700;font-size:16px;color:'+qtyColor+'">'+i.total+'</td>'+
       '<td>'+i.warehouse+'</td><td>'+i.branches+'</td><td>'+i.min+'</td>'+
       '<td><span class="badge '+sc+'">'+sl+'</span></td>'+
-      '<td><button class="inv-filter" style="padding:7px 10px" onclick="showInventoryDetail(\''+encodeURIComponent(i.key)+'\')">???????????</button></td>'+
+      '<td><button class="inv-filter" style="padding:7px 10px" onclick="showInventoryDetail(\''+encodeURIComponent(i.key)+'\')">Дэлгэрэнгүй</button></td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray)">????? ?????????</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
 }
 
 

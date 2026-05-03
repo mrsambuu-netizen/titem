@@ -96,7 +96,7 @@ async function loadProducts(){
   try{
     const grid=document.getElementById('product-grid-pos');
     grid.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:#888">Бараа ачааллаж байна...</div>';
-    const data=await apiGet('/api/products?limit=100');
+    const data=await apiGet('/api/products?limit=100&branch_id='+encodeURIComponent(currentBranch));
     PRODUCTS=data.map(p=>({
       id:p.id,
       name:p.name,
@@ -110,7 +110,7 @@ async function loadProducts(){
     // Variant татах
     for(const p of PRODUCTS){
       try{
-        const detail=await apiGet('/api/products/'+p.id);
+        const detail=await apiGet('/api/products/'+p.id+'?branch_id='+encodeURIComponent(currentBranch));
         p.colors=[...new Set((detail.variants||[]).map(v=>v.color).filter(Boolean))];
         p.sizes=[...new Set((detail.variants||[]).map(v=>v.size).filter(Boolean))];
         p.variants=detail.variants||[];
@@ -163,7 +163,7 @@ async function handleBarcode(e){
   if(e.key!=='Enter')return;
   const barcode=e.target.value.trim();
   try{
-    const v=await apiGet('/api/barcode/'+encodeURIComponent(barcode));
+    const v=await apiGet('/api/barcode/'+encodeURIComponent(barcode)+'?branch_id='+encodeURIComponent(currentBranch));
     const prod=PRODUCTS.find(p=>p.id===v.product_id);
     if(prod){
       const key=v.id+'-'+v.color+'-'+v.size;

@@ -410,64 +410,108 @@ async function confirmDistribute(){
 function clearDist(){distItems=[];renderDistItems();}
 
 // ── INVENTORY ──
+function whInvSafe(value){
+  return String(value == null || value === '' ? '-' : value).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];});
+}
+function whInvQtyHtml(q){
+  const qty=parseInt(q||0);
+  const color=qty<0?'var(--red)':qty===0?'var(--gray)':qty<5?'var(--amber)':'var(--green)';
+  return '<span style="font-weight:700;color:'+color+'">'+qty+'</span>';
+}
+function ensureWhInventoryDetailModal(){
+  let modal=document.getElementById('wh-inventory-detail-modal');
+  if(modal) return modal;
+  modal=document.createElement('div');
+  modal.id='wh-inventory-detail-modal';
+  modal.className='modal-overlay';
+  modal.innerHTML='<div class="modal" style="max-width:760px"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px"><div><div class="modal-title" id="wh-inv-detail-title"></div><div class="modal-sub" id="wh-inv-detail-sub"></div></div><button class="mini-action" onclick="closeWhInventoryDetail()">Close</button></div><div id="wh-inv-detail-body"></div></div>';
+  modal.addEventListener('click',function(e){if(e.target===modal) closeWhInventoryDetail();});
+  document.body.appendChild(modal);
+  return modal;
+}
+function closeWhInventoryDetail(){
+  const modal=document.getElementById('wh-inventory-detail-modal');
+  if(modal) modal.classList.remove('show');
+}
+function showWarehouseInventoryDetail(encodedSku){
+  const sku=decodeURIComponent(encodedSku);
+  const row=(window.WH_INV_DETAIL_GROUPS||{})[sku];
+  if(!row) return;
+  const modal=ensureWhInventoryDetailModal();
+  const variants=(row.variants||[]).slice().sort((a,b)=>(a.color||'').localeCompare(b.color||'','mn') || (a.size||'').localeCompare(b.size||'','mn'));
+  const negative=variants.filter(v=>parseInt(v.quantity||0)<0).length;
+  document.getElementById('wh-inv-detail-title').textContent=(row.name||'Бараа')+' - '+(row.sku||'');
+  document.getElementById('wh-inv-detail-sub').textContent='Warehouse color / size stock. Total: '+row.warehouse+' pcs'+(negative?' - Negative rows: '+negative:'');
+  document.getElementById('wh-inv-detail-body').innerHTML='<div style="overflow:auto"><table class="main-table" style="min-width:620px"><thead><tr><th>Өнгө</th><th>Размер</th><th>Barcode</th><th>Агуулах</th><th>Доод хэмжээ</th><th>Статус</th></tr></thead><tbody>'+variants.map(v=>{
+    const qty=parseInt(v.quantity||0);
+    const min=parseInt(v.min_quantity||5);
+    const st=qty===0?'out':qty<min?'low':'ok';
+    const sc=st==='ok'?'badge-green':st==='low'?'badge-amber':'badge-red';
+    const sl=st==='ok'?'Хангалттай':st==='low'?'Дутагдаж байна':'Дууссан';
+    return '<tr><td><b>'+whInvSafe(v.color)+'</b></td><td>'+whInvSafe(v.size)+'</td><td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">'+whInvSafe(v.barcode||v.sku)+'</span></td><td>'+whInvQtyHtml(qty)+'</td><td>'+min+'</td><td><span class="badge '+sc+'">'+sl+'</span></td></tr>';
+  }).join('')+'</tbody></table></div>'+(negative?'<div style="margin-top:12px;color:var(--red);font-size:12px;font-weight:600">Warning: negative stock exists. Fix with stock adjustment.</div>':'');
+  modal.classList.add('show');
+}
 async function renderInventory(){
   const tbody=document.getElementById('inv-table-body');
-  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">Ачааллаж байна...</td></tr>';
+  tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#888">Ачааллаж байна...</td></tr>';
   try{
     const invData=await apiGet('/api/inventory?branch_id=1');
     const stockMap={};
     invData.forEach(i=>{
       const key=i.sku;
-      if(!stockMap[key]) stockMap[key]={warehouse:0,name:i.name,cat:i.category_name||'',variants:[]};
+      if(!stockMap[key]) stockMap[key]={sku:i.sku,warehouse:0,name:i.name,cat:i.category_name||'',variants:[]};
       stockMap[key].warehouse+=parseInt(i.quantity||0);
       stockMap[key].variants.push(i);
     });
+    window.WH_INV_DETAIL_GROUPS=stockMap;
 
     const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
     const sort=document.getElementById('inv-sort')?.value||'';
     let filteredProducts=PRODUCTS.filter(p=>{
-      const text=`${p.sku||''} ${p.name||''} ${p.cat||''}`.toLowerCase();
-      return text.includes(search);
+      const text=String(p.sku||'')+' '+String(p.name||'')+' '+String(p.cat||'');
+      return text.toLowerCase().includes(search);
     });
     filteredProducts.sort((a,b)=>{
       const aw=stockMap[a.sku]?.warehouse||0;
       const bw=stockMap[b.sku]?.warehouse||0;
       if(sort==='stock-asc') return aw-bw;
       if(sort==='stock-desc') return bw-aw;
-      if(sort==='name-asc') return (a.name||'').localeCompare(b.name||'');
+      if(sort==='name-asc') return (a.name||'').localeCompare(b.name||'','mn');
       return 0;
     });
 
     const reorder=[];
     lastInventoryRows=filteredProducts.map(p=>{
-      const inv=stockMap[p.sku]||{warehouse:0,variants:[]};
+      const inv=stockMap[p.sku]||{sku:p.sku,name:p.name,cat:p.cat,warehouse:0,variants:[]};
       const warehouseStock=inv.warehouse;
       if(warehouseStock<5) reorder.push({sku:p.sku,name:p.name,need:Math.max(0,15-warehouseStock),stock:warehouseStock});
       const st=warehouseStock===0?'out':warehouseStock<5?'low':'ok';
       const sc=st==='ok'?'badge-green':st==='low'?'badge-amber':'badge-red';
       const sl=st==='ok'?'Хангалттай':st==='low'?'Дутагдаж байна':'Дууссан';
-      const variantText=(p.variants||[]).slice(0,4).map(v=>`${v.color||'-'} / ${v.size||'-'}`).join(' · ');
-      return {p,warehouseStock,sc,sl,variantText};
+      const variantText=(inv.variants||[]).slice(0,4).map(v=>(v.color||'-')+' / '+(v.size||'-')+' ('+parseInt(v.quantity||0)+')').join(' - ');
+      return {p,warehouseStock,sc,sl,variantText,variants:inv.variants||[]};
     });
 
     document.getElementById('reorder-box').innerHTML=reorder.length
-      ? '⚠️ Reorder санал: '+reorder.slice(0,8).map(r=>`<b>${r.sku}</b> ${r.need}ш`).join(' · ')
-      : '✅ Reorder шаардлагатай бараа алга байна';
+      ? 'Reorder: '+reorder.slice(0,8).map(r=>'<b>'+r.sku+'</b> '+r.need+' pcs').join(' - ')
+      : 'Reorder OK';
     document.getElementById('reorder-box').className='alert-box '+(reorder.length?'warn':'good');
 
-    const rows=lastInventoryRows.map(({p,warehouseStock,sc,sl,variantText})=>`<tr>
-        <td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">${p.sku}</code></td>
-        <td><b>${p.name}</b><div class="variant-detail">Variant: ${variantText||'—'}</div></td>
-        <td>${p.cat}</td>
-        <td style="font-weight:700;font-size:16px;color:${warehouseStock===0?'var(--red)':warehouseStock<5?'var(--amber)':'var(--black)'}">${warehouseStock}</td>
-        <td>${p.totalStock}</td>
-        <td>5</td>
-        <td>${warehouseStock<5?`<span style="color:var(--blue);font-weight:600">${Math.max(0,15-warehouseStock)} ш захиална</span>`:'—'}</td>
-        <td><span class="badge ${sc}">${sl}</span></td>
-      </tr>`);
-    tbody.innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
+    const rows=lastInventoryRows.map(({p,warehouseStock,sc,sl,variantText})=>'<tr>'+
+        '<td><code style="font-size:11px;background:var(--gray-light);padding:2px 8px;border-radius:4px">'+whInvSafe(p.sku)+'</code></td>'+
+        '<td><b>'+whInvSafe(p.name)+'</b><div class="variant-detail">Variant: '+(variantText||'-')+'</div></td>'+
+        '<td>'+whInvSafe(p.cat)+'</td>'+
+        '<td style="font-weight:700;font-size:16px;color:'+(warehouseStock===0?'var(--red)':warehouseStock<5?'var(--amber)':'var(--black)')+'">'+warehouseStock+'</td>'+
+        '<td>'+p.totalStock+'</td>'+
+        '<td>5</td>'+
+        '<td>'+(warehouseStock<5?'<span style="color:var(--blue);font-weight:600">'+Math.max(0,15-warehouseStock)+' ш захиална</span>':'-')+'</td>'+
+        '<td><span class="badge '+sc+'">'+sl+'</span></td>'+
+        '<td><button class="mini-action" onclick="showWarehouseInventoryDetail(\''+encodeURIComponent(p.sku)+'\')">Дэлгэрэнгүй</button></td>'+
+      '</tr>');
+    tbody.innerHTML=rows.length?rows.join(''):'<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
   }catch(e){
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:red">Үлдэгдэл татахад алдаа гарлаа</td></tr>';
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:red">Үлдэгдэл татахад алдаа гарлаа</td></tr>';
   }
 }
 function clearInventorySearch(){
@@ -475,7 +519,7 @@ function clearInventorySearch(){
   if(s) s.value=''; if(sort) sort.value=''; renderInventory();
 }
 function downloadInventoryCSV(){
-  const rows=[['SKU','Бараа','Ангилал','Агуулахт','Нийт','Доод хэмжээ','Статус']];
+  const rows=[['SKU','Бараа','Ангилал','Агуулах','Нийт','Доод хэмжээ','Статус']];
   lastInventoryRows.forEach(({p,warehouseStock,sl})=>rows.push([p.sku,p.name,p.cat,warehouseStock,p.totalStock,5,sl]));
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
@@ -483,7 +527,7 @@ function downloadInventoryCSV(){
 }
 function printBarcodeLabels(){
   const rows=(lastInventoryRows.length?lastInventoryRows:PRODUCTS.map(p=>({p,warehouseStock:p.totalStock,sl:''}))).slice(0,60);
-  const html=`<html><head><title>TITEM Barcode Labels</title><style>body{font-family:Arial;padding:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.label{border:1px solid #111;padding:10px;height:82px}.brand{letter-spacing:4px;font-size:12px}.sku{font-family:monospace;font-size:18px;font-weight:bold;margin-top:8px}.name{font-size:11px;margin-top:4px}</style></head><body><div class="grid">${rows.map(r=>`<div class="label"><div class="brand">TITEM</div><div class="sku">${r.p.sku}</div><div class="name">${r.p.name}</div></div>`).join('')}</div><script>window.print()<\/script></body></html>`;
+  const html='<html><head><title>TITEM Barcode Labels</title><style>body{font-family:Arial;padding:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.label{border:1px solid #111;padding:10px;height:82px}.brand{letter-spacing:4px;font-size:12px}.sku{font-family:monospace;font-size:18px;font-weight:bold;margin-top:8px}.name{font-size:11px;margin-top:4px}</style></head><body><div class="grid">'+rows.map(r=>'<div class="label"><div class="brand">TITEM</div><div class="sku">'+whInvSafe(r.p.sku)+'</div><div class="name">'+whInvSafe(r.p.name)+'</div></div>').join('')+'</div><script>window.print()<\/script></body></html>';
   const w=window.open('','_blank');w.document.write(html);w.document.close();
 }
 function handleReceiveCSV(e){

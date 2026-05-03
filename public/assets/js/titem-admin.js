@@ -368,25 +368,83 @@ function clearInvSearchSort(){
   renderInventory();
 }
 
+function isWarehouseInventoryRow(row){
+  return parseInt(row.branch_id||0)===1 || row.branch_name==='???????' || row.branch_name==='Warehouse';
+}
+
+function invDetailSafe(value){
+  return String(value == null || value === '' ? '?' : value).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];});
+}
+
+function invQtyHtml(q){
+  const qty=parseInt(q||0);
+  const color=qty<0?'var(--red)':qty===0?'var(--gray)':qty<5?'var(--amber)':'var(--green)';
+  return '<span style="font-weight:700;color:'+color+'">'+qty+'</span>';
+}
+
+function ensureInventoryDetailModal(){
+  let modal=document.getElementById('inventory-detail-modal');
+  if(modal) return modal;
+  modal=document.createElement('div');
+  modal.id='inventory-detail-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px';
+  modal.innerHTML='<div style="background:#fff;width:min(980px,96vw);max-height:88vh;overflow:auto;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.22)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--gray-light)"><div><div id="inventory-detail-title" style="font-family:var(--font-head);font-size:22px;font-weight:400"></div><div id="inventory-detail-sub" style="font-size:12px;color:var(--gray);margin-top:4px"></div></div><button onclick="closeInventoryDetail()" style="border:1px solid var(--gray-light);background:#fff;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:20px;line-height:1">?</button></div><div id="inventory-detail-body" style="padding:18px 20px"></div></div>';
+  modal.addEventListener('click',function(e){if(e.target===modal) closeInventoryDetail();});
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function closeInventoryDetail(){
+  const modal=document.getElementById('inventory-detail-modal');
+  if(modal) modal.style.display='none';
+}
+
+function showInventoryDetail(encodedKey){
+  const key=decodeURIComponent(encodedKey);
+  const group=(window.INV_DETAIL_GROUPS||{})[key];
+  if(!group) return;
+  const modal=ensureInventoryDetailModal();
+  const rows=group.details||[];
+  const branchNames=[...new Set(rows.map(r=>r.branch_name||'?'))].sort((a,b)=>{
+    if(a==='???????'||a==='Warehouse') return -1;
+    if(b==='???????'||b==='Warehouse') return 1;
+    return a.localeCompare(b,'mn');
+  });
+  const variantMap={};
+  rows.forEach(r=>{
+    const variantKey=[r.color||'?',r.size||'?',r.barcode||''].join('|');
+    if(!variantMap[variantKey]) variantMap[variantKey]={color:r.color||'?',size:r.size||'?',barcode:r.barcode||'',sku:r.sku||group.sku||'',total:0,branches:{}};
+    const qty=parseInt(r.quantity||0);
+    variantMap[variantKey].total+=qty;
+    const b=r.branch_name||'?';
+    variantMap[variantKey].branches[b]=(variantMap[variantKey].branches[b]||0)+qty;
+  });
+  const variants=Object.values(variantMap).sort((a,b)=>(a.color||'').localeCompare(b.color||'','mn') || (a.size||'').localeCompare(b.size||'','mn'));
+  const negative=rows.filter(r=>parseInt(r.quantity||0)<0).length;
+  document.getElementById('inventory-detail-title').textContent=(group.name||'?????')+' - '+(group.sku||'');
+  document.getElementById('inventory-detail-sub').textContent='???? / ?????? / ???????? ????????. ????: '+group.total+' ??????'+(negative?' ? ????? ???????? ?????: '+negative:'');
+  const header='<tr><th>????</th><th>??????</th><th>Barcode</th>'+branchNames.map(b=>'<th>'+invDetailSafe(b)+'</th>').join('')+'<th>????</th></tr>';
+  const body=variants.map(v=>'<tr><td><b>'+invDetailSafe(v.color)+'</b></td><td>'+invDetailSafe(v.size)+'</td><td><span style="font-family:monospace;font-size:11px;background:var(--gray-light);padding:2px 6px;border-radius:4px">'+invDetailSafe(v.barcode||v.sku)+'</span></td>'+branchNames.map(b=>'<td>'+invQtyHtml(v.branches[b]||0)+'</td>').join('')+'<td>'+invQtyHtml(v.total)+'</td></tr>').join('');
+  document.getElementById('inventory-detail-body').innerHTML='<div style="overflow:auto"><table style="min-width:720px;width:100%;border-collapse:collapse;font-size:13px"><thead>'+header+'</thead><tbody>'+body+'</tbody></table></div>'+(negative?'<div style="margin-top:12px;color:var(--red);font-size:12px;font-weight:600">??????: ????? ???????? ?? ????? ????? ??????????/??????????? ?????? ???? ?????. ?????????? ????? ????????.</div>':'');
+  modal.style.display='flex';
+}
+
 function renderInventory(){
   const data=window.INV_DATA||[];
   const grouped={};
   data.forEach(i=>{
     const key=i.sku||i.name;
-    if(!grouped[key]){grouped[key]={sku:i.sku,name:i.name,cat:i.category_name||'',total:0,warehouse:0,branches:0,min:parseInt(i.min_quantity||5)};}
-    grouped[key].total+=parseInt(i.quantity||0);
+    if(!grouped[key]){grouped[key]={key,sku:i.sku,name:i.name,cat:i.category_name||'',total:0,warehouse:0,branches:0,min:parseInt(i.min_quantity||5),details:[]};}
     const qty=parseInt(i.quantity||0);
-    if(window.CURRENT_INV_BRANCH && window.CURRENT_INV_BRANCH !== 'all'){
-      const selectedBranch=(window.BRANCHES||[]).find(b=>String(b.id)===String(window.CURRENT_INV_BRANCH));
-      const selectedType=selectedBranch ? normalizeBranchType(selectedBranch) : 'own_branch';
-      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
-      else if(selectedType==='partner') grouped[key].branches += qty;
-      else grouped[key].branches += qty;
-    } else {
-      if(i.branch_name==='Агуулах') grouped[key].warehouse += qty;
-      else grouped[key].branches += qty;
-    }
+    grouped[key].total+=qty;
+    grouped[key].details.push(i);
+    const selectedBranch=(window.CURRENT_INV_BRANCH && window.CURRENT_INV_BRANCH !== 'all') ? (window.BRANCHES||[]).find(b=>String(b.id)===String(window.CURRENT_INV_BRANCH)) : null;
+    const selectedType=selectedBranch ? normalizeBranchType(selectedBranch) : 'own_branch';
+    if(isWarehouseInventoryRow(i)) grouped[key].warehouse += qty;
+    else if(selectedType==='partner') grouped[key].branches += qty;
+    else grouped[key].branches += qty;
   });
+  window.INV_DETAIL_GROUPS=grouped;
   let list=Object.values(grouped);
   list.forEach(i=>{i.status=i.total===0?'out':i.total<i.min?'low':'ok';});
 
@@ -394,7 +452,7 @@ function renderInventory(){
 
   const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
   if(search){
-    list=list.filter(i=>`${i.sku||''} ${i.name||''} ${i.cat||''}`.toLowerCase().includes(search));
+    list=list.filter(i=>(String(i.sku||'')+' '+String(i.name||'')+' '+String(i.cat||'')).toLowerCase().includes(search));
   }
 
   const sort=document.getElementById('inv-sort')?.value||'';
@@ -408,18 +466,21 @@ function renderInventory(){
     return 0;
   });
 
-  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || 'Бүх салбар';
-  document.getElementById('inv-count').textContent=list.length+' бараа · '+branchText;
+  const branchText = document.getElementById('branch-filter')?.selectedOptions?.[0]?.textContent || '??? ??????';
+  document.getElementById('inv-count').textContent=list.length+' ????? ? '+branchText;
   document.getElementById('inv-table').innerHTML=list.length ? list.map(i=>{
     const sc=i.status==='ok'?'badge-green':i.status==='low'?'badge-amber':'badge-red';
-    const sl=i.status==='ok'?'Хангалттай':i.status==='low'?'Дутагдаж байна':'Дууссан';
-    return`<tr>
-      <td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">${i.sku||'—'}</span></td>
-      <td><b>${i.name}</b></td><td>${i.cat}</td>
-      <td style="font-weight:700;font-size:16px">${i.total}</td>
-      <td>${i.warehouse}</td><td>${i.branches}</td><td>${i.min}</td>
-      <td><span class="badge ${sc}">${sl}</span></td>
-    </tr>`;}).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray)">Илэрц олдсонгүй</td></tr>';
+    const sl=i.status==='ok'?'??????????':i.status==='low'?'???????? ?????':'???????';
+    const qtyColor=i.total<0?'var(--red)':i.total===0?'var(--red)':i.total<i.min?'var(--amber)':'var(--black)';
+    return '<tr>'+
+      '<td><span style="font-size:11px;font-family:monospace;background:var(--gray-light);padding:2px 8px;border-radius:4px">'+(i.sku||'?')+'</span></td>'+
+      '<td><b>'+invDetailSafe(i.name)+'</b></td><td>'+invDetailSafe(i.cat)+'</td>'+
+      '<td style="font-weight:700;font-size:16px;color:'+qtyColor+'">'+i.total+'</td>'+
+      '<td>'+i.warehouse+'</td><td>'+i.branches+'</td><td>'+i.min+'</td>'+
+      '<td><span class="badge '+sc+'">'+sl+'</span></td>'+
+      '<td><button class="inv-filter" style="padding:7px 10px" onclick="showInventoryDetail(\''+encodeURIComponent(i.key)+'\')">???????????</button></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray)">????? ?????????</td></tr>';
 }
 
 

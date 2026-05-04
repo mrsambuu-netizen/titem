@@ -1478,6 +1478,7 @@ async function loadWarehouseData(){
     }));
     whBranches = branches;
     whSuppliers = suppliers;
+    whRenderProductSuggestions();
 
     // KPI
     const totalStock = prods.reduce((s,p)=>s+parseInt(p.total_stock||0),0);
@@ -1504,10 +1505,46 @@ async function loadWarehouseData(){
   }catch(e){console.error('Warehouse data алдаа:',e);}
 }
 
-function whFindProduct(sku){
-  return whProducts.find(p=>p.sku.toLowerCase()===sku.toLowerCase().trim());
+function whProductSearchText(product){
+  const parts=[product.sku, product.name, product.category_name];
+  (product.variants||[]).forEach(v=>parts.push(v.barcode, v.sku, v.color, v.size));
+  return parts.filter(Boolean).join(' ').toLowerCase();
 }
 
+function whFindProductMatch(value){
+  const q=String(value||'').toLowerCase().trim();
+  if(!q) return null;
+  for(const p of whProducts){
+    const exactVariant=(p.variants||[]).find(v=>
+      String(v.barcode||'').toLowerCase()===q || String(v.sku||'').toLowerCase()===q
+    );
+    if(exactVariant) return {product:p, variant:exactVariant};
+  }
+  const exactProduct=whProducts.find(p=>String(p.sku||'').toLowerCase()===q || String(p.name||'').toLowerCase()===q);
+  if(exactProduct) return {product:exactProduct, variant:null};
+  const partial=whProducts.find(p=>whProductSearchText(p).includes(q));
+  return partial ? {product:partial, variant:null} : null;
+}
+
+function whFindProduct(sku){
+  return whFindProductMatch(sku)?.product || null;
+}
+
+function whRenderProductSuggestions(){
+  const list=document.getElementById('wh-product-suggestions');
+  if(!list) return;
+  const options=[];
+  whProducts.forEach(p=>{
+    options.push('<option value="'+String(p.sku||'').replace(/"/g,'&quot;')+'" label="'+String(p.name||'').replace(/"/g,'&quot;')+'"></option>');
+    options.push('<option value="'+String(p.name||'').replace(/"/g,'&quot;')+'" label="'+String(p.sku||'').replace(/"/g,'&quot;')+'"></option>');
+    (p.variants||[]).forEach(v=>{
+      const label=[p.name, v.color, v.size].filter(Boolean).join(' / ');
+      if(v.barcode) options.push('<option value="'+String(v.barcode).replace(/"/g,'&quot;')+'" label="'+label.replace(/"/g,'&quot;')+'"></option>');
+      if(v.sku) options.push('<option value="'+String(v.sku).replace(/"/g,'&quot;')+'" label="'+label.replace(/"/g,'&quot;')+'"></option>');
+    });
+  });
+  list.innerHTML=options.join('');
+}
 
 function whSetQtyValue(list, index, value, renderFn){
   const qty = Math.max(1, parseInt(value, 10) || 1);
@@ -1525,16 +1562,28 @@ function whQtyInput(listName, renderName, setterName, i, qty){
 // RECEIVE
 function whHandleBarcode(e){
   if(e.key!=='Enter') return;
-  const sku = e.target.value.trim();
-  const p = whFindProduct(sku);
-  if(!p){showToast('Бараа олдсонгүй: '+sku,'error');return;}
-  const ex = whReceiveItems.find(i=>i.sku===p.sku);
-  if(ex){ex.qty++;} else {
-    whReceiveItems.push({id:p.id,sku:p.sku,name:p.name,qty:1,price:p.wholesale_price||p.price,variants:p.variants||[]});
+  const code = e.target.value.trim();
+  const match = whFindProductMatch(code);
+  if(!match){showToast('Product not found: '+code,'error');return;}
+  const p = match.product;
+  const variant = match.variant;
+  const variantId = variant?.id ? String(variant.id) : '';
+  const ex = whReceiveItems.find(i=>i.sku===p.sku && String(i.selectedVariantId||'')===variantId);
+  if(ex){ex.qty++;}
+  else {
+    whReceiveItems.push({
+      id:p.id,
+      sku:p.sku,
+      name:p.name,
+      qty:1,
+      price:p.wholesale_price||p.price,
+      variants:p.variants||[],
+      selectedVariantId:variantId
+    });
   }
   e.target.value='';
   whRenderReceive();
-  showToast(p.name+' нэмэгдлээ','success');
+  showToast(p.name+(variant ? ' / '+[variant.color,variant.size].filter(Boolean).join(' / ') : '')+' added','success');
 }
 
 function whRenderReceive(){
@@ -1551,7 +1600,7 @@ function whRenderReceive(){
         <select style="border:1px solid var(--gray-light);border-radius:4px;padding:4px 8px;font-size:12px;min-width:130px" 
           onchange="whReceiveItems[${i}].selectedVariantId=this.value">
           <option value="">-- Бүгд --</option>
-          ${(()=>{const prod=whProducts.find(p=>p.sku===item.sku||p.id===item.id);return(prod?.variants||[]).map(v=>`<option value="${v.id}">${v.color||''}${v.size?' / '+v.size:''}</option>`).join('');})()}
+          ${(()=>{const prod=whProducts.find(p=>p.sku===item.sku||p.id===item.id);return(prod?.variants||[]).map(v=>`<option value="${v.id}" ${String(item.selectedVariantId||'')===String(v.id)?'selected':''}>${v.color||''}${v.size?' / '+v.size:''}${v.barcode?' - '+v.barcode:''}</option>`).join('');})()}
         </select>
       </td>
       <td>

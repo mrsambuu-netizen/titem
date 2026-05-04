@@ -1286,8 +1286,8 @@ function openAddProduct(){
   document.getElementById('mp-wholesale').value = '';
   document.getElementById('mp-discount').value = '';
   document.getElementById('mp-desc').value = '';
-  document.getElementById('mp-colors').value = 'Хар, Цагаан';
-  document.getElementById('mp-sizes').value = 'S, M, L, XL';
+  document.getElementById('mp-colors').value = ''; // blank creates one default color
+  document.getElementById('mp-sizes').value = ''; // blank creates one default size
   document.getElementById('mp-preview').innerHTML = '';
   document.getElementById('variant-section').style.display = 'block';
   loadProductCategories();
@@ -1309,11 +1309,11 @@ async function editProduct(id){
     document.getElementById('mp-desc').value = p.description || '';
     await loadProductCategories(p.category_id);
     document.getElementById('mp-cat').value = p.category_id || '';
-    document.getElementById('mp-colors').value = [...new Set((p.variants||[]).map(v=>v.color).filter(Boolean))].join(', ');
-    document.getElementById('mp-sizes').value = [...new Set((p.variants||[]).map(v=>v.size).filter(Boolean))].join(', ');
+    document.getElementById('mp-colors').value = '';
+    document.getElementById('mp-sizes').value = '';
     document.getElementById('variant-section').style.display = 'block';
-    document.getElementById('mp-colors').placeholder = 'Шинэ өнгө нэмэх: Хар, Цагаан...';
-    document.getElementById('mp-sizes').placeholder = 'Шинэ размер нэмэх: S, M, L...';
+    document.getElementById('mp-colors').placeholder = 'Only new colors: Black, White...';
+    document.getElementById('mp-sizes').placeholder = 'Only new sizes: S, M, L...';
     document.getElementById('variant-section-label').textContent = 'Шинэ variant нэмэх (байгаа variant-д нөлөөлөхгүй)';
     renderImagePreview();
     document.getElementById('modal-add-product').style.display = 'flex';

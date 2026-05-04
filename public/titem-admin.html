@@ -485,7 +485,7 @@
           <div style="background:#f8f8f8;border:1px solid var(--gray-light);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">📷</span>
             <div style="flex:1">
-              <input id="wh-barcode" class="f-input" placeholder="📡 Баркод уншигч бэлэн — уншуулна уу..." onkeydown="whHandleBarcode(event)" onfocus="this.style.borderColor='var(--green)';this.style.boxShadow='0 0 0 3px rgba(39,174,96,0.15)'" onblur="this.style.borderColor='';this.style.boxShadow=''" style="width:100%">
+              <input id="wh-barcode" class="f-input" list="wh-product-suggestions" placeholder="SKU / barcode / product name" onkeydown="whHandleBarcode(event)" onfocus="this.style.borderColor='var(--green)';this.style.boxShadow='0 0 0 3px rgba(39,174,96,0.15)'" onblur="this.style.borderColor='';this.style.boxShadow=''" style="width:100%">
               <div style="font-size:11px;color:var(--gray);margin-top:4px">Enter дарж нэмнэ</div>
             </div>
           </div>
@@ -930,6 +930,6 @@
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
-<script src="/assets/js/titem-admin.js?v=20260504-barcode-unchecked"></script>
+<script src="/assets/js/titem-admin.js?v=20260504-receive-suggest"></script>
 </body>
 </html>

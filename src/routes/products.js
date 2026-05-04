@@ -80,6 +80,13 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+
+function normalizeVariantValues(values, fallback) {
+  const list = Array.isArray(values) ? values : [];
+  const clean = list.map(v => String(v || '').trim()).filter(Boolean);
+  return clean.length ? [...new Set(clean)] : [fallback];
+}
+
 async function generateProductSku(client) {
   const result = await client.query(
     "SELECT sku FROM products WHERE sku ~ '^TIT-[0-9]+$' ORDER BY CAST(SUBSTRING(sku FROM 5) AS INTEGER) DESC LIMIT 1"
@@ -105,8 +112,8 @@ app.post('/api/products', authMiddleware(['super_admin','admin']), async (req, r
     const product = result.rows[0];
     
     // Variant үүсгэх
-    const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
-    const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
+    const colorList = normalizeVariantValues(colors, 'One color');
+    const sizeList = normalizeVariantValues(sizes, 'One size');
     const createdVariants = [];
     
     for (const color of colorList) {
@@ -220,8 +227,8 @@ app.post('/api/products/:id/variants', authMiddleware(['admin','super_admin']), 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const colorList = (colors && colors.length) ? colors : ['Нэг өнгө'];
-    const sizeList = (sizes && sizes.length) ? sizes : ['Нэг хэмжээ'];
+    const colorList = normalizeVariantValues(colors, 'One color');
+    const sizeList = normalizeVariantValues(sizes, 'One size');
     const product = await client.query('SELECT sku FROM products WHERE id=$1', [req.params.id]);
     const sku = product.rows[0]?.sku;
     const added = [];

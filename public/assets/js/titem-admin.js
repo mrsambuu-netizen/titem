@@ -1802,13 +1802,13 @@ async function loadBarcodeVariants(){
   try{
     const data = await apiGet('/api/products/'+productId);
     const variants = data.variants||[];
-    selectedVariants = variants.map(v=>({...v, selected:true, productName:data.name, productSku:data.sku, price:data.price}));
+    selectedVariants = variants.map(v=>({...v, selected:false, productName:data.name, productSku:data.sku, price:data.price}));
 
     document.getElementById('bc-variants').innerHTML = selectedVariants.length
       ? `<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);font-weight:500;width:100%;margin-bottom:4px">Variant сонгох:</div>`+
         selectedVariants.map((v,i)=>`
           <label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--gray-light);border-radius:6px;cursor:pointer;font-size:12px;background:var(--white)">
-            <input type="checkbox" checked onchange="selectedVariants[${i}].selected=this.checked" style="accent-color:var(--black)">
+            <input type="checkbox" onchange="selectedVariants[${i}].selected=this.checked" style="accent-color:var(--black)">
             ${v.color||'—'} / ${v.size||'—'}
             <code style="font-size:10px;background:var(--gray-light);padding:1px 6px;border-radius:3px;margin-left:4px">${v.barcode||'код үүсгэ'}</code>
           </label>`).join('')

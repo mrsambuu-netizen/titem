@@ -27,19 +27,21 @@ async function doLogin(){
   const username=document.getElementById('username').value.trim();
   const password=document.getElementById('password').value;
   const branchEl=document.getElementById('branch-select');
+  const selectedBranchId=parseInt(branchEl.value)||null;
   const err=document.getElementById('login-error');
   err.style.display='none';
   try {
-    const data=await apiPost('/api/auth/login',{username,password});
+    const data=await apiPost('/api/auth/login',{username,password,branch_id:selectedBranchId});
     TOKEN=data.token;
     localStorage.setItem('pos_token',TOKEN);
     currentUser=data.user.full_name||data.user.username;
     await loadBranches();
-    if(data.user.branch_id && [...branchEl.options].some(o=>parseInt(o.value)===parseInt(data.user.branch_id))){
-      branchEl.value=String(data.user.branch_id);
+    const sessionBranchId=data.user.branch_id||selectedBranchId;
+    if(sessionBranchId && [...branchEl.options].some(o=>parseInt(o.value)===parseInt(sessionBranchId))){
+      branchEl.value=String(sessionBranchId);
     }
-    currentBranch=parseInt(branchEl.value)||data.user.branch_id||1;
-    currentBranchName=branchEl.options[branchEl.selectedIndex]?.text||'Салбар';
+    currentBranch=parseInt(branchEl.value)||sessionBranchId||1;
+    currentBranchName=branchEl.options[branchEl.selectedIndex]?.text||'Branch';
     document.getElementById('pos-branch-name').textContent=currentBranchName;
     document.getElementById('pos-cashier').textContent=currentUser;
     showPage('pos');

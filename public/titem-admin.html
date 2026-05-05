@@ -111,50 +111,71 @@
     </div>
     <div class="content">
 
-      <!-- ДАШБОАРД -->
+      <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label"><span class="kpi-label-icon">💰</span>Өдрийн орлого</div>
-            <div class="kpi-val" id="kpi-revenue">₮0</div>
-            <div class="kpi-change up" id="kpi-rev-change">↑ +12% өчигдөрөөс</div>
+        <div class="dash-hero">
+          <div>
+            <div class="dash-eyebrow">Live business overview</div>
+            <div class="dash-hero-title">TITEM performance dashboard</div>
+            <div class="dash-hero-sub" id="dash-last-updated">Updated just now</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label"><span class="kpi-label-icon">🛍</span>Гүйлгээний тоо</div>
-            <div class="kpi-val" id="kpi-txn">0</div>
-            <div class="kpi-change up">↑ +8 өчигдөрөөс</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label"><span class="kpi-label-icon">📦</span>Нийт үлдэгдэл</div>
-            <div class="kpi-val" id="kpi-stock">0</div>
-            <div class="kpi-change neutral">5 төрлийн бараа</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label"><span class="kpi-label-icon">⚠️</span>Анхааруулга</div>
-            <div class="kpi-val" style="color:var(--red)" id="kpi-alert">4</div>
-            <div class="kpi-change down">Дуусч байгаа бараа</div>
+          <div class="dash-hero-metrics">
+            <div><span id="dash-cash">&#8366;0</span><small>Cash</small></div>
+            <div><span id="dash-card">&#8366;0</span><small>Card</small></div>
+            <div><span id="dash-qpay">&#8366;0</span><small>QPay</small></div>
           </div>
         </div>
 
-        <div class="chart-row">
-          <div class="card">
-            <div class="card-title">7 хоногийн борлуулалт <span class="card-title-right">₮ нийт дүн</span></div>
-            <div class="bar-chart" id="week-chart"></div>
+        <div class="kpi-grid kpi-grid-pro">
+          <div class="kpi-card pro-kpi accent-green">
+            <div class="kpi-label"><span class="kpi-label-icon">T</span>Today's revenue</div>
+            <div class="kpi-val" id="kpi-revenue">&#8366;0</div>
+            <div class="kpi-change neutral" id="kpi-rev-change">No sales yet today</div>
           </div>
-          <div class="card">
-            <div class="card-title">Төлбөрийн хэлбэр</div>
-            <div class="donut-wrap">
+          <div class="kpi-card pro-kpi accent-blue">
+            <div class="kpi-label"><span class="kpi-label-icon">#</span>Transactions</div>
+            <div class="kpi-val" id="kpi-txn">0</div>
+            <div class="kpi-change neutral" id="dash-average-sale">Average check &#8366;0</div>
+          </div>
+          <div class="kpi-card pro-kpi accent-amber">
+            <div class="kpi-label"><span class="kpi-label-icon">S</span>Total stock</div>
+            <div class="kpi-val" id="kpi-stock">0</div>
+            <div class="kpi-change neutral" id="dash-stock-health">Stock health loading</div>
+          </div>
+          <div class="kpi-card pro-kpi accent-red">
+            <div class="kpi-label"><span class="kpi-label-icon">!</span>Critical items</div>
+            <div class="kpi-val" id="kpi-alert">0</div>
+            <div class="kpi-change down">Need attention</div>
+          </div>
+        </div>
+
+        <div class="dash-pro-grid">
+          <div class="card dash-chart-card">
+            <div class="card-title">7-day sales trend <span class="card-title-right">Completed orders only</span></div>
+            <div class="bar-chart pro-bar-chart" id="week-chart"></div>
+          </div>
+          <div class="card dash-payment-card">
+            <div class="card-title">Payment mix</div>
+            <div class="donut-wrap pro-donut-wrap">
               <svg class="donut-svg" viewBox="0 0 120 120" id="donut-svg"></svg>
               <div class="donut-legend" id="donut-legend"></div>
             </div>
           </div>
+          <div class="card dash-focus-card">
+            <div class="card-title">Today's focus</div>
+            <div class="focus-main">
+              <span id="dash-top-branch">No branch sales</span>
+              <strong id="dash-top-branch-rev">&#8366;0</strong>
+            </div>
+            <div class="insight-list" id="dash-insight-list"></div>
+          </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Салбар бүрийн өдрийн гүйцэтгэл <span class="card-title-right">Зорилго: ₮2,000,000/сар</span></div>
+        <div class="card pro-table-card">
+          <div class="card-title">Branch performance <span class="card-title-right">Daily target: &#8366;2,000,000</span></div>
           <div class="table-wrap">
-            <table>
-              <thead><tr><th>Салбар</th><th>Өдрийн орлого</th><th>Гүйлгээ</th><th>Сарын зорилго</th><th>Гүйцэтгэл</th><th>Статус</th></tr></thead>
+            <table class="main-table pro-table">
+              <thead><tr><th>Branch</th><th>Revenue</th><th>Transactions</th><th>Payment</th><th>Target</th><th>Status</th></tr></thead>
               <tbody id="branch-table"></tbody>
             </table>
           </div>
@@ -930,6 +951,6 @@
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
-<script src="/assets/js/titem-admin.js?v=20260504-receive-suggest"></script>
+<script src="/assets/js/titem-admin.js?v=20260505-pro-dashboard"></script>
 </body>
 </html>

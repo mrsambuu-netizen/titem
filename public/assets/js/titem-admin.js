@@ -118,83 +118,112 @@ async function loadAll(){
 // ── DASHBOARD ──
 async function loadDashboard(){
   try{
-    const [branchData,daily] = await Promise.all([
+    const branchValue=document.getElementById('branch-filter')?.value||'all';
+    const branchQuery=branchValue && branchValue!=='all' ? '&branch_id='+encodeURIComponent(branchValue) : '';
+    const weekDates=[...Array(7)].map((_,i)=>{
+      const d=new Date(today+'T00:00:00');
+      d.setDate(d.getDate()-(6-i));
+      return d.toISOString().split('T')[0];
+    });
+    const [branchData,daily,weekly,inv] = await Promise.all([
       apiGet('/api/reports/branches?date='+today),
-      apiGet('/api/reports/daily?date='+today)
+      apiGet('/api/reports/daily?date='+today+branchQuery),
+      Promise.all(weekDates.map(d=>apiGet('/api/reports/daily?date='+d+branchQuery).catch(()=>({summary:{}})))),
+      apiGet('/api/inventory').catch(()=>[])
     ]);
 
-    const totalRev=branchData.reduce((s,b)=>s+parseInt(b.total_revenue||0),0);
-    const totalTxn=branchData.reduce((s,b)=>s+parseInt(b.transaction_count||0),0);
-    const s=daily.summary;
+    const s=daily.summary||{};
     const cash=parseInt(s.cash_total||0);
     const card=parseInt(s.card_total||0);
     const qpay=parseInt(s.qpay_total||0);
-    const total=cash+card+qpay;
+    const totalRev=parseInt(s.total_revenue||0);
+    const totalTxn=parseInt(s.transaction_count||0);
+    const avg=totalTxn?Math.round(totalRev/totalTxn):0;
+    const fmtMoney=v=>'\u20ae'+Number(v||0).toLocaleString();
 
-    document.getElementById('kpi-revenue').textContent='₮'+totalRev.toLocaleString();
-    document.getElementById('kpi-txn').textContent=totalTxn;
+    const ownBranches=branchData.filter(b=>String(b.branch_type||'own_branch')!=='partner');
+    const topBranch=ownBranches.find(b=>parseInt(b.total_revenue||0)>0)||ownBranches[0]||branchData[0];
+    const activeBranches=ownBranches.filter(b=>parseInt(b.total_revenue||0)>0).length;
+    const totalStock=inv.reduce((sum,item)=>sum+parseInt(item.quantity||0),0);
+    const zeroStock=inv.filter(item=>parseInt(item.quantity||0)<=0).length;
+    const lowStock=inv.filter(item=>parseInt(item.quantity||0)>0 && parseInt(item.quantity||0)<=parseInt(item.min_stock||5)).length;
 
-    // Inventory KPI
-    try{
-      const inv=await apiGet('/api/inventory');
-      const totalStock=inv.reduce((s,i)=>s+parseInt(i.quantity||0),0);
-      document.getElementById('kpi-stock').textContent=totalStock.toLocaleString();
-      const alerts=inv.filter(i=>parseInt(i.quantity||0)<=0).length;
-      document.getElementById('kpi-alert').textContent=alerts;
-    }catch(e){}
+    document.getElementById('kpi-revenue').textContent=fmtMoney(totalRev);
+    document.getElementById('kpi-txn').textContent=totalTxn.toLocaleString();
+    document.getElementById('kpi-rev-change').textContent=totalRev>0 ? activeBranches+' active branch'+(activeBranches===1?'':'es') : 'No sales yet today';
+    document.getElementById('dash-average-sale').textContent='Average check '+fmtMoney(avg);
+    document.getElementById('kpi-stock').textContent=totalStock.toLocaleString();
+    document.getElementById('kpi-alert').textContent=zeroStock.toLocaleString();
+    document.getElementById('dash-stock-health').textContent=lowStock+' low stock / '+zeroStock+' out of stock';
+    document.getElementById('dash-cash').textContent=fmtMoney(cash);
+    document.getElementById('dash-card').textContent=fmtMoney(card);
+    document.getElementById('dash-qpay').textContent=fmtMoney(qpay);
+    document.getElementById('dash-last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dash-top-branch').textContent=topBranch?.name||'No branch sales';
+    document.getElementById('dash-top-branch-rev').textContent=fmtMoney(topBranch?.total_revenue||0);
 
-    // Bar chart - 7 хоног
-    const days=['Да','Мя','Лх','Пү','Ба','Бя','Ня'];
-    const vals=[820000,940000,1100000,780000,1350000,1580000,totalRev||1240000];
-    const maxV=Math.max(...vals);
-    document.getElementById('week-chart').innerHTML=days.map((d,i)=>`
-      <div class="bar-col">
-        <div class="bar-val">₮${(vals[i]/1000).toFixed(0)}K</div>
-        <div class="bar" style="height:${Math.round(vals[i]/maxV*110)}px;background:${i===6?'var(--black)':'var(--gray-mid)'}"></div>
-        <div class="bar-label">${d}</div>
-      </div>`).join('');
+    const vals=weekly.map(d=>parseInt(d.summary?.total_revenue||0));
+    const maxV=Math.max(...vals,1);
+    document.getElementById('week-chart').innerHTML=weekDates.map((date,i)=>{
+      const d=new Date(date+'T00:00:00');
+      const label=d.toLocaleDateString('en-US',{weekday:'short'});
+      const h=Math.max(6,Math.round(vals[i]/maxV*128));
+      return `<div class="bar-col">
+        <div class="bar-val">${vals[i]?fmtMoney(vals[i]).replace(/000$/,'K'):'0'}</div>
+        <div class="bar" title="${fmtMoney(vals[i])}" style="height:${h}px;background:${i===6?'var(--black)':'#c7d2df'}"></div>
+        <div class="bar-label">${label}</div>
+      </div>`;
+    }).join('');
 
-    // Donut
-    const payTotal=cash+card+qpay||1;
+    const payTotal=cash+card+qpay;
     const payData=[
-      {name:'Бэлэн',pct:Math.round(cash/payTotal*100),color:'#0a0a0a'},
-      {name:'Карт',pct:Math.round(card/payTotal*100),color:'#378ADD'},
-      {name:'QPay',pct:Math.round(qpay/payTotal*100),color:'#27ae60'}
+      {name:'Cash',value:cash,color:'#111827'},
+      {name:'Card',value:card,color:'#2563eb'},
+      {name:'QPay',value:qpay,color:'#16a34a'}
     ];
     let offset=0;const r=48,cx=60,cy=60,c=2*Math.PI*r;
-    document.getElementById('donut-svg').innerHTML=payData.map(d=>{
-      const dash=d.pct/100*c;
-      const path=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${dash} ${c-dash}" stroke-dashoffset="${-offset*c/100}" transform="rotate(-90 ${cx} ${cy})"/>`;
-      offset+=d.pct;return path;
+    const donutBase=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef2f6" stroke-width="16"/>`;
+    document.getElementById('donut-svg').innerHTML=donutBase+(payTotal?payData.map(d=>{
+      const pct=d.value/payTotal;
+      const dash=pct*c;
+      const path=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${dash} ${c-dash}" stroke-dashoffset="${-offset*c}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset+=pct;return path;
+    }).join(''):'');
+    document.getElementById('donut-legend').innerHTML=payData.map(d=>{
+      const pct=payTotal?Math.round(d.value/payTotal*100):0;
+      return `<div class="legend-row"><div class="legend-left"><div class="legend-dot" style="background:${d.color}"></div>${d.name}</div><div class="legend-val">${pct}%</div></div>`;
     }).join('');
-    document.getElementById('donut-legend').innerHTML=payData.map(d=>`
-      <div class="legend-row">
-        <div class="legend-left"><div class="legend-dot" style="background:${d.color}"></div>${d.name}</div>
-        <div class="legend-val">${d.pct}%</div>
-      </div>`).join('');
 
-    // Branch table
-    document.getElementById('branch-table').innerHTML=branchData.map(b=>{
+    const insightItems=[
+      {label:'Today revenue',value:fmtMoney(totalRev)},
+      {label:'Transactions',value:totalTxn.toLocaleString()},
+      {label:'Stock alerts',value:(zeroStock+lowStock).toLocaleString()},
+      {label:'Active branches',value:activeBranches+'/'+ownBranches.length}
+    ];
+    document.getElementById('dash-insight-list').innerHTML=insightItems.map(i=>`<div class="insight-row"><span>${i.label}</span><strong>${i.value}</strong></div>`).join('');
+
+    const rows=branchData.length?branchData.map(b=>{
       const rev=parseInt(b.total_revenue||0);
+      const txn=parseInt(b.transaction_count||0);
       const goal=2000000;
       const prog=Math.min(100,Math.round(rev/goal*100));
+      const cashB=parseInt(b.cash_total||0), cardB=parseInt(b.card_total||0), qpayB=parseInt(b.qpay_total||0);
+      const statusClass=rev>0?'badge-green':'badge-gray';
+      const status=rev>0?'Selling':'No sales';
       return`<tr>
         <td><b>${b.name}</b><br><span style="font-size:11px;color:var(--gray)">${b.location||''}</span></td>
-        <td>₮${rev.toLocaleString()}</td>
-        <td>${b.transaction_count||0}</td>
-        <td>₮${goal.toLocaleString()}</td>
-        <td>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${prog}%;background:${prog>=60?'var(--green)':prog>=30?'var(--amber)':'var(--red)'}"></div></div>
-            <span class="progress-label">${prog}%</span>
-          </div>
-        </td>
-        <td><span class="badge badge-green">Онлайн</span></td>
-      </tr>`;}).join('');
-  }catch(e){console.error('Dashboard алдаа:',e);}
+        <td><strong>${fmtMoney(rev)}</strong></td>
+        <td>${txn.toLocaleString()}</td>
+        <td><span class="payment-mini">${fmtMoney(cashB)} / ${fmtMoney(cardB+qpayB)}</span></td>
+        <td><div class="progress-bar-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${prog}%;background:${prog>=70?'var(--green)':prog>=30?'var(--amber)':'var(--red)'}"></div></div><span class="progress-label">${prog}%</span></div></td>
+        <td><span class="badge ${statusClass}">${status}</span></td>
+      </tr>`;
+    }).join(''):`<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:28px">No branch data</td></tr>`;
+    document.getElementById('branch-table').innerHTML=rows;
+  }catch(e){console.error('Dashboard error:',e);}
 }
 
-// ── BRANCHES ──
+// Branches
 function branchTypeLabel(type){
   const t = type || 'own_branch';
   if(t === 'partner') return 'Гэрээт борлуулагч';

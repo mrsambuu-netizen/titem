@@ -68,8 +68,10 @@ app.get('/api/inventory', authMiddleware(), async (req, res) => {
 // ── САЛБАРЫН ТАЙЛАН ──
 app.get('/api/reports/daily', authMiddleware(['admin','super_admin','cashier']), async (req, res) => {
   try {
-    const { date, branch_id } = req.query;
+    const { date, start_date, end_date, branch_id } = req.query;
     const reportDate = date || new Date().toISOString().split('T')[0];
+    const startDate = start_date || reportDate;
+    const endDate = end_date || reportDate;
     const branchFilter = req.user.role === 'cashier' ? req.user.branch_id : branch_id;
 
     const sales = await pool.query(
@@ -80,32 +82,34 @@ app.get('/api/reports/daily', authMiddleware(['admin','super_admin','cashier']),
         COALESCE(SUM(CASE WHEN payment_method='card' THEN total ELSE 0 END),0) as card_total,
         COALESCE(SUM(CASE WHEN payment_method='qpay' THEN total ELSE 0 END),0) as qpay_total
        FROM orders
-       WHERE DATE(created_at) = $1 AND status = 'completed'
-       ${branchFilter ? 'AND branch_id = $2' : ''}`,
-      branchFilter ? [reportDate, branchFilter] : [reportDate]
+       WHERE DATE(created_at) BETWEEN $1 AND $2 AND status = 'completed'
+       ${branchFilter ? 'AND branch_id = $3' : ''}`,
+      branchFilter ? [startDate, endDate, branchFilter] : [startDate, endDate]
     );
 
     const topProducts = await pool.query(
       `SELECT oi.product_name, SUM(oi.quantity) as sold_qty, SUM(oi.total_price) as revenue
        FROM order_items oi
        JOIN orders o ON oi.order_id = o.id
-       WHERE DATE(o.created_at) = $1 AND o.status = 'completed'
-       ${branchFilter ? 'AND o.branch_id = $2' : ''}
+       WHERE DATE(o.created_at) BETWEEN $1 AND $2 AND o.status = 'completed'
+       ${branchFilter ? 'AND o.branch_id = $3' : ''}
        GROUP BY oi.product_name ORDER BY sold_qty DESC LIMIT 10`,
-      branchFilter ? [reportDate, branchFilter] : [reportDate]
+      branchFilter ? [startDate, endDate, branchFilter] : [startDate, endDate]
     );
 
-    res.json({ summary: sales.rows[0], top_products: topProducts.rows, date: reportDate });
+    res.json({ summary: sales.rows[0], top_products: topProducts.rows, date: reportDate, start_date: startDate, end_date: endDate });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Бүх салбарын тайлан
+// Branch report
 app.get('/api/reports/branches', authMiddleware(['admin','super_admin']), async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, start_date, end_date } = req.query;
     const reportDate = date || new Date().toISOString().split('T')[0];
+    const startDate = start_date || reportDate;
+    const endDate = end_date || reportDate;
     const result = await pool.query(
       `SELECT b.id, b.name, b.location, b.branch_type, b.phone, b.manager_name,
         b.commission_percent, b.payment_terms, b.is_active,
@@ -115,19 +119,17 @@ app.get('/api/reports/branches', authMiddleware(['admin','super_admin']), async 
         COALESCE(SUM(CASE WHEN o.payment_method='card' THEN o.total ELSE 0 END),0) as card_total,
         COALESCE(SUM(CASE WHEN o.payment_method='qpay' THEN o.total ELSE 0 END),0) as qpay_total
        FROM branches b
-       LEFT JOIN orders o ON o.branch_id = b.id AND DATE(o.created_at) = $1 AND o.status = 'completed'
+       LEFT JOIN orders o ON o.branch_id = b.id AND DATE(o.created_at) BETWEEN $1 AND $2 AND o.status = 'completed'
        WHERE b.id > 1
        GROUP BY b.id, b.name, b.location, b.branch_type, b.phone, b.manager_name, b.commission_percent, b.payment_terms, b.is_active
-       ORDER BY total_revenue DESC`, 
-      [reportDate]
+       ORDER BY total_revenue DESC`,
+      [startDate, endDate]
     );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// ── КАСС ──
 
 app.get('/api/reports/products', authMiddleware(['admin','super_admin']), async (req, res) => {
   try {

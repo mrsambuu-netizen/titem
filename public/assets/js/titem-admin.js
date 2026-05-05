@@ -31,6 +31,7 @@ async function apiPut(url,data){
 }
 
 let today=new Date().toISOString().split('T')[0];
+let dashboardRange='today';
 let invFilter='all';
 let TRANSFER_PRODUCTS=[];
 let PRODUCT_REPORT_ROWS=[];
@@ -116,19 +117,47 @@ async function loadAll(){
 }
 
 // ── DASHBOARD ──
+function setDashboardRange(range, btn){
+  dashboardRange=range;
+  document.querySelectorAll('.dash-range-btn').forEach(b=>b.classList.toggle('active', b===btn || b.dataset.range===range));
+  loadDashboard();
+}
+function getDashboardRange(){
+  const end=new Date(today+'T00:00:00');
+  const start=new Date(end);
+  let label='Today';
+  let chartDays=7;
+  if(dashboardRange==='yesterday'){
+    start.setDate(start.getDate()-1);
+    end.setDate(end.getDate()-1);
+    label='Yesterday';
+  }else if(dashboardRange==='week'){
+    start.setDate(start.getDate()-6);
+    label='Last 7 days';
+    chartDays=7;
+  }else if(dashboardRange==='month'){
+    start.setDate(1);
+    label='This month';
+    chartDays=Math.min(31, end.getDate());
+  }
+  const fmt=d=>d.toISOString().split('T')[0];
+  return { start:fmt(start), end:fmt(end), label, chartDays };
+}
 async function loadDashboard(){
   try{
+    const range=getDashboardRange();
     const branchValue=document.getElementById('branch-filter')?.value||'all';
     const branchQuery=branchValue && branchValue!=='all' ? '&branch_id='+encodeURIComponent(branchValue) : '';
-    const weekDates=[...Array(7)].map((_,i)=>{
-      const d=new Date(today+'T00:00:00');
-      d.setDate(d.getDate()-(6-i));
+    const rangeQuery='start_date='+encodeURIComponent(range.start)+'&end_date='+encodeURIComponent(range.end);
+    const chartDates=[...Array(range.chartDays)].map((_,i)=>{
+      const d=new Date(range.end+'T00:00:00');
+      d.setDate(d.getDate()-(range.chartDays-1-i));
       return d.toISOString().split('T')[0];
     });
     const [branchData,daily,weekly,inv] = await Promise.all([
-      apiGet('/api/reports/branches?date='+today),
-      apiGet('/api/reports/daily?date='+today+branchQuery),
-      Promise.all(weekDates.map(d=>apiGet('/api/reports/daily?date='+d+branchQuery).catch(()=>({summary:{}})))),
+      apiGet('/api/reports/branches?'+rangeQuery),
+      apiGet('/api/reports/daily?'+rangeQuery+branchQuery),
+      Promise.all(chartDates.map(d=>apiGet('/api/reports/daily?date='+d+branchQuery).catch(()=>({summary:{}})))),
       apiGet('/api/inventory').catch(()=>[])
     ]);
 
@@ -150,7 +179,7 @@ async function loadDashboard(){
 
     document.getElementById('kpi-revenue').textContent=fmtMoney(totalRev);
     document.getElementById('kpi-txn').textContent=totalTxn.toLocaleString();
-    document.getElementById('kpi-rev-change').textContent=totalRev>0 ? activeBranches+' active branch'+(activeBranches===1?'':'es') : 'No sales yet today';
+    document.getElementById('kpi-rev-change').textContent=range.label+' ? '+(totalRev>0 ? activeBranches+' active branch'+(activeBranches===1?'':'es') : 'No sales');
     document.getElementById('dash-average-sale').textContent='Average check '+fmtMoney(avg);
     document.getElementById('kpi-stock').textContent=totalStock.toLocaleString();
     document.getElementById('kpi-alert').textContent=zeroStock.toLocaleString();
@@ -158,19 +187,19 @@ async function loadDashboard(){
     document.getElementById('dash-cash').textContent=fmtMoney(cash);
     document.getElementById('dash-card').textContent=fmtMoney(card);
     document.getElementById('dash-qpay').textContent=fmtMoney(qpay);
-    document.getElementById('dash-last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dash-last-updated').textContent=range.label+' ? '+range.start+(range.start===range.end?'':' - '+range.end)+' ? Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('dash-top-branch').textContent=topBranch?.name||'No branch sales';
     document.getElementById('dash-top-branch-rev').textContent=fmtMoney(topBranch?.total_revenue||0);
 
     const vals=weekly.map(d=>parseInt(d.summary?.total_revenue||0));
     const maxV=Math.max(...vals,1);
-    document.getElementById('week-chart').innerHTML=weekDates.map((date,i)=>{
+    document.getElementById('week-chart').innerHTML=chartDates.map((date,i)=>{
       const d=new Date(date+'T00:00:00');
-      const label=d.toLocaleDateString('en-US',{weekday:'short'});
+      const label=range.chartDays>10 ? d.getDate() : d.toLocaleDateString('en-US',{weekday:'short'});
       const h=Math.max(6,Math.round(vals[i]/maxV*128));
       return `<div class="bar-col">
         <div class="bar-val">${vals[i]?fmtMoney(vals[i]).replace(/000$/,'K'):'0'}</div>
-        <div class="bar" title="${fmtMoney(vals[i])}" style="height:${h}px;background:${i===6?'var(--black)':'#c7d2df'}"></div>
+        <div class="bar" title="${fmtMoney(vals[i])}" style="height:${h}px;background:${i===chartDates.length-1?'var(--black)':'#c7d2df'}"></div>
         <div class="bar-label">${label}</div>
       </div>`;
     }).join('');
@@ -195,9 +224,9 @@ async function loadDashboard(){
     }).join('');
 
     const insightItems=[
-      {label:'Today revenue',value:fmtMoney(totalRev)},
+      {label:'Period',value:range.label},
+      {label:'Revenue',value:fmtMoney(totalRev)},
       {label:'Transactions',value:totalTxn.toLocaleString()},
-      {label:'Stock alerts',value:(zeroStock+lowStock).toLocaleString()},
       {label:'Active branches',value:activeBranches+'/'+ownBranches.length}
     ];
     document.getElementById('dash-insight-list').innerHTML=insightItems.map(i=>`<div class="insight-row"><span>${i.label}</span><strong>${i.value}</strong></div>`).join('');
@@ -205,7 +234,7 @@ async function loadDashboard(){
     const rows=branchData.length?branchData.map(b=>{
       const rev=parseInt(b.total_revenue||0);
       const txn=parseInt(b.transaction_count||0);
-      const goal=2000000;
+      const goal=dashboardRange==='month'?2000000:Math.round(2000000/30*Math.max(1,chartDates.length));
       const prog=Math.min(100,Math.round(rev/goal*100));
       const cashB=parseInt(b.cash_total||0), cardB=parseInt(b.card_total||0), qpayB=parseInt(b.qpay_total||0);
       const statusClass=rev>0?'badge-green':'badge-gray';

@@ -113,6 +113,12 @@ tr:hover td{background:#fafafa}
 .dash-hero-metrics>div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;min-height:78px}
 .dash-hero-metrics span{font-size:20px;font-weight:800;line-height:1;white-space:nowrap}
 .dash-hero-metrics small{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:#94a3b8;margin-top:8px;font-weight:700}
+
+.dash-range-tabs{display:inline-flex;gap:4px;margin:0 0 18px;background:#e9eef5;border:1px solid #d8e0ea;border-radius:8px;padding:4px}
+.dash-range-btn{border:none;background:transparent;color:#475569;padding:9px 14px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.dash-range-btn:hover{background:rgba(255,255,255,.55);color:#0f172a}
+.dash-range-btn.active{background:#0f172a;color:white;box-shadow:0 8px 18px rgba(15,23,42,.16)}
+
 .kpi-grid-pro{gap:14px;margin-bottom:18px}
 .pro-kpi{position:relative;overflow:hidden;border-color:#dde4ec;box-shadow:0 10px 24px rgba(15,23,42,.05);min-height:136px}
 .pro-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--black)}

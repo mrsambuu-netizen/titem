@@ -126,6 +126,13 @@
           </div>
         </div>
 
+        <div class="dash-range-tabs">
+          <button class="dash-range-btn active" data-range="today" onclick="setDashboardRange('today',this)">Өнөөдөр</button>
+          <button class="dash-range-btn" data-range="yesterday" onclick="setDashboardRange('yesterday',this)">Өчигдөр</button>
+          <button class="dash-range-btn" data-range="week" onclick="setDashboardRange('week',this)">7 хоног</button>
+          <button class="dash-range-btn" data-range="month" onclick="setDashboardRange('month',this)">Сар</button>
+        </div>
+
         <div class="kpi-grid kpi-grid-pro">
           <div class="kpi-card pro-kpi accent-green">
             <div class="kpi-label"><span class="kpi-label-icon">T</span>Today's revenue</div>
@@ -951,6 +958,6 @@
 <div class="toast" id="toast">
   <span id="toast-msg">OK</span>
 </div>
-<script src="/assets/js/titem-admin.js?v=20260505-pro-dashboard"></script>
+<script src="/assets/js/titem-admin.js?v=20260505-dashboard-range"></script>
 </body>
 </html>
